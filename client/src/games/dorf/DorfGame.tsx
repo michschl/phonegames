@@ -3,8 +3,10 @@ import type { GameProps } from '../types.ts';
 import { Avatar, Button } from '../../components/ui.tsx';
 import { sound } from '../../lib/audio.ts';
 import { confetti } from '../../lib/confetti.ts';
-import { haptic } from '../../lib/device.ts';
-import { speak, stopSpeaking } from '../../lib/speech.ts';
+import { haptic, setHapticsEnabled } from '../../lib/device.ts';
+import { primeSpeech, speak, stopSpeaking } from '../../lib/speech.ts';
+import { pickRandom } from '../../lib/util.ts';
+import { useSettings } from '../../store/settings.ts';
 import { Actions, GameShell, Headline, Stage } from '../shared/GameShell.tsx';
 import { PassTurns, SecretReveal } from '../shared/PassTurns.tsx';
 import { PlayerPicker } from '../shared/players.tsx';
@@ -17,12 +19,39 @@ type NightUi = { kind: 'narrate' } | { kind: 'pick'; role: 'beschuetzer' | 'werw
 
 class Cancelled extends Error {}
 
-const ROLE_WITH_ARTICLE: Record<Role, string> = {
-  werwolf: 'ein Werwolf',
-  seherin: 'die Seherin',
-  beschuetzer: 'der Beschützer',
-  dorf: 'Dorfbewohner',
+/*
+ * Narration. Deaths are announced by name only – roles stay secret until the
+ * game is over, so the village has something to argue about and everyone may
+ * lie about their own role.
+ */
+const LINES = {
+  nightfall: [
+    'Die Nacht bricht herein. Alle schliessen die Augen …',
+    'Es wird dunkel im Dorf. Alle schliessen jetzt die Augen …',
+    'Der Mond steigt über die Dächer. Alle schliessen die Augen …',
+  ],
+  wolvesWake: [
+    'Werwölfe, öffnet die Augen. Wählt gemeinsam ein Opfer.',
+    'Werwölfe, erwacht! Einigt euch lautlos auf ein Opfer.',
+  ],
+  death: [
+    (name: string) => `Das Dorf erwacht … doch nicht alle. Heute Nacht hat es ${name} erwischt.`,
+    (name: string) => `Die Sonne geht auf. Mit Schrecken entdeckt das Dorf: ${name} hat die Nacht nicht überlebt.`,
+    (name: string) => `Ein Schrei hallt durchs Dorf! ${name} wurde heute Nacht von den Werwölfen geholt.`,
+  ],
+  noDeath: [
+    'Das Dorf erwacht. Was für ein Glück: Heute Nacht ist niemand gestorben.',
+    'Die Sonne geht auf, und alle sind noch da. Die Werwölfe gingen heute leer aus!',
+  ],
+  discuss: 'Wer von euch ist ein Werwolf? Diskutiert!',
+  banish: [
+    (name: string) => `Das Dorf hat entschieden: ${name} muss das Dorf verlassen.`,
+    (name: string) => `${name} wird aus dem Dorf verbannt.`,
+  ],
 };
+
+/** Vibration (and tap sounds) would give away who is still alive and choosing at night. */
+const restoreHaptics = () => setHapticsEnabled(useSettings.getState().haptics);
 
 export default function DorfGame({ players, settings, onExit }: GameProps<DorfSettings>) {
   const [roles, setRoles] = useState(() => assignRoles(players, settings));
@@ -57,6 +86,7 @@ export default function DorfGame({ players, settings, onExit }: GameProps<DorfSe
       cancelled.current = true;
       stopSpeaking();
       stopAmbience.current?.();
+      restoreHaptics();
       waiter.current?.(null);
     },
     [],
@@ -109,8 +139,9 @@ export default function DorfGame({ players, settings, onExit }: GameProps<DorfSe
     try {
       setPhase('night');
       setBanished(undefined);
+      setHapticsEnabled(false);
       stopAmbience.current = sound.crickets();
-      await say('Die Nacht bricht herein. Alle schliessen die Augen.');
+      await say(pickRandom(LINES.nightfall));
       await pause(1500);
 
       let protectedId: string | null = null;
@@ -124,7 +155,7 @@ export default function DorfGame({ players, settings, onExit }: GameProps<DorfSe
 
       sound.howl();
       await pause(1200);
-      await say('Werwölfe, öffnet die Augen. Wählt gemeinsam ein Opfer.');
+      await say(pickRandom(LINES.wolvesWake));
       const victim = await ask('werwolf');
       await say('Werwölfe, schliesst die Augen.');
       await pause(1200);
@@ -147,6 +178,7 @@ export default function DorfGame({ players, settings, onExit }: GameProps<DorfSe
       }
 
       stopAmbience.current?.();
+      restoreHaptics();
       lastProtected.current = protectedId;
       const dead = resolveNight(victim, protectedId);
       const nextAlive = dead ? aliveRef.current.filter((id) => id !== dead) : aliveRef.current;
@@ -155,13 +187,17 @@ export default function DorfGame({ players, settings, onExit }: GameProps<DorfSe
       setLastDeath(dead);
       setDayNo((n) => n + 1);
       setPhase('day');
-      sound.reveal();
+      sound.birds();
+      if (dead) {
+        window.setTimeout(() => sound.sting(), 900);
+        haptic([200, 80, 200]);
+      } else {
+        window.setTimeout(() => sound.sparkle(), 700);
+      }
 
-      const morning = dead
-        ? `Das Dorf erwacht. Heute Nacht hat es ${nameOf(dead)} erwischt. ${nameOf(dead)} war ${ROLE_WITH_ARTICLE[rolesRef.current[dead]!]}.`
-        : 'Das Dorf erwacht. Was für ein Glück – heute Nacht ist niemand gestorben.';
+      const morning = dead ? pickRandom(LINES.death)(nameOf(dead)) : pickRandom(LINES.noDeath);
       setNarration(morning);
-      if (settings.voice) await speak(morning);
+      if (settings.voice) await speak(`${morning} ${LINES.discuss}`);
       check();
       if (!finishIfWon(nextAlive)) timer.reset();
     } catch (error) {
@@ -178,10 +214,11 @@ export default function DorfGame({ players, settings, onExit }: GameProps<DorfSe
     const text = w === 'dorf' ? 'Alle Werwölfe sind besiegt. Das Dorf gewinnt!' : 'Die Werwölfe haben das Dorf übernommen. Die Werwölfe gewinnen!';
     if (settings.voice) void speak(text);
     if (w === 'dorf') {
-      sound.reveal();
+      sound.fanfare();
       confetti({ count: 200 });
     } else {
       sound.howl();
+      window.setTimeout(() => sound.sting(), 1400);
       haptic([300, 100, 300]);
     }
     return true;
@@ -189,7 +226,6 @@ export default function DorfGame({ players, settings, onExit }: GameProps<DorfSe
 
   const confirmPick = () => {
     if (!pick) return;
-    haptic(15);
     waiter.current?.(pick);
   };
 
@@ -202,13 +238,16 @@ export default function DorfGame({ players, settings, onExit }: GameProps<DorfSe
       const nextAlive = aliveRef.current.filter((x) => x !== id);
       setAlive(nextAlive);
       aliveRef.current = nextAlive;
-      const text = `${nameOf(id)} wird aus dem Dorf verbannt. ${nameOf(id)} war ${ROLE_WITH_ARTICLE[rolesRef.current[id]!]}.`;
+      const text = pickRandom(LINES.banish)(nameOf(id));
       setNarration(text);
       if (settings.voice) void speak(text);
-      sound.buzzer(0.4);
+      sound.gong();
+      haptic([120, 60, 120]);
       if (finishIfWon(nextAlive)) return;
     } else {
       setNarration('Heute wird niemand verbannt.');
+      if (settings.voice) void speak('Heute wird niemand verbannt.');
+      sound.whoosh();
     }
     setPhase('dusk');
   };
@@ -243,7 +282,7 @@ export default function DorfGame({ players, settings, onExit }: GameProps<DorfSe
         <span key={p.id} className={`dorf-status__p ${alive.includes(p.id) ? '' : 'is-dead'}`} style={{ '--c': p.color } as CSSProperties}>
           <Avatar name={p.name} color={p.color} size={26} />
           {p.name}
-          {!alive.includes(p.id) && ` ${ROLES[roles[p.id]!].emoji}`}
+          {!alive.includes(p.id) && ' 👻'}
         </span>
       ))}
     </div>
@@ -301,7 +340,14 @@ export default function DorfGame({ players, settings, onExit }: GameProps<DorfSe
               : 'Die Spielleitung liest die Texte vor und tippt jeweils auf «Weiter».'}
           </p>
           <Actions>
-            <Button size="lg" block onClick={() => void runNight()}>
+            <Button
+              size="lg"
+              block
+              onClick={() => {
+                if (settings.voice) primeSpeech();
+                void runNight();
+              }}
+            >
               Die Nacht beginnt
             </Button>
           </Actions>
@@ -334,7 +380,7 @@ export default function DorfGame({ players, settings, onExit }: GameProps<DorfSe
           <Headline small>
             {ui.role === 'werwolf' ? 'Wen fresst ihr?' : ui.role === 'seherin' ? 'Wen durchschaust du?' : 'Wen beschützt du?'}
           </Headline>
-          <PlayerPicker players={pickOptions(ui.role)} selected={pick} onSelect={(p) => setPick(p.id)} />
+          <PlayerPicker players={pickOptions(ui.role)} selected={pick} onSelect={(p) => setPick(p.id)} quiet />
           <Actions>
             <Button size="lg" block disabled={!pick} onClick={confirmPick}>
               Bestätigen
