@@ -177,7 +177,12 @@ export function GamePlayPage() {
 
   useEffect(() => {
     document.documentElement.classList.add('is-playing');
-    return () => document.documentElement.classList.remove('is-playing');
+    // Sound is wanted while the game is open and released afterwards (no lingering iOS media session).
+    sound.hold();
+    return () => {
+      document.documentElement.classList.remove('is-playing');
+      sound.release();
+    };
   }, []);
 
   if (!game?.Play || game.status !== 'available') return <Navigate to="/" replace />;

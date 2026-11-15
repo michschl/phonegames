@@ -70,6 +70,7 @@ export function DiscoverPage() {
       addGame(gameId);
       sound.unlock();
       sound.pop();
+      sound.release();
       haptic([15, 30, 15]);
       const rect = button.getBoundingClientRect();
       confetti({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, count: 70, spread: Math.PI });

@@ -29,6 +29,7 @@ export function PlayerEditor({ group, autoFocus }: { group: PlayerGroup; autoFoc
     if (addPlayer(group.id, trimmed)) {
       sound.unlock();
       sound.pop();
+      sound.release();
       haptic(10);
       setName('');
       setError(null);

@@ -214,7 +214,7 @@ function sentenceAudio(voice: VoiceInfo, text: string): Promise<AudioBuffer | nu
   let entry = decoded.get(url);
   if (!entry) {
     entry = fetchAudio(url).then(async (data) => {
-      const ctx = sound.context ?? sound.unlock();
+      const ctx = sound.decoder ?? sound.unlock();
       if (!data || !ctx) return null;
       try {
         return await ctx.decodeAudioData(data);
@@ -231,9 +231,9 @@ function sentenceAudio(voice: VoiceInfo, text: string): Promise<AudioBuffer | nu
 }
 
 function playBuffer(buffer: AudioBuffer): Promise<void> {
-  const ctx = sound.context ?? sound.unlock();
+  // Never start audio in the background (iOS would show a media session for the app).
+  const ctx = sound.context ?? (document.hidden ? null : sound.unlock());
   if (!ctx) return Promise.resolve();
-  if (ctx.state !== 'running') void ctx.resume().catch(() => undefined);
   return new Promise((resolve) => {
     const source = ctx.createBufferSource();
     source.buffer = buffer;

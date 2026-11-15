@@ -44,6 +44,7 @@ export function HomePage() {
     addGame(gameId);
     sound.unlock();
     sound.pop();
+    sound.release();
     haptic([15, 30, 15]);
     const r = button.getBoundingClientRect();
     confetti({ x: r.left + r.width / 2, y: r.top + r.height / 2, count: 60, spread: Math.PI });

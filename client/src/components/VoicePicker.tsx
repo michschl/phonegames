@@ -1,6 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { isIos } from '../lib/device.ts';
 import { germanVoices, onVoicesChanged, previewVoice, refreshVoices, speechAvailable, stopSpeaking, type VoiceInfo } from '../lib/speech.ts';
+import { sound } from '../lib/audio.ts';
 import { useSettings } from '../store/settings.ts';
 import { Icon } from './Icon.tsx';
 
@@ -60,6 +61,7 @@ export function VoicePicker({ collapsed = false }: { collapsed?: boolean }) {
     }
     setPlaying(id ?? 'auto');
     await previewVoice(id);
+    sound.release();
     setPlaying((current) => (current === (id ?? 'auto') ? null : current));
   };
 
