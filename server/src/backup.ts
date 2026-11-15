@@ -10,9 +10,9 @@ import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { config } from './config.ts';
 
-const source = path.join(config.dataDir, 'plausch.db');
+const source = path.join(config.dataDir, 'phonegames.db');
 const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-const target = path.resolve(process.argv[2] ?? path.join(config.dataDir, 'backups', `plausch-${stamp}.db`));
+const target = path.resolve(process.argv[2] ?? path.join(config.dataDir, 'backups', `phonegames-${stamp}.db`));
 
 fs.mkdirSync(path.dirname(target), { recursive: true });
 const db = new DatabaseSync(source);

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { createBrowserRouter, Link, Navigate, Outlet, RouterProvider } from 'react-router';
-import { Aurora, TabBar, Toaster } from './components/Layout.tsx';
+import { Backdrop, TabBar, Toaster } from './components/Layout.tsx';
 import { EmptyState } from './components/ui.tsx';
 import { setHapticsEnabled } from './lib/device.ts';
 import { refreshSession } from './lib/session.ts';
@@ -26,7 +26,7 @@ function Root() {
 
   return (
     <>
-      <Aurora />
+      <Backdrop />
       <Outlet />
       <Toaster />
     </>
@@ -56,9 +56,10 @@ function TabsLayout() {
 function ErrorPage() {
   return (
     <main className="page">
-      <Aurora />
+      <Backdrop />
       <div className="page__content">
         <EmptyState
+          mascot="oops"
           emoji="🧯"
           title="Ups, da ist etwas explodiert"
           text="Keine Sorge, deine Daten sind gespeichert. Lade die App neu, um weiterzumachen."
@@ -78,6 +79,7 @@ function NotFound() {
     <main className="page">
       <div className="page__content">
         <EmptyState
+          mascot="wow"
           emoji="🛸"
           title="Hier ist nichts"
           text="Diese Seite gibt es nicht."

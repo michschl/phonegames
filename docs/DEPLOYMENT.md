@@ -1,6 +1,6 @@
 # Deployment auf einen Infomaniak-VPS
 
-Diese Anleitung bringt Plausch auf einen VPS bei [Infomaniak](https://www.infomaniak.com) (VPS Cloud oder VPS Lite).
+Diese Anleitung bringt Phonegames auf einen VPS bei [Infomaniak](https://www.infomaniak.com) (VPS Cloud oder VPS Lite).
 Nach der einmaligen Einrichtung wird **jeder Push auf `main` automatisch ausgerollt**.
 
 ## Überblick
@@ -21,9 +21,9 @@ Nach der einmaligen Einrichtung wird **jeder Push auf `main` automatisch ausgero
  Infomaniak VPS (Ubuntu 24.04, Docker)
  ┌──────────────────────────────────────────────┐
  │  caddy  :80/:443  ── HTTPS (Let’s Encrypt)   │
- │    │                                          │
- │    └──► app :3000  (Fastify: API + PWA)       │
- │            └── Volume app-data → plausch.db   │
+ │    │                                         │
+ │    └──► app :3000  (Fastify: API + PWA)      │
+ │          └── Volume app-data → phonegames.db │
  └──────────────────────────────────────────────┘
 ```
 
@@ -32,12 +32,12 @@ Nach der einmaligen Einrichtung wird **jeder Push auf `main` automatisch ausgero
   des Workflows an und meldet sich danach wieder ab.
 - **Caddy** besorgt und erneuert das TLS-Zertifikat automatisch. HTTPS ist Pflicht, sonst funktioniert der
   Service Worker (Offline-Modus) nicht.
-- Die Datenbank (SQLite) liegt im Docker-Volume `plausch_app-data` und überlebt Updates.
+- Die Datenbank (SQLite) liegt im Docker-Volume `phonegames_app-data` und überlebt Updates.
 
 ## Voraussetzungen
 
 - Infomaniak **VPS Cloud** oder **VPS Lite** – die kleinste Variante (1–2 vCPU, 2 GB RAM) reicht gut.
-- Eine **Domain** oder Subdomain, z. B. `plausch.example.ch`.
+- Eine **Domain** oder Subdomain, z. B. `phonegames.example.ch`.
 - Zugriff auf die **Einstellungen des GitHub-Repositorys** (Secrets & Variables).
 
 ## 1. VPS bestellen
@@ -63,13 +63,13 @@ Beim DNS-Anbieter der Domain (z. B. Infomaniak → Domain → DNS-Zone):
 
 | Typ | Name | Wert |
 | --- | --- | --- |
-| A | `plausch` (oder `@`) | IPv4-Adresse des VPS |
-| AAAA | `plausch` (oder `@`) | IPv6-Adresse des VPS (falls vorhanden) |
+| A | `phonegames` (oder `@`) | IPv4-Adresse des VPS |
+| AAAA | `phonegames` (oder `@`) | IPv6-Adresse des VPS (falls vorhanden) |
 
 Prüfen (kann einige Minuten dauern):
 
 ```bash
-dig +short plausch.example.ch
+dig +short phonegames.example.ch
 ```
 
 ## 3. Deploy-Schlüssel erzeugen
@@ -77,22 +77,22 @@ dig +short plausch.example.ch
 GitHub Actions verbindet sich mit einem eigenen SSH-Schlüssel – nicht mit deinem persönlichen. Auf deinem Rechner:
 
 ```bash
-ssh-keygen -t ed25519 -C "github-deploy-plausch" -f ./plausch_deploy -N ""
+ssh-keygen -t ed25519 -C "github-deploy-phonegames" -f ./phonegames_deploy -N ""
 ```
 
-Das erzeugt `plausch_deploy` (privat → kommt in GitHub) und `plausch_deploy.pub` (öffentlich → kommt auf den VPS).
+Das erzeugt `phonegames_deploy` (privat → kommt in GitHub) und `phonegames_deploy.pub` (öffentlich → kommt auf den VPS).
 
 ## 4. VPS vorbereiten
 
 Das Skript [`deploy/setup-vps.sh`](../deploy/setup-vps.sh) installiert Docker, legt den Benutzer `deploy` an,
-erstellt `/opt/plausch`, aktiviert die Firewall (`ufw`), `fail2ban` und automatische Sicherheitsupdates.
+erstellt `/opt/phonegames`, aktiviert die Firewall (`ufw`), `fail2ban` und automatische Sicherheitsupdates.
 
 ```bash
 scp deploy/setup-vps.sh ubuntu@<IP-ADRESSE>:~
 ```
 
 ```bash
-ssh ubuntu@<IP-ADRESSE> "sudo DEPLOY_PUBKEY='$(cat plausch_deploy.pub)' bash setup-vps.sh"
+ssh ubuntu@<IP-ADRESSE> "sudo DEPLOY_PUBKEY='$(cat phonegames_deploy.pub)' bash setup-vps.sh"
 ```
 
 Den Host-Key des Servers für GitHub auslesen (schützt vor Man-in-the-Middle-Angriffen):
@@ -104,7 +104,7 @@ ssh-keyscan -H <IP-ADRESSE-ODER-DOMAIN>
 Prüfen, ob der Deploy-Benutzer Docker verwenden darf:
 
 ```bash
-ssh -i plausch_deploy deploy@<IP-ADRESSE> docker ps
+ssh -i phonegames_deploy deploy@<IP-ADRESSE> docker ps
 ```
 
 ## 5. GitHub konfigurieren
@@ -120,11 +120,11 @@ Environment geladen ist.
 
 | Name | Pflicht | Beispiel | Beschreibung |
 | --- | --- | --- | --- |
-| `VPS_HOST` | ✅ | `plausch.example.ch` oder IP | Ohne diese Variable wird der Deploy-Schritt übersprungen |
-| `APP_DOMAIN` | ✅ | `plausch.example.ch` | Domain, für die Caddy das Zertifikat holt |
+| `VPS_HOST` | ✅ | `phonegames.example.ch` oder IP | Ohne diese Variable wird der Deploy-Schritt übersprungen |
+| `APP_DOMAIN` | ✅ | `phonegames.example.ch` | Domain, für die Caddy das Zertifikat holt |
 | `VPS_USER` | – | `deploy` | Standard: `deploy` |
 | `VPS_PORT` | – | `22` | Standard: `22` |
-| `APP_DIR` | – | `/opt/plausch` | Standard: `/opt/plausch` |
+| `APP_DIR` | – | `/opt/phonegames` | Standard: `/opt/phonegames` |
 
 ### Secrets (im Environment `production`)
 
@@ -132,28 +132,28 @@ Unter **Settings → Environments → production → «Add environment secret»*
 
 | Name | Pflicht | Inhalt |
 | --- | --- | --- |
-| `VPS_SSH_KEY` | ✅ | Kompletter Inhalt von `plausch_deploy` (privater Schlüssel, inkl. `-----BEGIN …` / `-----END …`) |
+| `VPS_SSH_KEY` | ✅ | Kompletter Inhalt von `phonegames_deploy` (privater Schlüssel, inkl. `-----BEGIN …` / `-----END …`) |
 | `VPS_KNOWN_HOSTS` | empfohlen | Ausgabe von `ssh-keyscan -H <host>` aus Schritt 4 |
 
 Mit der GitHub-CLI geht das auch so:
 
 ```bash
-gh secret set VPS_SSH_KEY --env production < plausch_deploy
+gh secret set VPS_SSH_KEY --env production < phonegames_deploy
 ```
 
 ```bash
-ssh-keyscan -H plausch.example.ch | gh secret set VPS_KNOWN_HOSTS --env production
+ssh-keyscan -H phonegames.example.ch | gh secret set VPS_KNOWN_HOSTS --env production
 ```
 
 ```bash
-gh variable set VPS_HOST --body "plausch.example.ch"
+gh variable set VPS_HOST --body "phonegames.example.ch"
 ```
 
 ```bash
-gh variable set APP_DOMAIN --body "plausch.example.ch"
+gh variable set APP_DOMAIN --body "phonegames.example.ch"
 ```
 
-> 💡 Danach den privaten Schlüssel `plausch_deploy` lokal löschen oder sicher aufbewahren.
+> 💡 Danach den privaten Schlüssel `phonegames_deploy` lokal löschen oder sicher aufbewahren.
 
 ## 6. Erstes Deployment
 
@@ -161,11 +161,11 @@ gh variable set APP_DOMAIN --body "plausch.example.ch"
 - in GitHub unter **Actions → Deploy → Run workflow** manuell starten.
 
 Der Workflow ([`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml)) zeigt am Ende
-`✅ https://plausch.example.ch läuft`. Beim allerersten Start holt Caddy das Zertifikat – das dauert einige Sekunden.
+`✅ https://phonegames.example.ch läuft`. Beim allerersten Start holt Caddy das Zertifikat – das dauert einige Sekunden.
 
 ## Betrieb
 
-Alle Befehle auf dem VPS als Benutzer `deploy` im Verzeichnis `/opt/plausch`.
+Alle Befehle auf dem VPS als Benutzer `deploy` im Verzeichnis `/opt/phonegames`.
 
 | Aufgabe | Befehl |
 | --- | --- |
@@ -177,11 +177,11 @@ Alle Befehle auf dem VPS als Benutzer `deploy` im Verzeichnis `/opt/plausch`.
 ### Backups
 
 [`deploy/backup.sh`](../deploy/backup.sh) erstellt im laufenden Betrieb eine konsistente Kopie der Datenbank
-(`VACUUM INTO`) nach `/opt/plausch/backups/` und löscht Backups, die älter als 14 Tage sind.
+(`VACUUM INTO`) nach `/opt/phonegames/backups/` und löscht Backups, die älter als 14 Tage sind.
 Täglich um 03:15 Uhr per Cron (`crontab -e` als `deploy`):
 
 ```
-15 3 * * * /opt/plausch/backup.sh >> /opt/plausch/backups/backup.log 2>&1
+15 3 * * * /opt/phonegames/backup.sh >> /opt/phonegames/backups/backup.log 2>&1
 ```
 
 Für echte Ausfallsicherheit die Backups zusätzlich ausser Haus kopieren, z. B. auf
@@ -194,12 +194,12 @@ docker compose stop app
 ```
 
 ```bash
-gunzip -c backups/plausch-JJJJMMTT-HHMMSS.db.gz > /tmp/plausch.db
+gunzip -c backups/phonegames-JJJJMMTT-HHMMSS.db.gz > /tmp/phonegames.db
 ```
 
 ```bash
-docker compose run --rm --no-deps -v /tmp/plausch.db:/restore.db:ro --entrypoint sh app \
-  -c 'cp /restore.db /data/plausch.db && rm -f /data/plausch.db-wal /data/plausch.db-shm'
+docker compose run --rm --no-deps -v /tmp/phonegames.db:/restore.db:ro --entrypoint sh app \
+  -c 'cp /restore.db /data/phonegames.db && rm -f /data/phonegames.db-wal /data/phonegames.db-shm'
 ```
 
 ```bash
@@ -230,6 +230,8 @@ Die Container starten dank `restart: unless-stopped` automatisch wieder.
 | Deploy-Job wird übersprungen | Repository-Variable `VPS_HOST` fehlt (nur im Environment gesetzt reicht nicht) |
 | `Permission denied (publickey)` | `VPS_SSH_KEY` unvollständig kopiert oder Public Key fehlt in `/home/deploy/.ssh/authorized_keys` |
 | `Host key verification failed` | `VPS_KNOWN_HOSTS` passt nicht (z. B. VPS neu installiert) → neu mit `ssh-keyscan -H` erzeugen |
+| `/opt/phonegames fehlt … oder ist nicht beschreibbar` | Ordner wurde nicht von `setup-vps.sh` angelegt. Einmalig auf dem VPS: `sudo install -d -m 750 -o deploy -g deploy /opt/phonegames` |
+| `port is already allocated` | Ein anderer Container belegt Port 80/443. Mit `docker ps` prüfen und den alten Stack stoppen |
 | `denied` beim `docker compose pull` | Workflow-Berechtigung `packages: write` fehlt oder Package gehört zu einem anderen Repo. Unter GitHub → Packages → *Package settings* das Repository verknüpfen |
 | Kein Zertifikat / Browser-Warnung | DNS zeigt noch nicht auf den VPS oder Port 80/443 ist in der Infomaniak-Firewall bzw. `ufw` gesperrt. `docker compose logs caddy` prüfen |
 | `502 Bad Gateway` | App-Container läuft nicht: `docker compose logs app` |
@@ -240,15 +242,15 @@ Die Container starten dank `restart: unless-stopped` automatisch wieder.
 Image lokal bauen und direkt auf den VPS übertragen:
 
 ```bash
-docker build -t plausch:manual .
+docker build -t phonegames:manual .
 ```
 
 ```bash
-docker save plausch:manual | ssh deploy@<host> docker load
+docker save phonegames:manual | ssh deploy@<host> docker load
 ```
 
-Auf dem VPS in `/opt/plausch` die Dateien aus `deploy/` ablegen, `.env` nach Vorlage
-[`deploy/.env.example`](../deploy/.env.example) anlegen (`APP_IMAGE=plausch:manual`) und starten:
+Auf dem VPS in `/opt/phonegames` die Dateien aus `deploy/` ablegen, `.env` nach Vorlage
+[`deploy/.env.example`](../deploy/.env.example) anlegen (`APP_IMAGE=phonegames:manual`) und starten:
 
 ```bash
 docker compose up -d

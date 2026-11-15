@@ -9,10 +9,13 @@ interface SettingsState {
   gameSettings: Record<string, unknown>;
   /** Last used player group per game. */
   lastGroupByGame: Record<string, string>;
+  /** Most recently started game, shown as «Weiterspielen» on the home screen. */
+  lastPlayed: { gameId: string; groupId?: string; at: number } | null;
   setSound(on: boolean): void;
   setHaptics(on: boolean): void;
   setGameSettings(gameId: string, value: unknown): void;
   setLastGroup(gameId: string, groupId: string): void;
+  setLastPlayed(gameId: string, groupId?: string): void;
 }
 
 export const useSettings = create<SettingsState>()(
@@ -22,12 +25,14 @@ export const useSettings = create<SettingsState>()(
       haptics: true,
       gameSettings: {},
       lastGroupByGame: {},
+      lastPlayed: null,
       setSound: (sound) => set({ sound }),
       setHaptics: (haptics) => set({ haptics }),
       setGameSettings: (gameId, value) => set((s) => ({ gameSettings: { ...s.gameSettings, [gameId]: value } })),
       setLastGroup: (gameId, groupId) => set((s) => ({ lastGroupByGame: { ...s.lastGroupByGame, [gameId]: groupId } })),
+      setLastPlayed: (gameId, groupId) => set({ lastPlayed: { gameId, groupId, at: Date.now() } }),
     }),
-    { name: 'plausch-settings', version: 1 },
+    { name: 'phonegames-settings', version: 1 },
   ),
 );
 

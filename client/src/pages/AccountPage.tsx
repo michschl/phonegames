@@ -45,7 +45,7 @@ export function AccountPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'plausch-export.json';
+      a.download = 'phonegames-export.json';
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
@@ -130,7 +130,7 @@ export function AccountPage() {
         <Button variant="ghost" icon="trash" onClick={() => setSheet('delete')}>
           Konto löschen
         </Button>
-        <p className="app-version">Plausch v{__APP_VERSION__} · Mit ❤️ in der Schweiz gehostet</p>
+        <p className="app-version">Phonegames v{__APP_VERSION__} · Mit ❤️ in der Schweiz gehostet</p>
       </div>
 
       <AvatarSheet open={sheet === 'avatar'} onClose={close} />

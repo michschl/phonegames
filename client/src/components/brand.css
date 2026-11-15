@@ -1,0 +1,118 @@
+.mascot {
+  flex: none;
+  overflow: visible;
+}
+
+.mascot__body {
+  transform-origin: 60px 110px;
+  animation: mascot-bob 3.2s ease-in-out infinite;
+}
+
+.mascot__eyes {
+  transform-origin: 60px 56px;
+  animation: mascot-blink 4.6s infinite;
+}
+
+.mascot__sparks {
+  transform-origin: 60px 60px;
+  animation: mascot-sparks 3.2s ease-in-out infinite;
+}
+
+.mascot--wow .mascot__body {
+  animation: mascot-shake 0.5s ease-in-out infinite;
+}
+
+.mascot--party .mascot__body {
+  animation: mascot-dance 0.9s ease-in-out infinite;
+}
+
+.mascot--sleepy .mascot__body {
+  animation: mascot-bob 5s ease-in-out infinite;
+}
+
+@keyframes mascot-bob {
+  0%,
+  100% {
+    transform: rotate(-6deg) translateY(0);
+  }
+  50% {
+    transform: rotate(4deg) translateY(-3px);
+  }
+}
+
+@keyframes mascot-blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.1);
+  }
+}
+
+@keyframes mascot-sparks {
+  50% {
+    transform: scale(1.08) rotate(6deg);
+  }
+}
+
+@keyframes mascot-shake {
+  25% {
+    transform: rotate(-8deg);
+  }
+  75% {
+    transform: rotate(8deg);
+  }
+}
+
+@keyframes mascot-dance {
+  0%,
+  100% {
+    transform: rotate(-10deg) translateY(0);
+  }
+  50% {
+    transform: rotate(10deg) translateY(-6px);
+  }
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.logo--stacked {
+  flex-direction: column;
+  gap: 0.2em;
+}
+
+.logo__word {
+  font-family: var(--font-display);
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.logo__phone {
+  color: var(--ink);
+}
+
+.logo__games {
+  color: var(--pink);
+  -webkit-text-stroke: 0.06em var(--ink);
+  paint-order: stroke fill;
+  text-shadow: 0.06em 0.07em 0 var(--ink);
+  margin-left: 0.02em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mascot__body,
+  .mascot__eyes,
+  .mascot__sparks {
+    animation: none;
+  }
+}

@@ -1,0 +1,54 @@
+.wop-choice {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  width: min(100%, 480px);
+}
+
+.wop-btn {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  min-height: 180px;
+  padding: 18px 10px;
+  border: 3px solid var(--ink);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 8px 0 var(--ink);
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 900;
+  color: #fff;
+  -webkit-text-stroke: 5px var(--ink);
+  paint-order: stroke fill;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+  animation: pop-in 0.5s var(--ease-spring) both;
+}
+
+.wop-btn span {
+  font-size: 56px;
+  line-height: 1;
+  -webkit-text-stroke: 0;
+  filter: drop-shadow(3px 4px 0 rgba(27, 16, 51, 0.9));
+}
+
+.wop-btn:active {
+  transform: translateY(6px);
+  box-shadow: 0 2px 0 var(--ink);
+}
+
+.wop-btn--truth {
+  background:
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.25) 0 12px, transparent 12px 24px),
+    var(--cyan);
+  transform: rotate(-2deg);
+}
+
+.wop-btn--dare {
+  background:
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.25) 0 12px, transparent 12px 24px),
+    var(--orange);
+  transform: rotate(2deg);
+  animation-delay: 0.08s;
+}

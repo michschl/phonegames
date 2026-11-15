@@ -1,33 +1,49 @@
+/*
+ * Phonegames design system – "Sticker Pop":
+ * warm cream paper, ink outlines, hard offset shadows and bright flat colours.
+ */
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  --bg: #0c0718;
-  --bg-2: #150c2a;
-  --surface: rgba(255, 255, 255, 0.06);
-  --surface-2: rgba(255, 255, 255, 0.1);
-  --surface-3: rgba(255, 255, 255, 0.16);
-  --stroke: rgba(255, 255, 255, 0.11);
-  --stroke-2: rgba(255, 255, 255, 0.2);
-  --text: #ffffff;
-  --muted: rgba(236, 230, 255, 0.68);
-  --faint: rgba(236, 230, 255, 0.42);
+  --ink: #1b1033;
+  --ink-2: #3d2f5c;
+  --bg: #fff6e9;
+  --bg-2: #ffecd4;
+  --paper: #ffffff;
 
-  --pink: #ff3d8b;
+  --text: var(--ink);
+  --muted: rgba(27, 16, 51, 0.68);
+  --faint: rgba(27, 16, 51, 0.46);
+  --line: rgba(27, 16, 51, 0.12);
+  --surface: #ffffff;
+  --surface-2: #fff1de;
+  --surface-3: #f6e6cf;
+
+  --pink: #ff4fa3;
   --orange: #ff8a3d;
   --yellow: #ffd23f;
-  --green: #3ddc97;
-  --cyan: #2de2e6;
-  --blue: #5b8cff;
-  --violet: #8b5cf6;
-  --red: #ff4d6d;
+  --lime: #9be15d;
+  --green: #21c46b;
+  --cyan: #2ec5ff;
+  --blue: #4d7cff;
+  --violet: #7c5cff;
+  --red: #ff5a5f;
 
-  --grad-hot: linear-gradient(135deg, #ff3d8b 0%, #ff8a3d 100%);
-  --grad-cool: linear-gradient(135deg, #8b5cf6 0%, #2de2e6 100%);
-  --glow-hot: 0 10px 30px -8px rgba(255, 61, 139, 0.7), 0 4px 14px -4px rgba(255, 138, 61, 0.6);
+  --pink-soft: #ffe0ef;
+  --yellow-soft: #fff3c4;
+  --cyan-soft: #d9f4ff;
+  --lime-soft: #e9f9d8;
+  --violet-soft: #e9e3ff;
 
-  --radius-xl: 32px;
-  --radius-lg: 24px;
-  --radius: 18px;
+  --border-w: 2.5px;
+  --border: var(--border-w) solid var(--ink);
+  --shadow-sm: 0 3px 0 var(--ink);
+  --shadow: 0 5px 0 var(--ink);
+  --shadow-lg: 5px 6px 0 var(--ink);
+
+  --radius-xl: 30px;
+  --radius-lg: 22px;
+  --radius: 17px;
   --radius-sm: 12px;
 
   --font-display: 'Unbounded Variable', 'Arial Rounded MT Bold', system-ui, sans-serif;
@@ -38,7 +54,7 @@
 
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --tabbar-h: 74px;
+  --tabbar-h: 72px;
   --page-max: 640px;
 }
 
@@ -57,7 +73,9 @@ html {
 body {
   margin: 0;
   min-height: 100dvh;
-  background: var(--bg);
+  background-color: var(--bg);
+  background-image: radial-gradient(rgba(27, 16, 51, 0.09) 1.3px, transparent 1.6px);
+  background-size: 22px 22px;
   color: var(--text);
   font-family: var(--font-body);
   font-size: 17px;
@@ -86,6 +104,7 @@ h2,
 h3,
 p {
   margin: 0;
+  hyphens: auto;
 }
 
 a {
@@ -111,12 +130,13 @@ button:disabled {
 }
 
 :focus-visible {
-  outline: 3px solid var(--cyan);
+  outline: 3px solid var(--violet);
   outline-offset: 3px;
 }
 
 ::selection {
-  background: rgba(255, 61, 139, 0.45);
+  background: var(--yellow);
+  color: var(--ink);
 }
 
 .icon {
@@ -124,74 +144,35 @@ button:disabled {
   display: block;
 }
 
-/* ---------------------------------------------------------------- Aurora */
+/* ------------------------------------------------- floating backdrop */
 
-.aurora {
+.backdrop {
   position: fixed;
   inset: 0;
   z-index: -1;
   overflow: hidden;
   pointer-events: none;
   background:
-    radial-gradient(120% 80% at 50% -10%, #241046 0%, transparent 60%),
-    linear-gradient(180deg, var(--bg-2) 0%, var(--bg) 60%);
+    radial-gradient(60% 40% at 100% 0%, rgba(255, 79, 163, 0.16), transparent 70%),
+    radial-gradient(60% 40% at 0% 100%, rgba(46, 197, 255, 0.16), transparent 70%),
+    radial-gradient(50% 35% at 0% 10%, rgba(255, 210, 63, 0.22), transparent 70%);
 }
 
-.aurora__blob {
+.backdrop__shape {
   position: absolute;
-  width: 70vmax;
-  height: 70vmax;
-  border-radius: 50%;
-  filter: blur(70px);
-  opacity: 0.38;
-  will-change: transform;
+  width: var(--s, 44px);
+  height: var(--s, 44px);
+  opacity: 0.9;
+  animation: drift-shape var(--d, 18s) ease-in-out infinite alternate;
+  animation-delay: var(--delay, 0s);
 }
 
-.aurora__blob--1 {
-  background: radial-gradient(circle, #ff3d8b 0%, transparent 65%);
-  top: -30vmax;
-  left: -25vmax;
-  animation: aurora-1 22s ease-in-out infinite alternate;
-}
-
-.aurora__blob--2 {
-  background: radial-gradient(circle, #5b2cff 0%, transparent 65%);
-  top: 10vmax;
-  right: -35vmax;
-  animation: aurora-2 26s ease-in-out infinite alternate;
-}
-
-.aurora__blob--3 {
-  background: radial-gradient(circle, #ff8a3d 0%, transparent 65%);
-  bottom: -40vmax;
-  left: -10vmax;
-  opacity: 0.22;
-  animation: aurora-3 30s ease-in-out infinite alternate;
-}
-
-.aurora__noise {
-  position: absolute;
-  inset: 0;
-  opacity: 0.06;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-@keyframes aurora-1 {
-  to {
-    transform: translate(18vmax, 14vmax) scale(1.15);
+@keyframes drift-shape {
+  from {
+    transform: translate(0, 0) rotate(0deg);
   }
-}
-
-@keyframes aurora-2 {
   to {
-    transform: translate(-16vmax, 10vmax) scale(0.9);
-  }
-}
-
-@keyframes aurora-3 {
-  to {
-    transform: translate(14vmax, -12vmax) scale(1.2);
+    transform: translate(var(--dx, 20px), var(--dy, -30px)) rotate(var(--r, 40deg));
   }
 }
 
@@ -199,7 +180,7 @@ button:disabled {
 
 ::view-transition-old(root),
 ::view-transition-new(root) {
-  animation-duration: 0.32s;
+  animation-duration: 0.34s;
   animation-timing-function: var(--ease-out);
 }
 
@@ -214,14 +195,14 @@ button:disabled {
 @keyframes vt-out {
   to {
     opacity: 0;
-    transform: scale(0.98);
+    transform: scale(0.97);
   }
 }
 
 @keyframes vt-in {
   from {
     opacity: 0;
-    transform: translateY(14px) scale(1.01);
+    transform: translateY(18px) scale(1.01);
   }
 }
 
@@ -246,9 +227,37 @@ button:disabled {
   }
 }
 
+@keyframes wiggle {
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+@keyframes float {
+  50% {
+    transform: translateY(-8px) rotate(-3deg);
+  }
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
   }
 }
 

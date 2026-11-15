@@ -3,7 +3,7 @@ import { buildApp } from './app.ts';
 import { config } from './config.ts';
 import { openDatabase } from './db.ts';
 
-const db = openDatabase(path.join(config.dataDir, 'plausch.db'));
+const db = openDatabase(path.join(config.dataDir, 'phonegames.db'));
 
 const app = await buildApp({
   db,

@@ -1,0 +1,88 @@
+.dorf-moon {
+  filter: drop-shadow(0 0 26px rgba(255, 233, 150, 0.7)) drop-shadow(4px 5px 0 rgba(0, 0, 0, 0.5));
+  animation:
+    pop-in 0.6s var(--ease-spring) both,
+    float 5s ease-in-out infinite;
+}
+
+.dorf-narration {
+  max-width: 460px;
+  font-family: var(--font-display);
+  font-size: clamp(20px, 6vw, 28px);
+  font-weight: 800;
+  line-height: 1.3;
+  text-wrap: balance;
+  animation: rise-in 0.6s var(--ease-out) both;
+}
+
+.dorf-status {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  max-width: 520px;
+}
+
+.dorf-status__p {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 3px;
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  box-shadow: 0 2px 0 var(--ink);
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.dorf-status__p .avatar {
+  box-shadow: none;
+  border-width: 2px;
+}
+
+.dorf-status__p.is-dead {
+  opacity: 0.5;
+  text-decoration: line-through;
+  transform: rotate(-3deg);
+}
+
+.dorf-roles {
+  display: grid;
+  gap: 8px;
+  width: min(100%, 460px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dorf-roles li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-radius: 14px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 2.5px solid var(--ink);
+  box-shadow: 0 3px 0 var(--ink);
+  text-align: left;
+}
+
+.dorf-roles li strong {
+  flex: 1;
+}
+
+.dorf-roles li span:last-child {
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+.dorf-roles li.is-dead {
+  opacity: 0.6;
+}
+
+.dorf-roles li.is-dead strong {
+  text-decoration: line-through;
+}

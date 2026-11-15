@@ -7,13 +7,13 @@
 # What it does:
 #   1. installs security updates, Docker Engine + Compose plugin, ufw, fail2ban
 #   2. creates the user "deploy" (member of the docker group) for GitHub Actions
-#   3. creates the app directory /opt/plausch
+#   3. creates the app directory /opt/phonegames
 #   4. opens only SSH, HTTP and HTTPS in the firewall
 #   5. enables automatic security updates
 set -euo pipefail
 
 DEPLOY_USER="${DEPLOY_USER:-deploy}"
-APP_DIR="${APP_DIR:-/opt/plausch}"
+APP_DIR="${APP_DIR:-/opt/phonegames}"
 DEPLOY_PUBKEY="${DEPLOY_PUBKEY:-}"
 
 if [[ $EUID -ne 0 ]]; then

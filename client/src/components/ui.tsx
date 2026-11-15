@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon, type IconName } from './Icon.tsx';
+import { Mascot, type Mood } from './Brand.tsx';
 import { haptic } from '../lib/device.ts';
 import { initials } from '../lib/util.ts';
 
@@ -327,20 +328,27 @@ export function Segmented<T extends string>({
 
 export function EmptyState({
   emoji,
+  mascot,
   title,
   text,
   action,
 }: {
   emoji: string;
+  /** Show Phoni with this mood instead of the emoji. */
+  mascot?: Mood;
   title: string;
   text: string;
   action?: ReactNode;
 }) {
   return (
     <div className="empty">
-      <div className="empty__emoji" aria-hidden="true">
-        {emoji}
-      </div>
+      {mascot ? (
+        <Mascot size={130} mood={mascot} />
+      ) : (
+        <div className="empty__emoji" aria-hidden="true">
+          {emoji}
+        </div>
+      )}
       <h2 className="empty__title">{title}</h2>
       <p className="empty__text">{text}</p>
       {action}

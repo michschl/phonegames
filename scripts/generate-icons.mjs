@@ -24,10 +24,10 @@ const browser = await chromium.launch();
 const page = await browser.newPage({ deviceScaleFactor: 1 });
 for (const t of targets) {
   const inner = Math.round(t.size * (1 - t.padding * 2));
-  // Full-bleed variants: drop the rounded background and the ring, the page background shows instead.
-  const art = t.radius ? svg : svg.replace(/<rect width="512"[^>]*\/>/, '').replace(/<circle cx="400"[^>]*\/>/, '');
+  // Full-bleed variants: drop the rounded background, the page background shows instead.
+  const art = t.radius ? svg : svg.replace(/<rect width="512"[^>]*\/>/, '');
   await page.setViewportSize({ width: t.size, height: t.size });
-  await page.setContent(`<!doctype html><html><body style="margin:0;display:grid;place-items:center;width:${t.size}px;height:${t.size}px;background:${t.radius ? 'transparent' : 'linear-gradient(135deg,#ff3d8b,#ff8a3d)'}">
+  await page.setContent(`<!doctype html><html><body style="margin:0;display:grid;place-items:center;width:${t.size}px;height:${t.size}px;background:${t.radius ? 'transparent' : '#ffd23f'}">
     <div style="width:${inner}px;height:${inner}px">${art.replace('<svg ', '<svg width="100%" height="100%" ')}</div></body></html>`);
   await page.screenshot({ path: out(t.file), omitBackground: t.radius });
   console.log('wrote', t.file);

@@ -1,6 +1,6 @@
 # Production stack on the VPS: the app container behind Caddy (automatic HTTPS).
 # Values come from the .env file next to this file, written by the deploy workflow.
-name: plausch
+name: phonegames
 
 services:
   app:

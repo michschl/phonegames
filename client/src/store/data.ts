@@ -146,7 +146,7 @@ export const useData = create<DataState>()(
       },
     }),
     {
-      name: 'plausch-data',
+      name: 'phonegames-data',
       version: 1,
       partialize: (s) => ({
         ownerId: s.ownerId,

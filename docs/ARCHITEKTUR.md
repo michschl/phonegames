@@ -17,13 +17,26 @@
                                    │  + statische PWA-Dateien│
                                    └────────────┬────────────┘
                                                 │ node:sqlite
-                                         ┌──────▼──────┐
-                                         │ plausch.db  │
-                                         └─────────────┘
+                                        ┌───────▼───────┐
+                                        │ phonegames.db │
+                                        └───────────────┘
 ```
 
 Ein einziger Node-Prozess liefert die API **und** die gebaute PWA aus. Caddy davor kümmert sich um HTTPS,
 Kompression und HTTP/3.
+
+## Design-System
+
+Das Aussehen steckt komplett in CSS-Variablen ([`client/src/styles/global.css`](../client/src/styles/global.css)):
+Tinte (`--ink`) für Konturen und Text, Creme-Papier (`--bg`), kräftige Akzentfarben (`--pink`, `--yellow`, `--cyan`,
+`--lime` …), harte Schatten (`--shadow`, `--shadow-lg`) und Konturen (`--border`). Komponenten
+([`components.css`](../client/src/styles/components.css)), Seiten ([`pages.css`](../client/src/styles/pages.css)) und
+Spiele ([`games/shared/game-shell.css`](../client/src/games/shared/game-shell.css)) bauen darauf auf. Jedes Spiel setzt
+mit `accent` seine eigene Farbe; `GameShell` mit `night` schaltet auf die dunkle Variante um.
+
+Maskottchen und Logo sind reine SVG-Komponenten (`Mascot`, `Logo` in
+[`components/Brand.tsx`](../client/src/components/Brand.tsx)) mit den Stimmungen `happy`, `wink`, `wow`, `party`,
+`sleepy` und `oops`. Die App-Icons werden mit `npm run icons` aus `client/public/favicon.svg` erzeugt.
 
 ## Offline-first
 
@@ -34,7 +47,7 @@ bearbeiten, Spiele zur Liste hinzufügen oder entfernen.
 ### Caching (Service Worker)
 
 `vite-plugin-pwa` erzeugt beim Build einen Workbox-Service-Worker, der alle Dateien des Builds vorab cacht
-(App-Shell, JavaScript, CSS, Schriften, Icons – zusammen rund 750 KB). Navigationen fallen offline auf
+(App-Shell, JavaScript aller 17 Spiele inklusive Inhalten, CSS, Schriften, Icons – zusammen rund 1 MB). Navigationen fallen offline auf
 `index.html` zurück. `/api/*` wird **nicht** gecacht – die Daten verwaltet die App selbst.
 
 Bei einer neuen Version erscheint ein Hinweis «Eine neue Version ist bereit – Aktualisieren». So wird nie mitten
@@ -64,8 +77,8 @@ Spieleinstellungen (z. B. Zünddauer), Ton und Vibration sind **Geräteeinstellu
 | Thema | Umsetzung |
 | --- | --- |
 | Passwörter | `scrypt` (N=2¹⁵, r=8, p=3, 16-Byte-Salt) aus `node:crypto`; Parameter werden mit dem Hash gespeichert und sind damit später erhöhbar |
-| Sessions | Zufälliges 256-Bit-Token im Cookie `plausch_session` (`HttpOnly`, `Secure`, `SameSite=Lax`); in der DB liegt nur der SHA-256-Hash. Gültig 180 Tage, verlängert sich bei Nutzung |
-| CSRF | Ändernde API-Aufrufe brauchen den Header `X-Requested-With: plausch`. Browser senden eigene Header nur bei Same-Origin-Anfragen (CORS ist nicht aktiviert) |
+| Sessions | Zufälliges 256-Bit-Token im Cookie `phonegames_session` (`HttpOnly`, `Secure`, `SameSite=Lax`); in der DB liegt nur der SHA-256-Hash. Gültig 180 Tage, verlängert sich bei Nutzung |
+| CSRF | Ändernde API-Aufrufe brauchen den Header `X-Requested-With: phonegames`. Browser senden eigene Header nur bei Same-Origin-Anfragen (CORS ist nicht aktiviert) |
 | Brute Force | Rate-Limit auf Registrierung, Anmeldung, Passwort- und Kontoänderungen; konstante Antwortzeit bei unbekannten E-Mails |
 | Passwortänderung | Meldet alle anderen Geräte ab. E-Mail-Änderung und Kontolöschung erfordern das aktuelle Passwort |
 | HTTP-Header | Content-Security-Policy, `X-Frame-Options: DENY`, `nosniff`, Referrer-Policy, Permissions-Policy, HSTS (Caddy) |
@@ -94,7 +107,7 @@ Migrationen immer **anhängen**, nie bestehende ändern.
 ## API
 
 Alle Antworten sind JSON. Fehler haben die Form `{ "error": "code", "message": "Deutscher Text" }`.
-Ändernde Requests brauchen `X-Requested-With: plausch`.
+Ändernde Requests brauchen `X-Requested-With: phonegames`.
 
 | Methode & Pfad | Auth | Body | Antwort |
 | --- | --- | --- | --- |
@@ -135,5 +148,15 @@ Die Typen stehen in [`shared/types.ts`](../shared/types.ts).
   selbst misst `performance.now()`. So bleibt das Ticken gleichmässig, auch wenn die Animation viel Rechenzeit braucht.
 - **Explosion:** Canvas-Partikelsystem (Feuerball, Schockwellen, Funken mit Schweif, Trümmer, Rauch, Glut) plus
   Blitz, Screen-Shake und Comic-Schriftzug. Bei «Bewegung reduzieren» wird alles abgeschwächt.
-- **Haptik:** Vibration (Android) beim Ticken in der heissen Phase und bei der Explosion.
+- **Haptik:** Vibration (Android) beim Ticken in der heissen Phase, bei der Explosion, bei richtigen/falschen Antworten.
 - **Wake Lock:** Der Bildschirm bleibt während des Spiels eingeschaltet.
+- **Sprachausgabe:** «Nachts im Dorf» liest die Nacht mit der Web Speech API vor
+  ([`client/src/lib/speech.ts`](../client/src/lib/speech.ts)) – mit den auf dem Gerät installierten deutschen
+  Stimmen, also auch offline. Ohne Sprachausgabe übernimmt eine Person die Spielleitung.
+- **Bewegungssensor:** «Wer bin ich?» erkennt Nicken nach vorne/hinten über `deviceorientation`
+  ([`client/src/lib/motion.ts`](../client/src/lib/motion.ts)). Die Neigung wird als vertikale Komponente der
+  Display-Normalen berechnet (`cos β · cos γ`) und ist damit unabhängig von Hoch- oder Querformat. iOS fragt einmal
+  um Erlaubnis; ohne Sensor wird per Tippen gesteuert.
+- **Multi-Touch:** «Zufallsfinger» verfolgt bis zu zehn Finger gleichzeitig über Pointer Events.
+- **Zeichenfläche:** «Zeichnen & Raten» speichert Striche als normalisierte Punkte und zeichnet sie mit Quadratkurven
+  geglättet neu – so bleibt die Zeichnung bei Grössenänderungen erhalten.

@@ -1,6 +1,7 @@
 import { Suspense, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router';
 import { Icon } from '../components/Icon.tsx';
+import { Mascot } from '../components/Brand.tsx';
 import { Page, Section } from '../components/Layout.tsx';
 import { PlayerEditor } from '../components/PlayerEditor.tsx';
 import { Button, EmptyState } from '../components/ui.tsx';
@@ -49,19 +50,22 @@ function GameSetup({ game }: { game: GameDefinition }) {
   const addGame = useData((s) => s.addGame);
   const createGroup = useData((s) => s.createGroup);
   const setLastGroup = useSettings((s) => s.setLastGroup);
+  const setLastPlayed = useSettings((s) => s.setLastPlayed);
   const { selectedId, select } = useSelectedGroup(game.id);
   const group = useGroup(selectedId);
   const [settings, setSettings] = useGameSettings(game.id, game.defaultSettings ?? {});
   const inLibrary = library.includes(game.id);
 
   const playerCount = group?.players.length ?? 0;
-  const missing = Math.max(0, game.minPlayers - playerCount);
+  const missing = game.noGroup ? 0 : Math.max(0, game.minPlayers - playerCount);
+  const canStart = game.noGroup || (!!group && missing === 0);
 
   const start = () => {
-    if (!group || missing > 0) return;
+    if (!canStart) return;
     sound.unlock(); // must happen inside the tap for iOS
     haptic(20);
-    setLastGroup(game.id, group.id);
+    if (group) setLastGroup(game.id, group.id);
+    setLastPlayed(game.id, game.noGroup ? undefined : group?.id);
     navigate(`/spiel/${game.id}/los`, { viewTransition: true });
   };
 
@@ -97,7 +101,7 @@ function GameSetup({ game }: { game: GameDefinition }) {
       </div>
 
       {game.rules && (
-        <details className="rules">
+        <details className="rules" open>
           <summary>
             <Icon name="sparkles" size={18} /> So geht’s
           </summary>
@@ -109,6 +113,7 @@ function GameSetup({ game }: { game: GameDefinition }) {
         </details>
       )}
 
+      {!game.noGroup && (
       <Section title="Spielgruppe">
         {selectedId ? (
           <>
@@ -130,6 +135,7 @@ function GameSetup({ game }: { game: GameDefinition }) {
           </div>
         )}
       </Section>
+      )}
 
       {game.Settings && (
         <Section title="Einstellungen">
@@ -138,10 +144,12 @@ function GameSetup({ game }: { game: GameDefinition }) {
       )}
 
       <div className="start-bar">
-        <Button size="lg" block icon="play" onClick={start} disabled={!group || missing > 0}>
-          {missing > 0
-            ? `Noch ${missing} ${missing === 1 ? 'Person' : 'Personen'} hinzufügen`
-            : `Spiel starten · ${playerCount} ${playerCount === 1 ? 'Person' : 'Personen'}`}
+        <Button size="lg" block icon="play" onClick={start} disabled={!canStart}>
+          {game.noGroup
+            ? 'Spiel starten'
+            : missing > 0
+              ? `Noch ${missing} ${missing === 1 ? 'Person' : 'Personen'} hinzufügen`
+              : `Spiel starten · ${playerCount} ${playerCount === 1 ? 'Person' : 'Personen'}`}
         </Button>
       </div>
     </Page>
@@ -165,12 +173,19 @@ export function GamePlayPage() {
   }, []);
 
   if (!game?.Play || game.status !== 'available') return <Navigate to="/" replace />;
-  if (!group || players.length < game.minPlayers) return <Navigate to={`/spiel/${game.id}`} replace />;
+  if (!game.noGroup && (!group || players.length < game.minPlayers)) return <Navigate to={`/spiel/${game.id}`} replace />;
 
   const Play = game.Play;
   return (
     <div className="play-screen">
-      <Suspense fallback={<div className="play-loading">Lädt …</div>}>
+      <Suspense
+        fallback={
+          <div className="play-loading">
+            <Mascot size={110} mood="wink" />
+            Gleich geht’s los …
+          </div>
+        }
+      >
         <Play
           players={players}
           settings={settings}

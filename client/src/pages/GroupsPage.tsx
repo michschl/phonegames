@@ -35,6 +35,7 @@ export function GroupsPage() {
     >
       {groups.length === 0 ? (
         <EmptyState
+          mascot="happy"
           emoji="👯"
           title="Noch keine Gruppe"
           text="Erstelle eine Gruppe mit allen, die mitspielen – zum Beispiel «WG», «Familie» oder «Skiweekend»."

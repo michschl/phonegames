@@ -1,4 +1,4 @@
-export const SESSION_COOKIE = 'plausch_session';
+export const SESSION_COOKIE = 'phonegames_session';
 
 /** Errors with a status code and a user facing (German) message. */
 export class HttpError extends Error {

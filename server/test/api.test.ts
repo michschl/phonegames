@@ -14,14 +14,14 @@ afterEach(async () => {
   await app.close();
 });
 
-const HEADERS = { 'x-requested-with': 'plausch' };
+const HEADERS = { 'x-requested-with': 'phonegames' };
 /** Realistic base timestamp – very old tombstones would be pruned. */
 const T = Date.now() - 60_000;
 
 function cookieFrom(res: LightMyRequestResponse): string {
-  const cookie = res.cookies.find((c) => c.name === 'plausch_session');
+  const cookie = res.cookies.find((c) => c.name === 'phonegames_session');
   if (!cookie) throw new Error('no session cookie');
-  return `plausch_session=${cookie.value}`;
+  return `phonegames_session=${cookie.value}`;
 }
 
 async function register(email = 'anna@example.ch', password = 'geheim123') {
@@ -108,7 +108,7 @@ describe('auth', () => {
       payload: { email: ' Anna@Example.ch ', password: 'geheim123' },
     });
     expect(ok.statusCode).toBe(200);
-    expect(ok.cookies.find((c) => c.name === 'plausch_session')?.httpOnly).toBe(true);
+    expect(ok.cookies.find((c) => c.name === 'phonegames_session')?.httpOnly).toBe(true);
   });
 
   it('blocks state changing requests without the CSRF header', async () => {

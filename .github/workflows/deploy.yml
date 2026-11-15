@@ -78,7 +78,7 @@ jobs:
       VPS_HOST: ${{ vars.VPS_HOST }}
       VPS_USER: ${{ vars.VPS_USER || 'deploy' }}
       VPS_PORT: ${{ vars.VPS_PORT || '22' }}
-      APP_DIR: ${{ vars.APP_DIR || '/opt/plausch' }}
+      APP_DIR: ${{ vars.APP_DIR || '/opt/phonegames' }}
       APP_DOMAIN: ${{ vars.APP_DOMAIN }}
       IMAGE_TAG: ${{ inputs.image_tag || needs.image.outputs.tag }}
     steps:
@@ -128,7 +128,10 @@ jobs:
             echo "APP_VERSION=${IMAGE_TAG::7}"
             echo "APP_DOMAIN=${APP_DOMAIN}"
           } > deploy/.env
-          ssh vps "mkdir -p '$APP_DIR'"
+          if ! ssh vps "mkdir -p '$APP_DIR' 2>/dev/null && test -w '$APP_DIR'"; then
+            echo "::error::$APP_DIR fehlt auf dem VPS oder ist nicht beschreibbar. Einmalig als root anlegen: sudo install -d -m 750 -o $VPS_USER -g $VPS_USER $APP_DIR"
+            exit 1
+          fi
           scp deploy/docker-compose.yml deploy/Caddyfile deploy/backup.sh deploy/.env "vps:$APP_DIR/"
 
       - name: Container aktualisieren
