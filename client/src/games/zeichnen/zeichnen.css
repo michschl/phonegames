@@ -16,13 +16,13 @@
 .zeichnen__peek {
   flex: 1;
   min-width: 0;
-  height: 44px;
+  height: 46px;
   padding: 0 12px;
-  border-radius: 999px;
-  border: 1px dashed var(--stroke-2);
-  background: var(--surface);
-  font-weight: 700;
-  color: var(--muted);
+  border-radius: 14px;
+  border: 2.5px dashed var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 800;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -45,9 +45,8 @@
   width: 100%;
   border-radius: var(--radius-lg);
   background: #fffdf7;
-  box-shadow:
-    0 20px 40px -20px rgba(0, 0, 0, 0.7),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+  border: 3px solid var(--ink);
+  box-shadow: 0 6px 0 var(--ink);
   touch-action: none;
   cursor: crosshair;
 }
@@ -68,15 +67,18 @@
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  border: 3px solid transparent;
+  border: 2.5px solid var(--ink);
   background: var(--c);
-  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.25);
+  box-shadow: 0 2px 0 var(--ink);
   transition: transform 0.2s var(--ease-spring);
 }
 
 .draw__color.is-active {
-  transform: scale(1.18);
-  box-shadow: 0 0 0 3px #fff;
+  transform: scale(1.22) rotate(-10deg);
+  box-shadow:
+    0 2px 0 var(--ink),
+    0 0 0 3px var(--paper),
+    0 0 0 5.5px var(--ink);
 }
 
 .draw__row {
@@ -89,33 +91,42 @@
   flex: 1;
   display: grid;
   place-items: center;
-  height: 44px;
+  height: 46px;
   border-radius: 14px;
-  border: 1.5px solid var(--stroke);
-  background: var(--surface);
+  border: 2.5px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 3px 0 var(--ink);
   font-size: 20px;
+}
+
+.draw__size:active,
+.draw__tool:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: none;
 }
 
 .draw__size span {
   border-radius: 50%;
-  background: #fff;
+  background: var(--ink);
 }
 
 .draw__size.is-active,
 .draw__tool.is-active {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  background: var(--yellow);
 }
 
 .draw__tool:disabled {
-  opacity: 0.35;
+  opacity: 0.4;
 }
 
 .zeichnen__picture {
-  width: min(100%, 360px);
+  width: min(100%, 340px);
   max-height: 42dvh;
   object-fit: contain;
   border-radius: var(--radius-lg);
-  box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.7);
+  border: 3px solid var(--ink);
+  box-shadow: 6px 8px 0 var(--ink);
+  transform: rotate(-2deg);
   animation: pop-in 0.5s var(--ease-spring) both;
 }

@@ -14,17 +14,27 @@
   width: min(86vw, 62dvh, 460px);
   aspect-ratio: 1;
   border-radius: 50%;
+  border: 4px solid var(--ink);
+  box-shadow: 0 8px 0 var(--ink);
   background:
-    repeating-conic-gradient(from 0deg, rgba(255, 255, 255, 0.05) 0deg 15deg, transparent 15deg 30deg),
-    radial-gradient(circle, rgba(61, 220, 151, 0.18), rgba(61, 220, 151, 0.04) 60%, transparent 70%);
-  border: 2px dashed rgba(255, 255, 255, 0.12);
+    repeating-conic-gradient(from 0deg, var(--yellow) 0deg 15deg, #fff3c4 15deg 30deg);
+}
+
+.bottle-table::after {
+  content: '';
+  position: absolute;
+  inset: 26%;
+  border-radius: 50%;
+  border: 4px solid var(--ink);
+  background: var(--paper);
 }
 
 .bottle {
   position: relative;
+  z-index: 1;
   width: min(30vw, 22dvh, 150px);
   aspect-ratio: 80 / 240;
-  filter: drop-shadow(0 20px 26px rgba(0, 0, 0, 0.55));
+  filter: drop-shadow(6px 8px 0 rgba(27, 16, 51, 0.9));
   will-change: transform;
 }
 
@@ -35,26 +45,31 @@
 }
 
 .bottle.is-stopped {
-  filter: drop-shadow(0 0 30px rgba(61, 220, 151, 0.7)) drop-shadow(0 20px 26px rgba(0, 0, 0, 0.55));
+  filter: drop-shadow(6px 8px 0 rgba(27, 16, 51, 0.9)) drop-shadow(0 0 22px rgba(255, 79, 163, 0.8));
 }
 
 .bottle-hint {
   position: absolute;
-  bottom: 6%;
-  left: 0;
-  right: 0;
-  padding: 0 24px;
+  bottom: 4%;
+  left: 50%;
+  transform: translateX(-50%) rotate(-2deg);
+  max-width: calc(100% - 40px);
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 2.5px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 3px 0 var(--ink);
   text-align: center;
-  color: var(--muted);
-  font-weight: 650;
+  font-weight: 800;
   pointer-events: none;
 }
 
 .bottle-actions {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   width: min(100%, 520px);
   margin: 0 auto;
-  padding-top: 10px;
+  padding-top: 12px;
   flex: none;
 }

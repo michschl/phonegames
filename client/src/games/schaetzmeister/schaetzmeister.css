@@ -1,7 +1,7 @@
 .estimate-form {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 12px;
+  gap: 14px;
   width: min(100%, 420px);
 }
 
@@ -9,16 +9,19 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  height: 66px;
+  height: 70px;
   padding: 0 18px;
   border-radius: var(--radius-lg);
-  border: 2px solid rgba(255, 210, 63, 0.5);
-  background: rgba(255, 255, 255, 0.07);
+  border: 3px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 5px 0 var(--ink);
 }
 
 .estimate-form__field:focus-within {
-  border-color: #ffd23f;
-  box-shadow: 0 0 0 4px rgba(255, 210, 63, 0.2);
+  box-shadow:
+    0 5px 0 var(--ink),
+    0 0 0 4px var(--yellow);
 }
 
 .estimate-form__field input {
@@ -30,27 +33,33 @@
   outline: 0;
   background: transparent;
   font-family: var(--font-display);
-  font-size: 26px;
-  font-weight: 800;
+  font-size: 28px;
+  font-weight: 900;
 }
 
 .estimate-form__field span {
-  font-weight: 700;
-  color: var(--muted);
+  font-weight: 800;
+  color: var(--ink-2);
 }
 
 .countup {
+  display: inline-block;
+  padding: 8px 22px;
+  border-radius: 24px;
+  border: 3px solid var(--ink);
+  background: var(--yellow);
+  box-shadow: 6px 8px 0 var(--ink);
   font-family: var(--font-display);
-  font-size: clamp(38px, 12vw, 64px);
+  font-size: clamp(36px, 11vw, 60px);
   font-weight: 900;
   font-variant-numeric: tabular-nums;
-  color: #ffe08a;
-  text-shadow: 0 8px 40px rgba(255, 210, 63, 0.45);
+  color: var(--ink);
+  transform: rotate(-3deg);
 }
 
 .guess-list {
   display: grid;
-  gap: 6px;
+  gap: 7px;
   width: min(100%, 480px);
   margin: 0;
   padding: 0;
@@ -63,16 +72,27 @@
   gap: 10px;
   padding: 7px 12px 7px 8px;
   border-radius: 14px;
-  background: var(--surface);
-  border: 1px solid var(--stroke);
+  background: var(--paper);
+  color: var(--ink);
+  border: 2.5px solid var(--ink);
+  box-shadow: 0 3px 0 var(--ink);
   text-align: left;
   animation: rise-in 0.4s var(--ease-out) both;
+}
+
+.guess-list li:first-child {
+  background: var(--lime-soft);
+}
+
+.guess-list .avatar {
+  box-shadow: none;
+  border-width: 2px;
 }
 
 .guess-list__name {
   flex: 1;
   min-width: 0;
-  font-weight: 700;
+  font-weight: 800;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -80,18 +100,18 @@
 
 .guess-list__guess {
   font-variant-numeric: tabular-nums;
-  color: var(--muted);
-  font-weight: 600;
+  color: var(--ink-2);
+  font-weight: 700;
 }
 
 .guess-list__points {
   min-width: 46px;
   text-align: right;
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 900;
   color: var(--green);
 }
 
 .guess-list__points.is-exact {
-  color: #ffd23f;
+  color: var(--pink);
 }

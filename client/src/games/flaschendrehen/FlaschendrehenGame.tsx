@@ -131,10 +131,10 @@ export default function FlaschendrehenGame({ onExit }: GameProps<Record<string, 
                 <stop offset="1" stopColor="#0b4a2c" />
               </linearGradient>
             </defs>
-            <rect x="31" y="2" width="18" height="14" rx="3" fill="#d9b44a" />
-            <path d="M33 16h14v46c0 10 23 22 23 46v116c0 8-6 14-14 14H24c-8 0-14-6-14-14V108c0-24 23-36 23-46z" fill="url(#glass)" />
-            <rect x="14" y="128" width="52" height="56" rx="6" fill="#fff8e6" opacity="0.92" />
-            <text x="40" y="162" textAnchor="middle" fontSize="15" fontWeight="900" fill="#0b4a2c" fontFamily="sans-serif">
+            <rect x="31" y="2" width="18" height="14" rx="3" fill="#ffd23f" stroke="#1b1033" strokeWidth="3" />
+            <path d="M33 16h14v46c0 10 23 22 23 46v116c0 8-6 14-14 14H24c-8 0-14-6-14-14V108c0-24 23-36 23-46z" fill="url(#glass)" stroke="#1b1033" strokeWidth="4" strokeLinejoin="round" />
+            <rect x="14" y="128" width="52" height="56" rx="6" fill="#ff4fa3" stroke="#1b1033" strokeWidth="3" />
+            <text x="40" y="162" textAnchor="middle" fontSize="15" fontWeight="900" fill="#fff" fontFamily="sans-serif">
               ★
             </text>
             <path d="M24 112c-4 8-4 90 0 110" stroke="#fff" strokeOpacity="0.45" strokeWidth="5" strokeLinecap="round" fill="none" />
