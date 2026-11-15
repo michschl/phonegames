@@ -36,7 +36,8 @@ mit `accent` seine eigene Farbe; `GameShell` mit `night` schaltet auf die dunkle
 
 Maskottchen und Logo sind reine SVG-Komponenten (`Mascot`, `Logo` in
 [`components/Brand.tsx`](../client/src/components/Brand.tsx)) mit den Stimmungen `happy`, `wink`, `wow`, `party`,
-`sleepy` und `oops`. Die App-Icons werden mit `npm run icons` aus `client/public/favicon.svg` erzeugt.
+`sleepy` und `oops`. Die App-Icons werden mit `npm run icons` aus `client/public/icons/phoni.svg` erzeugt. Ändert sich das Motiv, bekommen
+die Dateien neue Namen – Browser und Homescreens halten Icons sonst unter der alten Adresse fest.
 
 ## Offline-first
 

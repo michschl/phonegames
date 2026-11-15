@@ -1,6 +1,10 @@
 /**
- * Renders the PWA icons from client/public/favicon.svg with the pre-installed
+ * Renders the PWA icons from client/public/icons/phoni.svg with the pre-installed
  * Chromium (Playwright). Run: npm run icons
+ *
+ * Browsers and home screens hold on to icons by URL. When the artwork changes,
+ * give the files new names (here and in index.html / vite.config.ts) so every
+ * device picks up the new icon.
  */
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
@@ -9,15 +13,15 @@ import { readFileSync } from 'node:fs';
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
 
-const svg = readFileSync(new URL('../client/public/favicon.svg', import.meta.url), 'utf8');
+const svg = readFileSync(new URL('../client/public/icons/phoni.svg', import.meta.url), 'utf8');
 const out = (name) => new URL(`../client/public/${name}`, import.meta.url).pathname;
 
 const targets = [
-  { file: 'icons/icon-192.png', size: 192, padding: 0, radius: true },
-  { file: 'icons/icon-512.png', size: 512, padding: 0, radius: true },
+  { file: 'icons/phoni-192.png', size: 192, padding: 0, radius: true },
+  { file: 'icons/phoni-512.png', size: 512, padding: 0, radius: true },
   // Maskable icons need a safe zone: the artwork is scaled down on a full-bleed background.
-  { file: 'icons/icon-maskable-512.png', size: 512, padding: 0.12, radius: false },
-  { file: 'apple-touch-icon.png', size: 180, padding: 0, radius: false },
+  { file: 'icons/phoni-maskable-512.png', size: 512, padding: 0.12, radius: false },
+  { file: 'icons/phoni-180.png', size: 180, padding: 0, radius: false },
 ];
 
 const browser = await chromium.launch();

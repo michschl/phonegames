@@ -29,7 +29,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'prompt',
       injectRegister: false,
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
+      includeAssets: ['icons/phoni.svg', 'icons/phoni-180.png'],
       manifest: {
         id: '/',
         name: 'Phonegames – Partyspiele',
@@ -44,9 +44,9 @@ export default defineConfig({
         theme_color: '#fff6e9',
         categories: ['games', 'entertainment'],
         icons: [
-          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: '/icons/phoni-192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/icons/phoni-512.png', sizes: '512x512', type: 'image/png' },
+          { src: '/icons/phoni-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
       workbox: {

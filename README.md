@@ -112,7 +112,7 @@ npm run preview
 | `npm run preview` | Build + Produktionsserver |
 | `npm test` | Tests (Vitest): API, Sync-Logik, Spiellogik und Inhalte |
 | `npm run typecheck` | TypeScript-Prüfung |
-| `npm run icons` | App-Icons aus `client/public/favicon.svg` neu erzeugen |
+| `npm run icons` | App-Icons aus `client/public/icons/phoni.svg` neu erzeugen |
 
 ## Projektstruktur
 
