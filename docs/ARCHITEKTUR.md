@@ -34,6 +34,17 @@ Tinte (`--ink`) für Konturen und Text, Creme-Papier (`--bg`), kräftige Akzentf
 Spiele ([`games/shared/game-shell.css`](../client/src/games/shared/game-shell.css)) bauen darauf auf. Jedes Spiel setzt
 mit `accent` seine eigene Farbe; `GameShell` mit `night` schaltet auf die dunkle Variante um.
 
+Regeln für Lesbarkeit und Bedienbarkeit (geprüft mit axe-core gegen WCAG 2.2 AA):
+
+- **Text auf Farbe ist Tinte**, nicht Weiss: Weiss auf Pink oder Rot erreicht nur 3:1, Tinte rund 6:1. Weisse Schrift
+  gibt es nur mit dicker Tinten-Kontur (Sticker-Titel).
+- **Fliesstext nie in `--faint`** – das ist für Platzhalter und Symbole. Kleine Texte nutzen `--muted`.
+- **Spielnamen brechen nur an Wortfugen** (`breakableName()` in [`lib/util.ts`](../client/src/lib/util.ts) plus
+  `hyphens: manual`), sonst trennt der Browser «Zufallsfin-ger».
+- **Knöpfe in Formularen bleiben drückbar.** Fehlt etwas, steht beim Absenden direkt am Feld, was – und der Cursor
+  springt dorthin. Ein grauer Knopf ohne Erklärung lässt Leute rätseln.
+- Jede Ansicht hat genau ein `<main>` und eine `<h1>`; Deko (Formen, Konfetti, Laufband) ist `aria-hidden`.
+
 Maskottchen und Logo sind reine SVG-Komponenten (`Mascot`, `Logo` in
 [`components/Brand.tsx`](../client/src/components/Brand.tsx)) mit den Stimmungen `happy`, `wink`, `wow`, `party`,
 `sleepy` und `oops`. Die App-Icons werden mit `npm run icons` aus `client/public/icons/phoni.svg` erzeugt. Ändert sich das Motiv, bekommen

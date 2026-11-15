@@ -10,6 +10,7 @@ import { getGame } from '../games/registry.ts';
 import type { GameDefinition } from '../games/types.ts';
 import { sound } from '../lib/audio.ts';
 import { haptic } from '../lib/device.ts';
+import { breakableName } from '../lib/util.ts';
 import { useData, useGroup, useGroups, useLibraryIds } from '../store/data.ts';
 import { useGameSettings, useSettings } from '../store/settings.ts';
 import { toast } from '../store/ui.ts';
@@ -76,7 +77,7 @@ function GameSetup({ game }: { game: GameDefinition }) {
   };
 
   return (
-    <Page title={game.name} back={inLibrary ? '/' : '/entdecken'} className="setup">
+    <Page title={breakableName(game.name)} back={inLibrary ? '/' : '/entdecken'} className="setup">
       <div className="setup-hero" style={{ '--g1': game.colors[0], '--g2': game.colors[1] } as CSSProperties}>
         <div className="setup-hero__art">{game.Art ? <game.Art size={130} /> : <span>{game.emoji}</span>}</div>
         <div className="setup-hero__text">

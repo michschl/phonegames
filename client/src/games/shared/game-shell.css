@@ -46,6 +46,20 @@
     0 0;
 }
 
+/* A disabled button at half opacity turns muddy on the night sky: show it as a calm outline instead. */
+.gs--night .btn:disabled {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.6);
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow: none;
+  transform: none;
+}
+
+.gs--night .btn:disabled::after {
+  display: none;
+}
+
 .gs__bar {
   position: relative;
   z-index: 20;
@@ -754,7 +768,7 @@
   align-items: center;
   gap: 10px;
   background: var(--red);
-  color: #fff;
+  color: var(--ink);
 }
 
 .big-btn--foul span:first-child {

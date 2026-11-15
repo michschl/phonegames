@@ -141,11 +141,9 @@ export function DiscoverPage() {
         <EmptyState mascot="oops" emoji="🔍" title="Nichts gefunden" text="Versuch es mit einem anderen Suchbegriff oder Filter." />
       ) : (
         <>
-          {filtering && (
-            <p className="results-count">
-              {results.length} {results.length === 1 ? 'Spiel' : 'Spiele'} gefunden
-            </p>
-          )}
+          <h2 className="results-count" aria-live="polite">
+            {filtering ? `${results.length} ${results.length === 1 ? 'Spiel' : 'Spiele'} gefunden` : 'Alle Spiele'}
+          </h2>
           <div className="game-list">
             {results.map((game, i) => (
               <GameRow

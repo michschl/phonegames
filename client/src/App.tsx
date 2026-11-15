@@ -61,6 +61,7 @@ function ErrorPage() {
         <EmptyState
           mascot="oops"
           emoji="🧯"
+          level={1}
           title="Ups, da ist etwas explodiert"
           text="Keine Sorge, deine Daten sind gespeichert. Lade die App neu, um weiterzumachen."
           action={
@@ -81,6 +82,7 @@ function NotFound() {
         <EmptyState
           mascot="wow"
           emoji="🛸"
+          level={1}
           title="Hier ist nichts"
           text="Diese Seite gibt es nicht."
           action={

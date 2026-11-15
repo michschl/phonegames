@@ -58,7 +58,7 @@ export default function BombeGame({ players, settings, onExit }: GameProps<Bombe
   const timerRef = useRef<BombTimer | null>(null);
   const stopFuseRef = useRef<(() => void) | null>(null);
   const bombRef = useRef<HTMLDivElement>(null);
-  const stageRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLElement>(null);
   const flashRef = useRef<HTMLDivElement>(null);
   const timeouts = useRef<number[]>([]);
 
@@ -175,7 +175,7 @@ export default function BombeGame({ players, settings, onExit }: GameProps<Bombe
   const starterPlayer = players[starter] ?? players[0]!;
 
   return (
-    <div
+    <main
       ref={stageRef}
       className={`bombe phase-${phase} ${shaking ? 'is-shaking' : ''}`}
       style={{ '--starter': starterPlayer.color } as CSSProperties}
@@ -304,7 +304,7 @@ export default function BombeGame({ players, settings, onExit }: GameProps<Bombe
           </Button>
         </div>
       </Sheet>
-    </div>
+    </main>
   );
 }
 

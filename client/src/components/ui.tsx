@@ -368,6 +368,7 @@ export function EmptyState({
   title,
   text,
   action,
+  level = 2,
 }: {
   emoji: string;
   /** Show Phoni with this mood instead of the emoji. */
@@ -375,7 +376,10 @@ export function EmptyState({
   title: string;
   text: string;
   action?: ReactNode;
+  /** Heading level — use 1 when the empty state is the whole page. */
+  level?: 1 | 2;
 }) {
+  const Heading = level === 1 ? 'h1' : 'h2';
   return (
     <div className="empty">
       {mascot ? (
@@ -385,7 +389,7 @@ export function EmptyState({
           {emoji}
         </div>
       )}
-      <h2 className="empty__title">{title}</h2>
+      <Heading className="empty__title">{title}</Heading>
       <p className="empty__text">{text}</p>
       {action}
     </div>

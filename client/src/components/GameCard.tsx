@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import { Link } from 'react-router';
 import type { GameDefinition } from '../games/types.ts';
 import { Icon } from './Icon.tsx';
+import { breakableName } from '../lib/util.ts';
 
 export function GameArt({ game, size }: { game: GameDefinition; size: number }) {
   if (game.Art) return <game.Art size={size} />;
@@ -31,7 +32,7 @@ export function GameTile({ game, index = 0 }: { game: GameDefinition; index?: nu
         <GameArt game={game} size={84} />
       </div>
       <div className="game-tile__body">
-        <h3 className="game-tile__title">{game.name}</h3>
+        <h3 className="game-tile__title">{breakableName(game.name)}</h3>
         <p className="game-tile__meta">
           <Icon name="users" size={14} strokeWidth={2.6} /> {players(game)}
         </p>
@@ -59,7 +60,7 @@ export function GameHero({
       </span>
       <span className="hero-card__body">
         <span className="hero-card__eyebrow">{eyebrow}</span>
-        <span className="hero-card__title">{game.name}</span>
+        <span className="hero-card__title">{breakableName(game.name)}</span>
         <span className="hero-card__text">{text}</span>
       </span>
       <span className="hero-card__play" aria-hidden="true">
@@ -85,7 +86,7 @@ export function GameMini({
         <span className="mini-card__art">
           <GameArt game={game} size={52} />
         </span>
-        <span className="mini-card__name">{game.name}</span>
+        <span className="mini-card__name">{breakableName(game.name)}</span>
       </Link>
       <button
         type="button"
@@ -119,7 +120,7 @@ export function GameRow({
       </div>
       <div className="game-row__body">
         <h3 className="game-row__title">
-          {game.name}
+          {breakableName(game.name)}
           {soon && <span className="badge">Demnächst</span>}
         </h3>
         <p className="game-row__tagline">{game.tagline}</p>
