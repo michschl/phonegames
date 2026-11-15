@@ -176,8 +176,9 @@ Die Typen stehen in [`shared/types.ts`](../shared/types.ts).
   Schweizer vor deutschen und österreichischen, alte Desktop-Stimmen zuletzt, Spassstimmen von iOS («Eddy»,
   «Grandma» …) nie. Gesprochen wird Satz für Satz mit kurzen Pausen; Ansagen werden nacheinander abgespielt. Fällt
   eine Online-Stimme aus (z. B. offline), springt die beste Stimme auf dem Gerät ein. Unter **Konto → Erzählstimme**
-  und in den Spieleinstellungen lässt sich die Stimme mit Hörprobe wählen – inkl. Tipp, wo es auf iPhone/Android
-  bessere Stimmen gibt. Ohne Sprachausgabe übernimmt eine Person die Spielleitung.
+  und in den Spieleinstellungen lässt sich die Stimme mit Hörprobe wählen. **Einschränkung iPhone/iPad:** WebKit gibt
+  Webseiten nur die vorinstallierten Stimmen frei; heruntergeladene Premium-/Enhanced-Stimmen sind Apps vorbehalten
+  (gilt für alle Browser auf iOS). Ohne Sprachausgabe übernimmt eine Person die Spielleitung.
 - **Bewegungssensor:** «Wer bin ich?» erkennt Nicken nach vorne/hinten über `deviceorientation`
   ([`client/src/lib/motion.ts`](../client/src/lib/motion.ts)). Die Neigung wird als vertikale Komponente der
   Display-Normalen berechnet (`cos β · cos γ`) und ist damit unabhängig von Hoch- oder Querformat. iOS fragt einmal

@@ -1,6 +1,6 @@
-import { useState, useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { isIos } from '../lib/device.ts';
-import { germanVoices, onVoicesChanged, previewVoice, speechAvailable, stopSpeaking, type VoiceInfo } from '../lib/speech.ts';
+import { germanVoices, onVoicesChanged, previewVoice, refreshVoices, speechAvailable, stopSpeaking, type VoiceInfo } from '../lib/speech.ts';
 import { useSettings } from '../store/settings.ts';
 import { Icon } from './Icon.tsx';
 
@@ -17,10 +17,11 @@ function useGermanVoices(): VoiceInfo[] {
 }
 
 function upgradeHint(best: VoiceInfo | undefined): string | null {
-  if (best?.quality === 'natural') return null;
   if (isIos()) {
-    return 'Tipp: Viel natürlichere Stimmen gibt’s gratis im iPhone unter Einstellungen → Bedienungshilfen → Gesprochene Inhalte → Stimmen → Deutsch. Lade z. B. «Anna (Premium)» und wähle sie dann hier aus.';
+    // WebKit only exposes the built-in voices to web pages – downloaded Premium/Enhanced voices stay reserved for apps.
+    return 'Hinweis: Auf iPhone und iPad dürfen Web-Apps nur die vorinstallierten Stimmen verwenden. Heruntergeladene Premium-Stimmen wie «Anna (Premium)» stellt Apple leider nur Apps zur Verfügung.';
   }
+  if (best?.quality === 'natural') return null;
   if (/android/i.test(navigator.userAgent)) {
     return 'Tipp: In den Android-Einstellungen unter «Sprachausgabe» die Google-Sprachausgabe wählen und die deutschen Sprachdaten (hohe Qualität) laden.';
   }
@@ -34,6 +35,9 @@ export function VoicePicker() {
   const setVoiceId = useSettings((s) => s.setVoiceId);
   const [expanded, setExpanded] = useState(false);
   const [playing, setPlaying] = useState<string | null>(null);
+
+  // Pick up voices installed since the app started.
+  useEffect(() => refreshVoices(), []);
 
   if (!speechAvailable()) return <p className="settings-panel__hint">Dieser Browser hat keine Sprachausgabe.</p>;
   if (!voices.length) {

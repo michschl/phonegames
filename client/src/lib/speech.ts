@@ -95,15 +95,22 @@ export function rankGermanVoices(list: readonly SpeechSynthesisVoice[]): VoiceIn
     .sort((a, b) => b.score - a.score);
 }
 
-function refreshVoices(): void {
+/** Re-reads the installed voices (e.g. after the user installed a new one). */
+export function refreshVoices(): void {
   if (!speechAvailable()) return;
-  voices = rankGermanVoices(window.speechSynthesis.getVoices());
-  listeners.forEach((listener) => listener());
+  const next = rankGermanVoices(window.speechSynthesis.getVoices());
+  const changed = next.length !== voices.length || next.some((v, i) => v.id !== voices[i]?.id);
+  voices = next;
+  if (changed) listeners.forEach((listener) => listener());
 }
 
 if (speechAvailable()) {
   refreshVoices();
   window.speechSynthesis.addEventListener?.('voiceschanged', refreshVoices);
+  // Not every browser fires "voiceschanged" when a voice is installed while the app is in the background.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') refreshVoices();
+  });
 }
 
 /** German voices of this device, best first. */
