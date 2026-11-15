@@ -32,6 +32,11 @@ export const config = {
   version: env.APP_VERSION ?? 'dev',
   /** Comma separated invitation codes. When set, registering requires one of them. */
   inviteCodes: list(env.INVITE_CODES),
+  /**
+   * Public address(es) of the app, e.g. https://phonegames.app (comma separated).
+   * Passkeys are bound to this domain; without it they are switched off in production.
+   */
+  appOrigins: list(env.APP_ORIGIN ?? (isProd ? '' : 'http://localhost:5173,http://localhost:3000')),
 } as const;
 
 export type AppConfig = typeof config;

@@ -6,6 +6,8 @@ import {
   findUserByEmail,
   getGroups,
   getLibrary,
+  listPasskeys,
+  toPasskeyInfo,
   toPublicUser,
   updateUser,
 } from '../repo.ts';
@@ -39,6 +41,7 @@ export const accountRoutes: FastifyPluginAsync<{ rateLimit: boolean }> = async (
       avatar: body.avatar,
       color: body.color,
       email: emailChanged ? body.email : undefined,
+      passkeyHintDismissed: body.passkeyHintDismissed,
     });
     return { user: toPublicUser(updated) };
   });
@@ -60,7 +63,7 @@ export const accountRoutes: FastifyPluginAsync<{ rateLimit: boolean }> = async (
     if (!(await verifyPassword(body.password, user.passwordHash))) {
       throw new HttpError(403, 'invalid_password', 'Das Passwort ist falsch.');
     }
-    deleteUser(app.db, user.id); // sessions, library and groups are deleted via ON DELETE CASCADE
+    deleteUser(app.db, user.id); // sessions, passkeys, library and groups are deleted via ON DELETE CASCADE
     app.clearSessionCookie(reply);
     return reply.status(204).send();
   });
@@ -73,6 +76,7 @@ export const accountRoutes: FastifyPluginAsync<{ rateLimit: boolean }> = async (
       user: toPublicUser(user),
       library: getLibrary(app.db, user.id).filter((item) => !item.deleted),
       groups: getGroups(app.db, user.id).filter((group) => !group.deleted),
+      passkeys: listPasskeys(app.db, user.id).map(toPasskeyInfo),
     };
     reply.header('Content-Disposition', 'attachment; filename="phonegames-export.json"');
     return data;

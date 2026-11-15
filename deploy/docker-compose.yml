@@ -11,6 +11,8 @@ services:
       APP_VERSION: ${APP_VERSION:-}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       INVITE_CODES: ${INVITE_CODES:-}
+      # Passkeys are bound to this address.
+      APP_ORIGIN: https://${APP_DOMAIN:?APP_DOMAIN fehlt}
     volumes:
       - app-data:/data
     expose:

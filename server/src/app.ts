@@ -11,6 +11,7 @@ import { purgeExpiredSessions, resolveSession, SESSION_TTL_MS, type UserRecord }
 import { authRoutes } from './routes/auth.ts';
 import { accountRoutes } from './routes/account.ts';
 import { syncRoutes } from './routes/sync.ts';
+import { passkeyRoutes, type WebAuthnConfig } from './routes/passkeys.ts';
 
 export interface AppOptions {
   db: Database;
@@ -24,6 +25,8 @@ export interface AppOptions {
   rateLimit?: boolean;
   /** Valid invitation codes for registering. Empty or missing = open registration. */
   inviteCodes?: readonly string[];
+  /** Passkey (WebAuthn) settings; null or missing = passkeys switched off. */
+  webauthn?: WebAuthnConfig | null;
 }
 
 declare module 'fastify' {
@@ -149,6 +152,12 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     prefix: '/api/auth',
     rateLimit: options.rateLimit ?? true,
     inviteCodes: options.inviteCodes ?? [],
+    passkeys: options.webauthn ? { rpID: options.webauthn.rpID } : null,
+  });
+  await app.register(passkeyRoutes, {
+    prefix: '/api/passkeys',
+    rateLimit: options.rateLimit ?? true,
+    webauthn: options.webauthn ?? null,
   });
   await app.register(accountRoutes, { prefix: '/api/account', rateLimit: options.rateLimit ?? true });
   await app.register(syncRoutes, { prefix: '/api' });
