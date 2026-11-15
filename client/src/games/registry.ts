@@ -9,28 +9,18 @@ import { verboteneWoerter } from './verbotene-woerter/index.tsx';
 import { hutspiel } from './hutspiel/index.tsx';
 import { zeichnen } from './zeichnen/index.tsx';
 import { summRaten } from './summ-raten/index.tsx';
+import { schaetzmeister } from './schaetzmeister/index.tsx';
+import { mehrOderWeniger } from './mehr-oder-weniger/index.tsx';
+import { werWuerdeEher } from './wer-wuerde-eher/index.tsx';
+import { wahrheitOderPflicht } from './wahrheit-oder-pflicht/index.tsx';
+import { ichHabNochNie } from './ich-hab-noch-nie/index.tsx';
+import { zufallsfinger } from './zufallsfinger/index.tsx';
+import { flaschendrehen } from './flaschendrehen/index.tsx';
 
 /**
- * Coming-soon entries make the catalogue searchable before the games exist.
- * Replace them with real definitions once they are implemented.
+ * All games in catalogue order. To add a game, create a folder with an
+ * index.tsx exporting its GameDefinition and add it here (see docs/SPIELE.md).
  */
-const comingSoon: GameDefinition[] = [
-  {
-    id: 'schaetzmeister',
-    name: 'Schätzmeister',
-    tagline: 'Wer liegt am nächsten?',
-    description: 'Verrückte Schätzfragen – wer am weitesten daneben liegt, verliert einen Punkt.',
-    emoji: '🎯',
-    colors: ['#ffd23f', '#ff8a3d'],
-    minPlayers: 2,
-    maxPlayers: 12,
-    duration: '15–30 Min.',
-    age: 'ab 10 J.',
-    tags: ['Wissen', 'Ruhig'],
-    status: 'soon',
-  },
-];
-
 export const GAMES: GameDefinition[] = [
   bombe,
   spion,
@@ -42,7 +32,13 @@ export const GAMES: GameDefinition[] = [
   hutspiel,
   zeichnen,
   summRaten,
-  ...comingSoon,
+  schaetzmeister,
+  mehrOderWeniger,
+  werWuerdeEher,
+  wahrheitOderPflicht,
+  ichHabNochNie,
+  zufallsfinger,
+  flaschendrehen,
 ];
 
 export function getGame(id: string | undefined): GameDefinition | undefined {

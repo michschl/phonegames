@@ -64,24 +64,18 @@
   flex-direction: column;
   align-items: center;
   /* Centered while it fits, scrollable from the top when it does not. */
-  justify-content: flex-start;
+  justify-content: center;
+  justify-content: safe center;
   gap: 18px;
   text-align: center;
   padding-top: 8px;
+  overflow-x: hidden;
   overflow-y: auto;
   animation: rise-in 0.45s var(--ease-out) both;
 }
 
-.gs-stage > :first-child {
-  margin-top: auto;
-}
-
-.gs-stage > :last-child {
-  margin-bottom: auto;
-}
-
-.gs-stage--top > :first-child {
-  margin-top: 0;
+.gs-stage--top {
+  justify-content: flex-start;
 }
 
 .gs-eyebrow {
@@ -784,6 +778,7 @@
 
 .term-form {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
   width: min(100%, 460px);
 }
@@ -795,6 +790,7 @@
 
 .term-form__row input {
   flex: 1;
+  width: 0;
   min-width: 0;
   height: 54px;
   padding: 0 16px;
