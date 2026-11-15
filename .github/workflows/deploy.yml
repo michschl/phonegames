@@ -87,12 +87,20 @@ jobs:
       - name: Konfiguration prüfen
         env:
           HAS_SSH_KEY: ${{ secrets.VPS_SSH_KEY != '' }}
+          INVITE_CODES: ${{ secrets.INVITE_CODES }}
         run: |
           missing=0
           for v in VPS_HOST APP_DOMAIN IMAGE_TAG; do
             if [ -z "${!v}" ]; then echo "::error::Variable $v fehlt"; missing=1; fi
           done
           if [ "$HAS_SSH_KEY" != "true" ]; then echo "::error::Secret VPS_SSH_KEY fehlt"; missing=1; fi
+          codes_pattern='^[A-Za-z0-9_, -]+$'
+          if [ -z "$INVITE_CODES" ]; then
+            echo "::warning::Secret INVITE_CODES fehlt – die Registrierung ist für alle offen."
+          elif ! [[ "$INVITE_CODES" =~ $codes_pattern ]]; then
+            echo "::error::INVITE_CODES darf nur Buchstaben, Ziffern, - und _ enthalten (mehrere Codes mit Komma trennen)."
+            missing=1
+          fi
           exit $missing
 
       - name: SSH einrichten
@@ -121,12 +129,16 @@ jobs:
           EOF
 
       - name: Dateien übertragen
+        env:
+          INVITE_CODES: ${{ secrets.INVITE_CODES }}
         run: |
           IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}"
+          umask 077
           {
             echo "APP_IMAGE=${IMAGE}:${IMAGE_TAG}"
             echo "APP_VERSION=${IMAGE_TAG::7}"
             echo "APP_DOMAIN=${APP_DOMAIN}"
+            echo "INVITE_CODES=${INVITE_CODES// /}"
           } > deploy/.env
           if ! ssh vps "mkdir -p '$APP_DIR' 2>/dev/null && test -w '$APP_DIR'"; then
             echo "::error::$APP_DIR fehlt auf dem VPS oder ist nicht beschreibbar. Einmalig als root anlegen: sudo install -d -m 750 -o $VPS_USER -g $VPS_USER $APP_DIR"
@@ -141,7 +153,7 @@ jobs:
         run: |
           # The short-lived workflow token is passed via stdin and removed after the pull.
           printf '%s' "$GH_TOKEN" | ssh vps "docker login ghcr.io -u '$GH_ACTOR' --password-stdin"
-          ssh vps "cd '$APP_DIR' && chmod +x backup.sh \
+          ssh vps "cd '$APP_DIR' && chmod +x backup.sh && chmod 600 .env \
             && docker compose pull \
             && docker compose up -d --remove-orphans --wait --wait-timeout 120; \
             status=\$?; docker logout ghcr.io >/dev/null; exit \$status"

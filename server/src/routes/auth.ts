@@ -1,21 +1,41 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { HttpError, SESSION_COOKIE } from '../http.ts';
 import { createSession, createUser, deleteSession, findUserByEmail, toPublicUser } from '../repo.ts';
-import { getDummyHash, hashPassword, randomId, verifyPassword } from '../security.ts';
+import { getDummyHash, hashPassword, matchesInviteCode, randomId, verifyPassword } from '../security.ts';
 import { loginSchema, registerSchema } from '../schemas.ts';
+import type { AuthOptions } from '../../../shared/types.ts';
 
 const AVATARS = ['🦊', '🐼', '🦄', '🐸', '🐙', '🦁', '🐵', '🐧', '🦉', '🐯', '🐨', '🦖', '👾', '🤖', '🎃', '🌵'];
 const COLORS = ['#ff3d8b', '#ff8a3d', '#ffd23f', '#3ddc97', '#2de2e6', '#8b5cf6', '#5b8cff', '#ff5e5e'];
 
 const pick = <T>(items: readonly T[]): T => items[Math.floor(Math.random() * items.length)]!;
 
-export const authRoutes: FastifyPluginAsync<{ rateLimit: boolean }> = async (app, opts) => {
+export interface AuthRoutesOptions {
+  rateLimit: boolean;
+  /** Valid invitation codes. Empty = anyone may register. */
+  inviteCodes: readonly string[];
+}
+
+export const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (app, opts) => {
   const limit = (max: number) => ({
     rateLimit: opts.rateLimit ? { max, timeWindow: '15 minutes' } : (false as const),
   });
+  const inviteRequired = opts.inviteCodes.length > 0;
+
+  app.get('/options', async (): Promise<AuthOptions> => ({ inviteRequired }));
 
   app.post('/register', { config: limit(20) }, async (request, reply) => {
     const body = registerSchema.parse(request.body);
+    // Checked before the e-mail so that strangers cannot probe for existing accounts.
+    if (inviteRequired) {
+      const code = body.inviteCode?.trim() ?? '';
+      if (!code) {
+        throw new HttpError(403, 'invite_required', 'Für die Registrierung brauchst du einen Einladungscode.');
+      }
+      if (!matchesInviteCode(code, opts.inviteCodes)) {
+        throw new HttpError(403, 'invalid_invite', 'Dieser Einladungscode stimmt leider nicht.');
+      }
+    }
     if (findUserByEmail(app.db, body.email)) {
       throw new HttpError(409, 'email_taken', 'Mit dieser E-Mail-Adresse gibt es bereits ein Konto.');
     }

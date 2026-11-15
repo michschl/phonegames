@@ -121,6 +121,71 @@ describe('auth', () => {
   });
 });
 
+describe('invitation codes', () => {
+  let gated: FastifyInstance;
+
+  beforeEach(async () => {
+    gated = await buildApp({ db: openDatabase(':memory:'), rateLimit: false, inviteCodes: ['PARTY-2026', 'Familie'] });
+  });
+
+  afterEach(async () => {
+    await gated.close();
+  });
+
+  const attempt = (inviteCode?: string, email = 'ben@example.ch') =>
+    gated.inject({
+      method: 'POST',
+      url: '/api/auth/register',
+      headers: HEADERS,
+      payload: { name: 'Ben', email, password: 'geheim123', ...(inviteCode !== undefined ? { inviteCode } : {}) },
+    });
+
+  it('tells the client whether a code is needed', async () => {
+    const open = await app.inject({ method: 'GET', url: '/api/auth/options' });
+    expect(open.json()).toEqual({ inviteRequired: false });
+    const closed = await gated.inject({ method: 'GET', url: '/api/auth/options' });
+    expect(closed.json()).toEqual({ inviteRequired: true });
+  });
+
+  it('rejects registrations without or with a wrong code', async () => {
+    const missing = await attempt();
+    expect(missing.statusCode).toBe(403);
+    expect(missing.json().error).toBe('invite_required');
+
+    const blank = await attempt('   ');
+    expect(blank.json().error).toBe('invite_required');
+
+    const wrong = await attempt('PARTY-2025');
+    expect(wrong.statusCode).toBe(403);
+    expect(wrong.json()).toMatchObject({ error: 'invalid_invite', message: expect.stringContaining('Einladungscode') });
+    expect(wrong.cookies.find((c) => c.name === 'phonegames_session')).toBeUndefined();
+  });
+
+  it('accepts any valid code, ignoring case and spaces', async () => {
+    expect((await attempt('party-2026')).statusCode).toBe(201);
+    expect((await attempt(' FAMI LIE ', 'carla@example.ch')).statusCode).toBe(201);
+  });
+
+  it('checks the code before revealing that an e-mail exists', async () => {
+    expect((await attempt('PARTY-2026')).statusCode).toBe(201);
+    const probe = await attempt('falsch');
+    expect(probe.json().error).toBe('invalid_invite');
+    const duplicate = await attempt('PARTY-2026');
+    expect(duplicate.statusCode).toBe(409);
+  });
+
+  it('does not affect logging in', async () => {
+    await attempt('PARTY-2026');
+    const res = await gated.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      headers: HEADERS,
+      payload: { email: 'ben@example.ch', password: 'geheim123' },
+    });
+    expect(res.statusCode).toBe(200);
+  });
+});
+
 describe('account', () => {
   it('updates the profile and requires the password for e-mail changes', async () => {
     const { cookie } = await register();

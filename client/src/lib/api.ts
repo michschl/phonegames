@@ -1,4 +1,4 @@
-import type { ApiErrorBody, PublicUser, SyncPayload, SyncResponse } from '../../../shared/types.ts';
+import type { ApiErrorBody, AuthOptions, PublicUser, SyncPayload, SyncResponse } from '../../../shared/types.ts';
 
 export class ApiError extends Error {
   readonly status: number;
@@ -52,7 +52,8 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
 }
 
 export const api = {
-  register: (body: { name: string; email: string; password: string }) =>
+  authOptions: () => request<AuthOptions>('GET', '/api/auth/options'),
+  register: (body: { name: string; email: string; password: string; inviteCode?: string }) =>
     request<{ user: PublicUser }>('POST', '/api/auth/register', body),
   login: (body: { email: string; password: string }) => request<{ user: PublicUser }>('POST', '/api/auth/login', body),
   logout: () => request<void>('POST', '/api/auth/logout'),

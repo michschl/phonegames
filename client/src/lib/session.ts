@@ -11,7 +11,12 @@ function signIn(user: PublicUser): void {
   void syncNow();
 }
 
-export async function register(input: { name: string; email: string; password: string }): Promise<PublicUser> {
+export async function register(input: {
+  name: string;
+  email: string;
+  password: string;
+  inviteCode?: string;
+}): Promise<PublicUser> {
   const { user } = await api.register(input);
   signIn(user);
   return user;

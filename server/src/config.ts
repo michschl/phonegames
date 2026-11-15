@@ -8,6 +8,13 @@ function bool(value: string | undefined, fallback: boolean): boolean {
   return ['1', 'true', 'yes', 'on'].includes(value.toLowerCase());
 }
 
+function list(value: string | undefined): string[] {
+  return (value ?? '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 export const config = {
   isProd,
   port: Number(env.PORT ?? 3000),
@@ -23,6 +30,8 @@ export const config = {
   trustProxy: bool(env.TRUST_PROXY, isProd),
   logLevel: env.LOG_LEVEL ?? (isProd ? 'info' : 'debug'),
   version: env.APP_VERSION ?? 'dev',
+  /** Comma separated invitation codes. When set, registering requires one of them. */
+  inviteCodes: list(env.INVITE_CODES),
 } as const;
 
 export type AppConfig = typeof config;

@@ -36,7 +36,8 @@ mit `accent` seine eigene Farbe; `GameShell` mit `night` schaltet auf die dunkle
 
 Maskottchen und Logo sind reine SVG-Komponenten (`Mascot`, `Logo` in
 [`components/Brand.tsx`](../client/src/components/Brand.tsx)) mit den Stimmungen `happy`, `wink`, `wow`, `party`,
-`sleepy` und `oops`. Die App-Icons werden mit `npm run icons` aus `client/public/favicon.svg` erzeugt.
+`sleepy` und `oops`. Die App-Icons werden mit `npm run icons` aus `client/public/icons/phoni.svg` erzeugt. Ändert sich das Motiv, bekommen
+die Dateien neue Namen – Browser und Homescreens halten Icons sonst unter der alten Adresse fest.
 
 ## Offline-first
 
@@ -79,6 +80,7 @@ Spieleinstellungen (z. B. Zünddauer), Ton und Vibration sind **Geräteeinstellu
 | Passwörter | `scrypt` (N=2¹⁵, r=8, p=3, 16-Byte-Salt) aus `node:crypto`; Parameter werden mit dem Hash gespeichert und sind damit später erhöhbar |
 | Sessions | Zufälliges 256-Bit-Token im Cookie `phonegames_session` (`HttpOnly`, `Secure`, `SameSite=Lax`); in der DB liegt nur der SHA-256-Hash. Gültig 180 Tage, verlängert sich bei Nutzung |
 | CSRF | Ändernde API-Aufrufe brauchen den Header `X-Requested-With: phonegames`. Browser senden eigene Header nur bei Same-Origin-Anfragen (CORS ist nicht aktiviert) |
+| Einladungscodes | Vergleich in konstanter Zeit (SHA-256 + `timingSafeEqual`), geprüft **vor** der E-Mail-Prüfung – ohne gültigen Code lässt sich nicht herausfinden, ob ein Konto existiert |
 | Brute Force | Rate-Limit auf Registrierung, Anmeldung, Passwort- und Kontoänderungen; konstante Antwortzeit bei unbekannten E-Mails |
 | Passwortänderung | Meldet alle anderen Geräte ab. E-Mail-Änderung und Kontolöschung erfordern das aktuelle Passwort |
 | HTTP-Header | Content-Security-Policy, `X-Frame-Options: DENY`, `nosniff`, Referrer-Policy, Permissions-Policy, HSTS (Caddy) |
@@ -112,7 +114,8 @@ Alle Antworten sind JSON. Fehler haben die Form `{ "error": "code", "message": "
 | Methode & Pfad | Auth | Body | Antwort |
 | --- | --- | --- | --- |
 | `GET /api/health` | – | – | `{ ok, version }` |
-| `POST /api/auth/register` | – | `{ name, email, password }` | `201 { user }` + Cookie |
+| `GET /api/auth/options` | – | – | `{ inviteRequired }` |
+| `POST /api/auth/register` | – | `{ name, email, password, inviteCode? }` | `201 { user }` + Cookie · `403 invite_required` / `invalid_invite` |
 | `POST /api/auth/login` | – | `{ email, password }` | `{ user }` + Cookie |
 | `POST /api/auth/logout` | – | – | `204` |
 | `GET /api/auth/me` | ✅ | – | `{ user }` |
@@ -137,6 +140,7 @@ Die Typen stehen in [`shared/types.ts`](../shared/types.ts).
 | `TRUST_PROXY` | in Produktion `true` | `X-Forwarded-*` von Caddy vertrauen (für Rate-Limit nach Client-IP) |
 | `LOG_LEVEL` | `info` / `debug` | Fastify/Pino-Loglevel |
 | `APP_VERSION` | `dev` | Wird im Health-Check und in der App angezeigt |
+| `INVITE_CODES` | – | Einladungscodes, mit Komma getrennt. Gesetzt = Registrierung nur mit Code; leer = offen |
 
 ## Sound, Grafik & Haptik
 

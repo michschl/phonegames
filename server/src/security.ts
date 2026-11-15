@@ -51,6 +51,22 @@ export function randomToken(bytes = 32): string {
   return crypto.randomBytes(bytes).toString('base64url');
 }
 
+/** Invitation codes are compared case-insensitively and ignore spaces. */
+export function normalizeInviteCode(code: string): string {
+  return code.replace(/\s+/g, '').toUpperCase();
+}
+
+/** Constant-time check of an invitation code against all valid codes. */
+export function matchesInviteCode(code: string, validCodes: readonly string[]): boolean {
+  const digest = (value: string) => crypto.createHash('sha256').update(normalizeInviteCode(value)).digest();
+  const given = digest(code);
+  let match = false;
+  for (const valid of validCodes) {
+    if (crypto.timingSafeEqual(given, digest(valid))) match = true;
+  }
+  return match;
+}
+
 export function sha256(value: string): string {
   return crypto.createHash('sha256').update(value).digest('base64url');
 }

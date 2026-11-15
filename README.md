@@ -31,7 +31,7 @@ Mit dabei: vom tickenden Klassiker **💣 Bombe** über Bluff-Spiele wie **🕵�
 | Bereich | Was es kann |
 | --- | --- |
 | **Start** | «Weiterspielen» mit dem zuletzt gespielten Spiel und der Gruppe · kompakte Kacheln für «Meine Spiele» · Vorschläge zum direkten Hinzufügen |
-| **Konto** | Registrieren mit Name, E-Mail und Passwort · Anmelden/Abmelden · Name, E-Mail, Avatar (Emoji + Farbe) und Passwort ändern · Datenexport (JSON) · Konto löschen |
+| **Konto** | Registrieren mit Name, E-Mail und Passwort – vorerst nur mit Einladungscode (auch als Link `/registrieren?code=…`) · Anmelden/Abmelden · Name, E-Mail, Avatar (Emoji + Farbe) und Passwort ändern · Datenexport (JSON) · Konto löschen |
 | **Entdecken** | «Spiel des Tages» · Filter «Wie viele seid ihr?» · Volltextsuche (umlaut-tolerant) und Kategorien · Spiele mit einem Tipp hinzufügen/entfernen |
 | **Spielgruppen** | Gruppen mit Namen, Symbol und Mitspielenden anlegen · beim Spielstart wird die Gruppe angezeigt und kann direkt angepasst werden (Personen hinzufügen/entfernen) |
 | **Spiele** | 17 Spiele mit über 2’500 Begriffen, Fragen und Karten – siehe Tabelle unten |
@@ -112,7 +112,7 @@ npm run preview
 | `npm run preview` | Build + Produktionsserver |
 | `npm test` | Tests (Vitest): API, Sync-Logik, Spiellogik und Inhalte |
 | `npm run typecheck` | TypeScript-Prüfung |
-| `npm run icons` | App-Icons aus `client/public/favicon.svg` neu erzeugen |
+| `npm run icons` | App-Icons aus `client/public/icons/phoni.svg` neu erzeugen |
 
 ## Projektstruktur
 

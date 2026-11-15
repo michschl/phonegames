@@ -1,9 +1,9 @@
-import { useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { useEffect, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { Mascot, type Mood } from '../components/Brand.tsx';
 import { Button, TextField } from '../components/ui.tsx';
 import { GAMES } from '../games/registry.ts';
-import { errorMessage } from '../lib/api.ts';
+import { api, ApiError, errorMessage } from '../lib/api.ts';
 import { confetti } from '../lib/confetti.ts';
 import { haptic } from '../lib/device.ts';
 import { login, register } from '../lib/session.ts';
@@ -109,33 +109,91 @@ function AuthShell({ title, subtitle, mood, children }: { title: string; subtitl
   );
 }
 
+/** Whether the server currently requires an invitation code (null = not known yet). */
+function useInviteRequired(): boolean | null {
+  const [required, setRequired] = useState<boolean | null>(null);
+  useEffect(() => {
+    let active = true;
+    api
+      .authOptions()
+      .then((options) => active && setRequired(options.inviteRequired))
+      .catch(() => {
+        // Offline or server unreachable: keep showing the field, registering needs the server anyway.
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+  return required;
+}
+
 export function RegisterPage() {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const linkCode = (params.get('code') ?? '').trim().toUpperCase().slice(0, 64);
+  const inviteRequired = useInviteRequired();
+  const showInvite = inviteRequired !== false;
+  const [inviteCode, setInviteCode] = useState(linkCode);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [inviteError, setInviteError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setError(null);
+    setInviteError(null);
     setLoading(true);
     try {
-      const user = await register({ name: name.trim(), email: email.trim(), password });
+      const user = await register({
+        name: name.trim(),
+        email: email.trim(),
+        password,
+        ...(showInvite ? { inviteCode: inviteCode.trim() } : {}),
+      });
       confetti({ count: 180 });
       toast(`Willkommen bei Phonegames, ${user.name}! 🎉`, { tone: 'success' });
       navigate('/', { replace: true, viewTransition: true });
     } catch (err) {
-      setError(errorMessage(err));
+      if (err instanceof ApiError && (err.code === 'invalid_invite' || err.code === 'invite_required')) {
+        setInviteError(err.message);
+        haptic([30, 40, 30]);
+      } else {
+        setError(errorMessage(err));
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <AuthShell title="Konto erstellen" subtitle="Dauert keine 30 Sekunden. Versprochen." mood={error ? 'oops' : 'happy'}>
+    <AuthShell
+      title="Konto erstellen"
+      subtitle={showInvite ? 'Noch geheim – nur mit Einladung.' : 'Dauert keine 30 Sekunden. Versprochen.'}
+      mood={error || inviteError ? 'oops' : 'happy'}
+    >
       <form className="form" onSubmit={submit} noValidate>
+        {showInvite && (
+          <TextField
+            label="Einladungscode"
+            icon="ticket"
+            value={inviteCode}
+            onChange={(e) => {
+              setInviteCode(e.target.value.toUpperCase());
+              setInviteError(null);
+            }}
+            autoComplete="off"
+            autoCapitalize="characters"
+            autoCorrect="off"
+            spellCheck={false}
+            maxLength={64}
+            error={inviteError}
+            hint={linkCode ? 'Aus deiner Einladung übernommen 🎟️' : 'Den Code bekommst du von der Person, die dich eingeladen hat.'}
+            required
+          />
+        )}
         <TextField
           label="Dein Name"
           icon="user"
@@ -166,7 +224,13 @@ export function RegisterPage() {
           required
         />
         {error && <p className="notice notice--error">{error}</p>}
-        <Button type="submit" size="lg" block loading={loading} disabled={!name || !email || !password}>
+        <Button
+          type="submit"
+          size="lg"
+          block
+          loading={loading}
+          disabled={!name || !email || !password || (showInvite && !inviteCode.trim())}
+        >
           Los geht’s
         </Button>
       </form>
