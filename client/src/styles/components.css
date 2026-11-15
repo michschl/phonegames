@@ -1747,3 +1747,36 @@ button.list__item:active {
 .voice-fold[open] .voice-picker {
   animation: rise-in 0.3s var(--ease-out) backwards;
 }
+
+/* Floating back button once the page header has scrolled away. */
+.page__float-back {
+  position: fixed;
+  z-index: 45;
+  top: calc(var(--safe-top) + 10px);
+  left: max(12px, calc(50% - var(--page-max) / 2 + 12px));
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100% - 24px);
+  padding: 6px 16px 6px 8px;
+  border-radius: 999px;
+  border: var(--border);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+  animation: pop-in 0.3s var(--ease-spring) backwards;
+}
+
+.page__float-back span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.page__float-back:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
