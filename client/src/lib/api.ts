@@ -1,0 +1,72 @@
+import type { ApiErrorBody, PublicUser, SyncPayload, SyncResponse } from '../../../shared/types.ts';
+
+export class ApiError extends Error {
+  readonly status: number;
+  readonly code: string;
+  constructor(status: number, code: string, message: string) {
+    super(message);
+    this.status = status;
+    this.code = code;
+  }
+}
+
+/** Thrown when the device is offline or the server cannot be reached. */
+export class OfflineError extends Error {
+  constructor() {
+    super('Keine Verbindung. Bitte prüfe dein Internet und versuche es nochmals.');
+  }
+}
+
+async function request<T>(method: string, url: string, body?: unknown): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method,
+      credentials: 'same-origin',
+      headers: {
+        Accept: 'application/json',
+        'X-Requested-With': 'plausch',
+        ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+      },
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    throw new OfflineError();
+  }
+
+  if (response.status === 204) return undefined as T;
+
+  let data: unknown = null;
+  try {
+    data = await response.json();
+  } catch {
+    // A non-JSON answer usually means a proxy error page or the server is down.
+    if (!response.ok) throw new OfflineError();
+  }
+
+  if (!response.ok) {
+    const err = (data ?? {}) as Partial<ApiErrorBody>;
+    throw new ApiError(response.status, err.error ?? 'error', err.message ?? 'Da ist etwas schiefgelaufen.');
+  }
+  return data as T;
+}
+
+export const api = {
+  register: (body: { name: string; email: string; password: string }) =>
+    request<{ user: PublicUser }>('POST', '/api/auth/register', body),
+  login: (body: { email: string; password: string }) => request<{ user: PublicUser }>('POST', '/api/auth/login', body),
+  logout: () => request<void>('POST', '/api/auth/logout'),
+  me: () => request<{ user: PublicUser }>('GET', '/api/auth/me'),
+  updateAccount: (body: Partial<{ name: string; email: string; avatar: string; color: string; password: string }>) =>
+    request<{ user: PublicUser }>('PATCH', '/api/account', body),
+  changePassword: (body: { currentPassword: string; newPassword: string }) =>
+    request<void>('POST', '/api/account/password', body),
+  deleteAccount: (body: { password: string }) => request<void>('DELETE', '/api/account', body),
+  exportData: () => request<unknown>('GET', '/api/account/export'),
+  sync: (body: SyncPayload) => request<SyncResponse>('POST', '/api/sync', body),
+};
+
+export function errorMessage(error: unknown): string {
+  if (error instanceof ApiError || error instanceof OfflineError) return error.message;
+  return 'Da ist etwas schiefgelaufen.';
+}

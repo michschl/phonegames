@@ -1,0 +1,80 @@
+import type { FastifyPluginAsync } from 'fastify';
+import { HttpError } from '../http.ts';
+import {
+  deleteOtherSessions,
+  deleteUser,
+  findUserByEmail,
+  getGroups,
+  getLibrary,
+  toPublicUser,
+  updateUser,
+} from '../repo.ts';
+import { hashPassword, verifyPassword } from '../security.ts';
+import { changePasswordSchema, deleteAccountSchema, updateAccountSchema } from '../schemas.ts';
+
+export const accountRoutes: FastifyPluginAsync<{ rateLimit: boolean }> = async (app, opts) => {
+  const limit = (max: number) => ({
+    rateLimit: opts.rateLimit ? { max, timeWindow: '15 minutes' } : (false as const),
+  });
+
+  app.addHook('preHandler', app.requireAuth);
+
+  app.patch('/', { config: limit(60) }, async (request) => {
+    const user = request.user!;
+    const body = updateAccountSchema.parse(request.body);
+
+    const emailChanged = body.email !== undefined && body.email !== user.email.toLowerCase();
+    if (emailChanged) {
+      if (!body.password || !(await verifyPassword(body.password, user.passwordHash))) {
+        throw new HttpError(403, 'invalid_password', 'Bitte bestätige die Änderung mit deinem aktuellen Passwort.');
+      }
+      const other = findUserByEmail(app.db, body.email!);
+      if (other && other.id !== user.id) {
+        throw new HttpError(409, 'email_taken', 'Diese E-Mail-Adresse wird bereits verwendet.');
+      }
+    }
+
+    const updated = updateUser(app.db, user.id, {
+      name: body.name,
+      avatar: body.avatar,
+      color: body.color,
+      email: emailChanged ? body.email : undefined,
+    });
+    return { user: toPublicUser(updated) };
+  });
+
+  app.post('/password', { config: limit(10) }, async (request, reply) => {
+    const user = request.user!;
+    const body = changePasswordSchema.parse(request.body);
+    if (!(await verifyPassword(body.currentPassword, user.passwordHash))) {
+      throw new HttpError(403, 'invalid_password', 'Das aktuelle Passwort ist falsch.');
+    }
+    updateUser(app.db, user.id, { passwordHash: await hashPassword(body.newPassword) });
+    deleteOtherSessions(app.db, user.id, request.sessionToken!);
+    return reply.status(204).send();
+  });
+
+  app.delete('/', { config: limit(10) }, async (request, reply) => {
+    const user = request.user!;
+    const body = deleteAccountSchema.parse(request.body);
+    if (!(await verifyPassword(body.password, user.passwordHash))) {
+      throw new HttpError(403, 'invalid_password', 'Das Passwort ist falsch.');
+    }
+    deleteUser(app.db, user.id); // sessions, library and groups are deleted via ON DELETE CASCADE
+    app.clearSessionCookie(reply);
+    return reply.status(204).send();
+  });
+
+  /** Data export (Auskunftsrecht nach DSG/DSGVO). */
+  app.get('/export', async (request, reply) => {
+    const user = request.user!;
+    const data = {
+      exportedAt: new Date().toISOString(),
+      user: toPublicUser(user),
+      library: getLibrary(app.db, user.id).filter((item) => !item.deleted),
+      groups: getGroups(app.db, user.id).filter((group) => !group.deleted),
+    };
+    reply.header('Content-Disposition', 'attachment; filename="plausch-export.json"');
+    return data;
+  });
+};

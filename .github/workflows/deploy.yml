@@ -1,0 +1,155 @@
+name: Deploy
+
+# Every push to main is tested, packaged as a Docker image (GitHub Container
+# Registry) and rolled out to the Infomaniak VPS via SSH.
+# "Run workflow" with an image tag re-deploys an older version (rollback).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image-Tag für ein Rollback (Commit-SHA). Leer lassen = aktuellen Stand bauen und ausrollen.'
+        required: false
+        default: ''
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  ci:
+    if: inputs.image_tag == ''
+    uses: ./.github/workflows/ci.yml
+
+  image:
+    name: Docker-Image bauen & pushen
+    needs: ci
+    if: inputs.image_tag == ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Image-Namen bestimmen
+        id: meta
+        run: |
+          echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+          echo "tag=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Bei der GitHub Container Registry anmelden
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_ACTOR: ${{ github.actor }}
+        run: printf '%s' "$GH_TOKEN" | docker login ghcr.io -u "$GH_ACTOR" --password-stdin
+
+      - name: Bauen
+        run: |
+          docker build \
+            --build-arg APP_VERSION="${GITHUB_SHA::7}" \
+            --label "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --tag "${{ steps.meta.outputs.image }}:${GITHUB_SHA}" \
+            --tag "${{ steps.meta.outputs.image }}:latest" \
+            .
+
+      - name: Pushen
+        run: docker push --all-tags "${{ steps.meta.outputs.image }}"
+
+  deploy:
+    name: Auf den VPS ausrollen
+    needs: image
+    # Runs after a successful build, or directly for a rollback. Skipped until
+    # the VPS is configured (repository variable VPS_HOST).
+    if: always() && vars.VPS_HOST != '' && (needs.image.result == 'success' || (needs.image.result == 'skipped' && inputs.image_tag != ''))
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: https://${{ vars.APP_DOMAIN }}
+    env:
+      VPS_HOST: ${{ vars.VPS_HOST }}
+      VPS_USER: ${{ vars.VPS_USER || 'deploy' }}
+      VPS_PORT: ${{ vars.VPS_PORT || '22' }}
+      APP_DIR: ${{ vars.APP_DIR || '/opt/plausch' }}
+      APP_DOMAIN: ${{ vars.APP_DOMAIN }}
+      IMAGE_TAG: ${{ inputs.image_tag || needs.image.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Konfiguration prüfen
+        env:
+          HAS_SSH_KEY: ${{ secrets.VPS_SSH_KEY != '' }}
+        run: |
+          missing=0
+          for v in VPS_HOST APP_DOMAIN IMAGE_TAG; do
+            if [ -z "${!v}" ]; then echo "::error::Variable $v fehlt"; missing=1; fi
+          done
+          if [ "$HAS_SSH_KEY" != "true" ]; then echo "::error::Secret VPS_SSH_KEY fehlt"; missing=1; fi
+          exit $missing
+
+      - name: SSH einrichten
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          if [ -n "$KNOWN_HOSTS" ]; then
+            printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          else
+            echo "::warning::Secret VPS_KNOWN_HOSTS fehlt – Host-Key wird ungeprüft übernommen (Trust on first use)."
+            ssh-keyscan -p "$VPS_PORT" -H "$VPS_HOST" > ~/.ssh/known_hosts
+          fi
+          cat > ~/.ssh/config <<EOF
+          Host vps
+            HostName $VPS_HOST
+            Port $VPS_PORT
+            User $VPS_USER
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+            StrictHostKeyChecking yes
+            ServerAliveInterval 30
+          EOF
+
+      - name: Dateien übertragen
+        run: |
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}"
+          {
+            echo "APP_IMAGE=${IMAGE}:${IMAGE_TAG}"
+            echo "APP_VERSION=${IMAGE_TAG::7}"
+            echo "APP_DOMAIN=${APP_DOMAIN}"
+          } > deploy/.env
+          ssh vps "mkdir -p '$APP_DIR'"
+          scp deploy/docker-compose.yml deploy/Caddyfile deploy/backup.sh deploy/.env "vps:$APP_DIR/"
+
+      - name: Container aktualisieren
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_ACTOR: ${{ github.actor }}
+        run: |
+          # The short-lived workflow token is passed via stdin and removed after the pull.
+          printf '%s' "$GH_TOKEN" | ssh vps "docker login ghcr.io -u '$GH_ACTOR' --password-stdin"
+          ssh vps "cd '$APP_DIR' && chmod +x backup.sh \
+            && docker compose pull \
+            && docker compose up -d --remove-orphans --wait --wait-timeout 120; \
+            status=\$?; docker logout ghcr.io >/dev/null; exit \$status"
+          ssh vps "docker image prune -af --filter 'until=168h' >/dev/null || true"
+
+      - name: Health-Check
+        run: |
+          for i in $(seq 1 20); do
+            if curl -fsS "https://${APP_DOMAIN}/api/health"; then echo; echo "✅ https://${APP_DOMAIN} läuft"; exit 0; fi
+            echo "Warte auf ${APP_DOMAIN} … ($i/20)"; sleep 6
+          done
+          echo "::error::Health-Check fehlgeschlagen"
+          ssh vps "cd '$APP_DIR' && docker compose ps && docker compose logs --tail 80"
+          exit 1
