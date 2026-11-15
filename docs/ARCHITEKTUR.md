@@ -148,6 +148,13 @@ Die Typen stehen in [`shared/types.ts`](../shared/types.ts).
   [`client/src/games/bombe/sounds.ts`](../client/src/games/bombe/sounds.ts)) – Ticken, Zündschnur-Knistern,
   Explosion mit Sub-Bass und Verzerrung. Es gibt keine Audiodateien. Auf iOS wird `navigator.audioSession` auf
   `playback` gesetzt, damit der Ton auch im Lautlos-Modus zu hören ist.
+- **Audio bleibt wach:** Die Engine hängt sich an jede Berührung (`pointerup`, `touchend`, `click`, `keydown`) und
+  startet oder weckt den Audio-Kontext dort – auch nachdem iOS ihn im Hintergrund pausiert hat. Beim ersten Start
+  spielt sie einen stummen Puffer ab, den iOS zum «Aufwärmen» braucht.
+- **Sound-Baukasten:** Neben `correct()`, `wrong()`, `buzzer()` usw. gibt es `tap()`, `flip()`, `pluck(i)`
+  (pentatonische Töne, z. B. pro Finger), `swirl()`, `ding()`, `coin()`, `countTick()`, `sparkle()`, `fanfare()`,
+  `fail()`, `sting()`, `gong()`, `birds()`, `tension()` sowie die Schleifen `drumroll()` und `heartbeat()`. Alle
+  Töne liegen im Bereich, den Handy-Lautsprecher gut wiedergeben.
 - **Timing:** Der Bomben-Timer plant Ticks mit dem präzisen Audio-Clock voraus («Two Clocks»-Prinzip), die Spielzeit
   selbst misst `performance.now()`. So bleibt das Ticken gleichmässig, auch wenn die Animation viel Rechenzeit braucht.
 - **Explosion:** Canvas-Partikelsystem (Feuerball, Schockwellen, Funken mit Schweif, Trümmer, Rauch, Glut) plus
@@ -155,8 +162,13 @@ Die Typen stehen in [`shared/types.ts`](../shared/types.ts).
 - **Haptik:** Vibration (Android) beim Ticken in der heissen Phase, bei der Explosion, bei richtigen/falschen Antworten.
 - **Wake Lock:** Der Bildschirm bleibt während des Spiels eingeschaltet.
 - **Sprachausgabe:** «Nachts im Dorf» liest die Nacht mit der Web Speech API vor
-  ([`client/src/lib/speech.ts`](../client/src/lib/speech.ts)) – mit den auf dem Gerät installierten deutschen
-  Stimmen, also auch offline. Ohne Sprachausgabe übernimmt eine Person die Spielleitung.
+  ([`client/src/lib/speech.ts`](../client/src/lib/speech.ts)). Die Qualität hängt fast nur von der Stimme ab, deshalb
+  werden die deutschen Stimmen des Geräts bewertet: natürliche/neuronale, Premium- und erweiterte Stimmen zuerst,
+  Schweizer vor deutschen und österreichischen, alte Desktop-Stimmen zuletzt, Spassstimmen von iOS («Eddy»,
+  «Grandma» …) nie. Gesprochen wird Satz für Satz mit kurzen Pausen; Ansagen werden nacheinander abgespielt. Fällt
+  eine Online-Stimme aus (z. B. offline), springt die beste Stimme auf dem Gerät ein. Unter **Konto → Erzählstimme**
+  und in den Spieleinstellungen lässt sich die Stimme mit Hörprobe wählen – inkl. Tipp, wo es auf iPhone/Android
+  bessere Stimmen gibt. Ohne Sprachausgabe übernimmt eine Person die Spielleitung.
 - **Bewegungssensor:** «Wer bin ich?» erkennt Nicken nach vorne/hinten über `deviceorientation`
   ([`client/src/lib/motion.ts`](../client/src/lib/motion.ts)). Die Neigung wird als vertikale Komponente der
   Display-Normalen berechnet (`cos β · cos γ`) und ist damit unabhängig von Hoch- oder Querformat. iOS fragt einmal

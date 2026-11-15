@@ -11,11 +11,14 @@ interface SettingsState {
   lastGroupByGame: Record<string, string>;
   /** Most recently started game, shown as «Weiterspielen» on the home screen. */
   lastPlayed: { gameId: string; groupId?: string; at: number } | null;
+  /** Preferred narrator voice (voiceURI); null = pick the best one automatically. */
+  voiceId: string | null;
   setSound(on: boolean): void;
   setHaptics(on: boolean): void;
   setGameSettings(gameId: string, value: unknown): void;
   setLastGroup(gameId: string, groupId: string): void;
   setLastPlayed(gameId: string, groupId?: string): void;
+  setVoiceId(voiceId: string | null): void;
 }
 
 export const useSettings = create<SettingsState>()(
@@ -26,11 +29,13 @@ export const useSettings = create<SettingsState>()(
       gameSettings: {},
       lastGroupByGame: {},
       lastPlayed: null,
+      voiceId: null,
       setSound: (sound) => set({ sound }),
       setHaptics: (haptics) => set({ haptics }),
       setGameSettings: (gameId, value) => set((s) => ({ gameSettings: { ...s.gameSettings, [gameId]: value } })),
       setLastGroup: (gameId, groupId) => set((s) => ({ lastGroupByGame: { ...s.lastGroupByGame, [gameId]: groupId } })),
       setLastPlayed: (gameId, groupId) => set({ lastPlayed: { gameId, groupId, at: Date.now() } }),
+      setVoiceId: (voiceId) => set({ voiceId }),
     }),
     { name: 'phonegames-settings', version: 1 },
   ),
