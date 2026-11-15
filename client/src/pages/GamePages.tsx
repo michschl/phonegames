@@ -55,13 +55,14 @@ function GameSetup({ game }: { game: GameDefinition }) {
   const inLibrary = library.includes(game.id);
 
   const playerCount = group?.players.length ?? 0;
-  const missing = Math.max(0, game.minPlayers - playerCount);
+  const missing = game.noGroup ? 0 : Math.max(0, game.minPlayers - playerCount);
+  const canStart = game.noGroup || (!!group && missing === 0);
 
   const start = () => {
-    if (!group || missing > 0) return;
+    if (!canStart) return;
     sound.unlock(); // must happen inside the tap for iOS
     haptic(20);
-    setLastGroup(game.id, group.id);
+    if (group) setLastGroup(game.id, group.id);
     navigate(`/spiel/${game.id}/los`, { viewTransition: true });
   };
 
@@ -109,6 +110,7 @@ function GameSetup({ game }: { game: GameDefinition }) {
         </details>
       )}
 
+      {!game.noGroup && (
       <Section title="Spielgruppe">
         {selectedId ? (
           <>
@@ -130,6 +132,7 @@ function GameSetup({ game }: { game: GameDefinition }) {
           </div>
         )}
       </Section>
+      )}
 
       {game.Settings && (
         <Section title="Einstellungen">
@@ -138,10 +141,12 @@ function GameSetup({ game }: { game: GameDefinition }) {
       )}
 
       <div className="start-bar">
-        <Button size="lg" block icon="play" onClick={start} disabled={!group || missing > 0}>
-          {missing > 0
-            ? `Noch ${missing} ${missing === 1 ? 'Person' : 'Personen'} hinzufügen`
-            : `Spiel starten · ${playerCount} ${playerCount === 1 ? 'Person' : 'Personen'}`}
+        <Button size="lg" block icon="play" onClick={start} disabled={!canStart}>
+          {game.noGroup
+            ? 'Spiel starten'
+            : missing > 0
+              ? `Noch ${missing} ${missing === 1 ? 'Person' : 'Personen'} hinzufügen`
+              : `Spiel starten · ${playerCount} ${playerCount === 1 ? 'Person' : 'Personen'}`}
         </Button>
       </div>
     </Page>
@@ -165,7 +170,7 @@ export function GamePlayPage() {
   }, []);
 
   if (!game?.Play || game.status !== 'available') return <Navigate to="/" replace />;
-  if (!group || players.length < game.minPlayers) return <Navigate to={`/spiel/${game.id}`} replace />;
+  if (!game.noGroup && (!group || players.length < game.minPlayers)) return <Navigate to={`/spiel/${game.id}`} replace />;
 
   const Play = game.Play;
   return (

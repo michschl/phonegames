@@ -35,6 +35,8 @@ export interface GameDefinition<S extends object = any> {
   age: string;
   tags: string[];
   status: 'available' | 'soon';
+  /** The game needs no player group (e.g. tools like «Zufallsfinger»). */
+  noGroup?: boolean;
   /** Short rules shown on the setup screen. */
   rules?: string[];
   defaultSettings?: S;

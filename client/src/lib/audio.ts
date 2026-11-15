@@ -178,6 +178,110 @@ class SoundEngine {
     });
     this.noiseBurst({ start: t, duration: 0.4, gain: 0.06, filter: 'highpass', freq: 3000, freqEnd: 8000 });
   }
+
+  /** Bright "ding-ding" for a correct answer. */
+  correct(): void {
+    const t = this.now;
+    this.tone({ freq: 1046.5, type: 'triangle', start: t, duration: 0.16, gain: 0.22 });
+    this.tone({ freq: 1568, type: 'triangle', start: t + 0.08, duration: 0.3, gain: 0.2 });
+  }
+
+  /** Short descending "bwop" for skip / wrong. */
+  wrong(): void {
+    const t = this.now;
+    this.tone({ freq: 420, freqEnd: 180, type: 'sawtooth', start: t, duration: 0.22, gain: 0.12 });
+  }
+
+  /** Harsh buzzer for "time is up" or a foul. */
+  buzzer(duration = 0.6): void {
+    const t = this.now;
+    this.tone({ freq: 140, type: 'square', start: t, duration, gain: 0.22, attack: 0.01 });
+    this.tone({ freq: 147, type: 'sawtooth', start: t, duration, gain: 0.14, attack: 0.01 });
+  }
+
+  /** Countdown beep; the final one is higher and longer. */
+  beep(final = false): void {
+    this.tone({ freq: final ? 1320 : 880, type: 'sine', duration: final ? 0.4 : 0.12, gain: 0.25 });
+  }
+
+  /** Soft clock tick for running timers. */
+  tick(): void {
+    this.noiseBurst({ duration: 0.025, gain: 0.25, filter: 'bandpass', freq: 3000, q: 8 });
+  }
+
+  /** Airy swoosh for card changes. */
+  whoosh(): void {
+    this.noiseBurst({ duration: 0.35, gain: 0.12, attack: 0.08, filter: 'bandpass', freq: 600, freqEnd: 3500, q: 1.2 });
+  }
+
+  /** Snare drum roll; returns a function that ends it with a cymbal-ish crash. */
+  drumroll(): () => void {
+    const ctx = this.context;
+    if (!ctx) return () => undefined;
+    let next = ctx.currentTime;
+    let stopped = false;
+    const timer = window.setInterval(() => {
+      while (!stopped && next < ctx.currentTime + 0.1) {
+        this.noiseBurst({ start: next, duration: 0.05, gain: 0.12 + Math.random() * 0.06, filter: 'bandpass', freq: 1800, q: 0.8 });
+        next += 0.045;
+      }
+    }, 25);
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
+      this.noiseBurst({ duration: 1.2, gain: 0.25, attack: 0.002, filter: 'highpass', freq: 4000 });
+      this.tone({ freq: 110, freqEnd: 55, type: 'sine', duration: 0.4, gain: 0.4 });
+    };
+  }
+
+  /** Short wooden click (bottle spin, wheel). */
+  click(pitch = 1): void {
+    this.noiseBurst({ duration: 0.03, gain: 0.3, filter: 'bandpass', freq: 1800 * pitch, q: 5 });
+  }
+
+  /** Spooky wolf howl. */
+  howl(): void {
+    const ctx = this.context;
+    const out = this.master;
+    if (!ctx || !out) return;
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const vibrato = ctx.createOscillator();
+    const vibratoGain = ctx.createGain();
+    const amp = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(320, t);
+    osc.frequency.linearRampToValueAtTime(560, t + 0.6);
+    osc.frequency.linearRampToValueAtTime(600, t + 1.6);
+    osc.frequency.linearRampToValueAtTime(420, t + 2.4);
+    vibrato.frequency.value = 5.5;
+    vibratoGain.gain.value = 9;
+    vibrato.connect(vibratoGain).connect(osc.frequency);
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 1400;
+    amp.gain.setValueAtTime(0.0001, t);
+    amp.gain.exponentialRampToValueAtTime(0.12, t + 0.4);
+    amp.gain.setValueAtTime(0.12, t + 1.8);
+    amp.gain.exponentialRampToValueAtTime(0.0001, t + 2.5);
+    osc.connect(filter).connect(amp).connect(out);
+    osc.start(t);
+    vibrato.start(t);
+    osc.stop(t + 2.6);
+    vibrato.stop(t + 2.6);
+  }
+
+  /** Night ambience with chirping crickets. Returns a stop function. */
+  crickets(): () => void {
+    const timer = window.setInterval(() => {
+      if (Math.random() < 0.6) {
+        const t = this.now;
+        const freq = 4200 + Math.random() * 600;
+        for (let i = 0; i < 3; i++) this.tone({ freq, type: 'sine', start: t + i * 0.06, duration: 0.04, gain: 0.025 });
+      }
+    }, 420);
+    return () => window.clearInterval(timer);
+  }
 }
 
 export const sound = new SoundEngine();
