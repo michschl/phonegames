@@ -74,7 +74,7 @@ export const accountRoutes: FastifyPluginAsync<{ rateLimit: boolean }> = async (
       library: getLibrary(app.db, user.id).filter((item) => !item.deleted),
       groups: getGroups(app.db, user.id).filter((group) => !group.deleted),
     };
-    reply.header('Content-Disposition', 'attachment; filename="plausch-export.json"');
+    reply.header('Content-Disposition', 'attachment; filename="phonegames-export.json"');
     return data;
   });
 };

@@ -22,7 +22,7 @@ export function initPwa(): void {
   });
   window.addEventListener('appinstalled', () => {
     usePwa.setState({ installEvent: null });
-    toast('Plausch ist jetzt auf deinem Startbildschirm 🎉');
+    toast('Phonegames ist jetzt auf deinem Startbildschirm 🎉');
   });
 
   if (!('serviceWorker' in navigator) || import.meta.env.DEV) return;
@@ -36,7 +36,7 @@ export function initPwa(): void {
       });
     },
     onOfflineReady() {
-      toast('Bereit für offline – Plausch funktioniert jetzt auch ohne Internet ✈️');
+      toast('Bereit für offline – Phonegames funktioniert jetzt auch ohne Internet ✈️');
     },
     onRegisteredSW(_url, registration) {
       // Check for updates every hour while the app is open.

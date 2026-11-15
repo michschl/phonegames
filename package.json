@@ -1,8 +1,8 @@
 {
-  "name": "plausch",
+  "name": "phonegames",
   "version": "1.0.0",
   "private": true,
-  "description": "Plausch – Partyspiele fürs Handy. Offline-fähige PWA mit Konten, Spielgruppen und dem Spiel «Bombe».",
+  "description": "Phonegames – Partyspiele fürs Handy. Offline-fähige PWA mit Konten, Spielgruppen und 17 Spielen.",
   "type": "module",
   "engines": {
     "node": ">=22.18"

@@ -1,32 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#ff3d8b"/>
-      <stop offset="1" stop-color="#ff8a3d"/>
-    </linearGradient>
-    <radialGradient id="body" cx="36%" cy="34%" r="70%">
-      <stop offset="0" stop-color="#77709a"/>
-      <stop offset=".35" stop-color="#2e2745"/>
-      <stop offset="1" stop-color="#09070f"/>
-    </radialGradient>
-    <radialGradient id="spark" cx="50%" cy="50%" r="50%">
-      <stop offset="0" stop-color="#fff"/>
-      <stop offset=".3" stop-color="#fff3a0"/>
-      <stop offset=".6" stop-color="#ffd23f" stop-opacity=".8"/>
-      <stop offset="1" stop-color="#ff8a3d" stop-opacity="0"/>
-    </radialGradient>
-  </defs>
-  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
-  <circle cx="400" cy="90" r="150" fill="none" stroke="#fff" stroke-opacity=".12" stroke-width="40"/>
-  <g transform="translate(70 92) scale(1.62)">
-    <circle cx="100" cy="132" r="74" fill="url(#body)"/>
-    <ellipse cx="70" cy="98" rx="24" ry="13" fill="#fff" opacity=".25" transform="rotate(-38 70 98)"/>
-    <g transform="rotate(24 112 62)">
-      <rect x="92" y="46" width="40" height="28" rx="6" fill="#bcb7d4"/>
-      <rect x="94" y="48" width="36" height="7" rx="3" fill="#fff" opacity=".35"/>
-    </g>
-    <path d="M121 50 C127 30 148 36 155 20 S167 4 176 8" stroke="#f3d3a1" stroke-width="7" fill="none" stroke-linecap="round"/>
-    <circle cx="176" cy="8" r="26" fill="url(#spark)"/>
-    <path d="M176 -14v12M176 18v12M154 8h12M186 8h12M161 -7l7 7M184 16l7 7M191 -7l-7 7M168 16l-7 7" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+  <rect width="512" height="512" rx="116" fill="#ffd23f"/>
+  <g opacity=".22" fill="#1b1033">
+    <circle cx="70" cy="70" r="7"/><circle cx="140" cy="70" r="7"/><circle cx="70" cy="140" r="7"/>
+    <circle cx="442" cy="442" r="7"/><circle cx="372" cy="442" r="7"/><circle cx="442" cy="372" r="7"/>
   </g>
+  <g transform="translate(256 262) rotate(-10) translate(-256 -256)">
+    <rect x="160" y="70" width="210" height="370" rx="56" fill="#1b1033" transform="translate(16 16)"/>
+    <rect x="150" y="60" width="210" height="370" rx="56" fill="#ff4fa3" stroke="#1b1033" stroke-width="16"/>
+    <rect x="228" y="80" width="54" height="13" rx="6.5" fill="#1b1033"/>
+    <rect x="176" y="108" width="158" height="262" rx="32" fill="#fff" stroke="#1b1033" stroke-width="12"/>
+    <ellipse cx="222" cy="216" rx="15" ry="19" fill="#1b1033"/>
+    <ellipse cx="288" cy="216" rx="15" ry="19" fill="#1b1033"/>
+    <circle cx="227" cy="209" r="5" fill="#fff"/>
+    <circle cx="293" cy="209" r="5" fill="#fff"/>
+    <circle cx="200" cy="262" r="15" fill="#ff4fa3" opacity=".55"/>
+    <circle cx="310" cy="262" r="15" fill="#ff4fa3" opacity=".55"/>
+    <path d="M220 270 Q255 312 290 270" stroke="#1b1033" stroke-width="14" stroke-linecap="round" fill="none"/>
+    <circle cx="255" cy="402" r="12" fill="#1b1033"/>
+  </g>
+  <path d="M96 150 l11 25 25 11 -25 11 -11 25 -11 -25 -25 -11 25 -11z" fill="#2ec5ff" stroke="#1b1033" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M420 300 l9 20 20 9 -20 9 -9 20 -9 -20 -20 -9 20 -9z" fill="#fff" stroke="#1b1033" stroke-width="8" stroke-linejoin="round"/>
 </svg>
