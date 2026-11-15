@@ -1,5 +1,8 @@
 import type { GameDefinition } from './types.ts';
 import { bombe } from './bombe/index.ts';
+import { spion } from './spion/index.tsx';
+import { doppelgaenger } from './doppelgaenger/index.tsx';
+import { dorf } from './dorf/index.tsx';
 
 /**
  * Coming-soon entries make the catalogue searchable before the games exist.
@@ -50,7 +53,7 @@ const comingSoon: GameDefinition[] = [
   },
 ];
 
-export const GAMES: GameDefinition[] = [bombe, ...comingSoon];
+export const GAMES: GameDefinition[] = [bombe, spion, doppelgaenger, dorf, ...comingSoon];
 
 export function getGame(id: string | undefined): GameDefinition | undefined {
   return GAMES.find((game) => game.id === id);
