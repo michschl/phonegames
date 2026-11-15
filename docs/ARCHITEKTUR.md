@@ -17,9 +17,9 @@
                                    │  + statische PWA-Dateien│
                                    └────────────┬────────────┘
                                                 │ node:sqlite
-                                         ┌──────▼──────┐
-                                         │ plausch.db  │
-                                         └─────────────┘
+                                        ┌───────▼───────┐
+                                        │ phonegames.db │
+                                        └───────────────┘
 ```
 
 Ein einziger Node-Prozess liefert die API **und** die gebaute PWA aus. Caddy davor kümmert sich um HTTPS,
@@ -77,8 +77,8 @@ Spieleinstellungen (z. B. Zünddauer), Ton und Vibration sind **Geräteeinstellu
 | Thema | Umsetzung |
 | --- | --- |
 | Passwörter | `scrypt` (N=2¹⁵, r=8, p=3, 16-Byte-Salt) aus `node:crypto`; Parameter werden mit dem Hash gespeichert und sind damit später erhöhbar |
-| Sessions | Zufälliges 256-Bit-Token im Cookie `plausch_session` (`HttpOnly`, `Secure`, `SameSite=Lax`); in der DB liegt nur der SHA-256-Hash. Gültig 180 Tage, verlängert sich bei Nutzung |
-| CSRF | Ändernde API-Aufrufe brauchen den Header `X-Requested-With: plausch`. Browser senden eigene Header nur bei Same-Origin-Anfragen (CORS ist nicht aktiviert) |
+| Sessions | Zufälliges 256-Bit-Token im Cookie `phonegames_session` (`HttpOnly`, `Secure`, `SameSite=Lax`); in der DB liegt nur der SHA-256-Hash. Gültig 180 Tage, verlängert sich bei Nutzung |
+| CSRF | Ändernde API-Aufrufe brauchen den Header `X-Requested-With: phonegames`. Browser senden eigene Header nur bei Same-Origin-Anfragen (CORS ist nicht aktiviert) |
 | Brute Force | Rate-Limit auf Registrierung, Anmeldung, Passwort- und Kontoänderungen; konstante Antwortzeit bei unbekannten E-Mails |
 | Passwortänderung | Meldet alle anderen Geräte ab. E-Mail-Änderung und Kontolöschung erfordern das aktuelle Passwort |
 | HTTP-Header | Content-Security-Policy, `X-Frame-Options: DENY`, `nosniff`, Referrer-Policy, Permissions-Policy, HSTS (Caddy) |
@@ -107,7 +107,7 @@ Migrationen immer **anhängen**, nie bestehende ändern.
 ## API
 
 Alle Antworten sind JSON. Fehler haben die Form `{ "error": "code", "message": "Deutscher Text" }`.
-Ändernde Requests brauchen `X-Requested-With: plausch`.
+Ändernde Requests brauchen `X-Requested-With: phonegames`.
 
 | Methode & Pfad | Auth | Body | Antwort |
 | --- | --- | --- | --- |

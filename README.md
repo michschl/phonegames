@@ -70,8 +70,6 @@ Alle Inhalte sind in Schweizer Hochdeutsch geschrieben (ohne «ß») und funktio
   ([`client/src/styles/global.css`](client/src/styles/global.css)).
 - **Knöpfe zum Draufdrücken:** Alles Klickbare senkt sich beim Antippen spürbar ein – mit Vibration und Sound.
 - **Spiele:** helle, farbige Bühnen pro Spiel; bewusst dunkel sind nur die Nacht im Dorf und der Knall der Bombe.
-- Interne technische Namen (Datenbank `plausch.db`, Cookie, Docker-Volume, Ordner `/opt/plausch`) heissen aus
-  Kompatibilitätsgründen weiterhin «plausch» – so bleiben bestehende Konten und Daten erhalten.
 
 ## Technik
 
@@ -94,7 +92,7 @@ npm run dev
 ```
 
 Danach läuft die App auf <http://localhost:5173> (Vite mit Hot Reload), die API auf Port 3000. Vite leitet `/api` automatisch an die API weiter.
-Die SQLite-Datenbank liegt in `./data/plausch.db`.
+Die SQLite-Datenbank liegt in `./data/phonegames.db`.
 
 Produktionsbuild lokal testen (inkl. Service Worker / Offline-Modus):
 

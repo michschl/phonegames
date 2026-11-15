@@ -25,7 +25,7 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
       credentials: 'same-origin',
       headers: {
         Accept: 'application/json',
-        'X-Requested-With': 'plausch',
+        'X-Requested-With': 'phonegames',
         ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,

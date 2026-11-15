@@ -9,7 +9,7 @@ interface AuthState {
 
 export const useAuth = create<AuthState>()(
   persist(() => ({ user: null as PublicUser | null }), {
-    name: 'plausch-auth',
+    name: 'phonegames-auth',
     version: 1,
   }),
 );

@@ -27,7 +27,7 @@ const LOSER_LINES = [
   'Das war wohl nix, {name}.',
 ];
 
-const SCORE_KEY = 'plausch-bombe-scores';
+const SCORE_KEY = 'phonegames-bombe-scores';
 
 function loadScores(players: Player[]): Record<string, number> {
   try {

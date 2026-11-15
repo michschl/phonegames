@@ -36,4 +36,4 @@ jobs:
 
       - name: Docker-Image bauen (ohne Push)
         if: github.event_name == 'pull_request'
-        run: docker build --tag plausch:ci .
+        run: docker build --tag phonegames:ci .

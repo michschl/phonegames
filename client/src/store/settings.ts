@@ -32,7 +32,7 @@ export const useSettings = create<SettingsState>()(
       setLastGroup: (gameId, groupId) => set((s) => ({ lastGroupByGame: { ...s.lastGroupByGame, [gameId]: groupId } })),
       setLastPlayed: (gameId, groupId) => set({ lastPlayed: { gameId, groupId, at: Date.now() } }),
     }),
-    { name: 'plausch-settings', version: 1 },
+    { name: 'phonegames-settings', version: 1 },
   ),
 );
 

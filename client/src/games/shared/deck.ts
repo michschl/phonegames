@@ -28,7 +28,7 @@ export function drawFresh<T>(
 }
 
 function key(storageKey: string): string {
-  return `plausch-recent-${storageKey}`;
+  return `phonegames-recent-${storageKey}`;
 }
 
 function readRecent(storageKey: string): string[] {

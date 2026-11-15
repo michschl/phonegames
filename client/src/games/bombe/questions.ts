@@ -274,7 +274,7 @@ function buildQuestions(): Question[] {
 
 export const ALL_QUESTIONS: Question[] = buildQuestions();
 
-const RECENT_KEY = 'plausch-bombe-recent';
+const RECENT_KEY = 'phonegames-bombe-recent';
 const RECENT_MAX = 120;
 
 function readRecent(): string[] {

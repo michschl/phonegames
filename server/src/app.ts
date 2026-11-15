@@ -105,7 +105,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   app.addHook('onRequest', async (request) => {
     if (!request.url.startsWith('/api/')) return;
     if (['GET', 'HEAD', 'OPTIONS'].includes(request.method)) return;
-    if (request.headers['x-requested-with'] !== 'plausch') {
+    if (request.headers['x-requested-with'] !== 'phonegames') {
       throw new HttpError(403, 'forbidden', 'Anfrage abgelehnt.');
     }
   });
