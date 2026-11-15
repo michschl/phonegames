@@ -48,6 +48,12 @@ export interface SyncResponse extends SyncPayload {
   serverTime: number;
 }
 
+/** Public settings the client needs before signing in. */
+export interface AuthOptions {
+  /** Registering requires an invitation code. */
+  inviteRequired: boolean;
+}
+
 export interface ApiErrorBody {
   error: string;
   message: string;

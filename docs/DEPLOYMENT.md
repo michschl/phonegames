@@ -134,6 +134,7 @@ Unter **Settings → Environments → production → «Add environment secret»*
 | --- | --- | --- |
 | `VPS_SSH_KEY` | ✅ | Kompletter Inhalt von `phonegames_deploy` (privater Schlüssel, inkl. `-----BEGIN …` / `-----END …`) |
 | `VPS_KNOWN_HOSTS` | empfohlen | Ausgabe von `ssh-keyscan -H <host>` aus Schritt 4 |
+| `INVITE_CODES` | empfohlen | Einladungscodes für die Registrierung, mit Komma getrennt, z. B. `PARTY-2026,FAMILIE`. Nicht gesetzt = jede und jeder kann sich registrieren |
 
 Mit der GitHub-CLI geht das auch so:
 
@@ -143,6 +144,10 @@ gh secret set VPS_SSH_KEY --env production < phonegames_deploy
 
 ```bash
 ssh-keyscan -H phonegames.example.ch | gh secret set VPS_KNOWN_HOSTS --env production
+```
+
+```bash
+gh secret set INVITE_CODES --env production --body "PARTY-2026,FAMILIE"
 ```
 
 ```bash
@@ -207,6 +212,21 @@ docker compose start app
 ```
 
 (`docker compose run` läuft als Benutzer `node`, damit die App die Datei danach wieder beschreiben darf.)
+
+### Einladungscodes
+
+Solange das Secret `INVITE_CODES` gesetzt ist, braucht die Registrierung einen dieser Codes. Gross-/Kleinschreibung
+und Leerzeichen spielen keine Rolle; erlaubt sind Buchstaben, Ziffern, `-` und `_`. Bestehende Konten melden sich
+ganz normal an.
+
+- **Einladen:** Code weitergeben oder direkt einen Link schicken – das Feld ist dann schon ausgefüllt:
+  `https://phonegames.example.ch/registrieren?code=PARTY-2026`
+- **Codes ändern:** Secret anpassen und neu ausrollen (**Actions → Deploy → Run workflow**). Ein entfernter Code
+  funktioniert sofort nicht mehr.
+- **Registrierung für alle öffnen:** Secret löschen und neu ausrollen. Das Feld verschwindet dann aus dem Formular.
+
+Wähle Codes, die man nicht leicht errät. Die Registrierung ist zusätzlich auf 20 Versuche pro 15 Minuten und
+IP-Adresse begrenzt.
 
 ### Rollback
 

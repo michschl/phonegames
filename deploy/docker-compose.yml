@@ -10,6 +10,7 @@ services:
       NODE_ENV: production
       APP_VERSION: ${APP_VERSION:-}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      INVITE_CODES: ${INVITE_CODES:-}
     volumes:
       - app-data:/data
     expose:

@@ -29,6 +29,7 @@ export const registerSchema = z.object({
   name: nameSchema,
   email: emailSchema,
   password: passwordSchema,
+  inviteCode: z.string().max(64, 'Der Einladungscode ist zu lang.').optional(),
 });
 
 export const loginSchema = z.object({

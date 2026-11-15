@@ -22,6 +22,8 @@ export interface AppOptions {
   version?: string;
   /** Disable rate limiting (tests). */
   rateLimit?: boolean;
+  /** Valid invitation codes for registering. Empty or missing = open registration. */
+  inviteCodes?: readonly string[];
 }
 
 declare module 'fastify' {
@@ -143,7 +145,11 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
 
   app.get('/api/health', async () => ({ ok: true, version: options.version ?? 'dev' }));
 
-  await app.register(authRoutes, { prefix: '/api/auth', rateLimit: options.rateLimit ?? true });
+  await app.register(authRoutes, {
+    prefix: '/api/auth',
+    rateLimit: options.rateLimit ?? true,
+    inviteCodes: options.inviteCodes ?? [],
+  });
   await app.register(accountRoutes, { prefix: '/api/account', rateLimit: options.rateLimit ?? true });
   await app.register(syncRoutes, { prefix: '/api' });
 
