@@ -99,6 +99,36 @@ describe('Nachts im Dorf', () => {
     expect(values.filter((r) => r === 'beschuetzer')).toHaveLength(1);
   });
 
+  it.each([
+    [5, { werwolf: 1, seherin: 1, beschuetzer: 0, dorf: 3 }],
+    [6, { werwolf: 1, seherin: 1, beschuetzer: 1, dorf: 3 }],
+    [10, { werwolf: 2, seherin: 1, beschuetzer: 1, dorf: 6 }],
+  ])('distributes the roles for %i players', (n, expected) => {
+    for (let run = 0; run < 20; run++) {
+      const roles = Object.values(assignRoles(players(n), { seherin: true, beschuetzer: true, discussionMinutes: 3, voice: true }));
+      const counts = { werwolf: 0, seherin: 0, beschuetzer: 0, dorf: 0 };
+      roles.forEach((r) => counts[r]++);
+      expect(counts).toEqual(expected);
+    }
+  });
+
+  it('leaves out special roles that are switched off', () => {
+    const roles = Object.values(assignRoles(players(6), { seherin: false, beschuetzer: false, discussionMinutes: 3, voice: true }));
+    expect(roles.filter((r) => r === 'dorf')).toHaveLength(5);
+  });
+
+  it('lets the werewolves win as soon as they are as many as the rest', () => {
+    // 5 players: after one death and one wrong banishment it is 1 werewolf against 2 – the next kill decides.
+    const roles = { w: 'werwolf', s: 'seherin', a: 'dorf', b: 'dorf', c: 'dorf' } as const;
+    expect(winner(roles, ['w', 'a', 'b'])).toBeNull();
+    expect(winner(roles, ['w', 'a'])).toBe('wolf');
+    // 10 players with two werewolves: one banished wolf is not enough.
+    const ten = { w1: 'werwolf', w2: 'werwolf', s: 'seherin', p: 'beschuetzer', a: 'dorf', b: 'dorf' } as const;
+    expect(winner(ten, ['w2', 's', 'p', 'a'])).toBeNull();
+    expect(winner(ten, ['w1', 'w2', 'a', 'b'])).toBe('wolf');
+    expect(winner(ten, ['s', 'p', 'a'])).toBe('dorf');
+  });
+
   it('detects the winner', () => {
     const roles = { a: 'werwolf', b: 'dorf', c: 'dorf', d: 'seherin' } as const;
     expect(winner(roles, ['a', 'b', 'c', 'd'])).toBeNull();

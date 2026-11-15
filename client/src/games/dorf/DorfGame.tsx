@@ -70,6 +70,9 @@ export default function DorfGame({ players, settings, onExit }: GameProps<DorfSe
   const [narration, setNarration] = useState('');
   const [ui, setUi] = useState<NightUi>({ kind: 'narrate' });
   const [pick, setPick] = useState<string | null>(null);
+  /** Who the village wants to banish – separate from the night picks, which must stay secret. */
+  const [suspect, setSuspect] = useState<string | null>(null);
+  const discussionWasRunning = useRef(false);
   const [lastDeath, setLastDeath] = useState<string | null>(null);
   const [banished, setBanished] = useState<string | null | undefined>(undefined);
   const [result, setResult] = useState<'wolf' | 'dorf' | null>(null);
@@ -119,9 +122,17 @@ export default function DorfGame({ players, settings, onExit }: GameProps<DorfSe
     check();
   };
 
+  /** True while the moderator's «Weiter» tap is awaited – between lines the button is hidden, so no line is skipped. */
+  const [awaitingTap, setAwaitingTap] = useState(false);
+
   const waitForTap = () =>
     new Promise<string | null>((resolve) => {
-      waiter.current = resolve;
+      setAwaitingTap(true);
+      waiter.current = (value) => {
+        waiter.current = null;
+        setAwaitingTap(false);
+        resolve(value);
+      };
     });
 
   const say = async (text: string) => {
@@ -247,9 +258,24 @@ export default function DorfGame({ players, settings, onExit }: GameProps<DorfSe
 
   /* --------------------------------------------------------------- day */
 
+  const openVote = () => {
+    setSuspect(null);
+    discussionWasRunning.current = timer.running;
+    if (timer.running) timer.pause();
+    setPhase('vote');
+  };
+
+  const backToDiscussion = () => {
+    setSuspect(null);
+    setPhase('day');
+    if (discussionWasRunning.current && timer.remaining > 0) timer.start();
+  };
+
   const banish = (id: string | null) => {
+    if (id && !aliveRef.current.includes(id)) return; // only living players can be banished
     setBanished(id);
-    timer.pause();
+    setSuspect(null);
+    if (timer.running) timer.pause();
     if (id) {
       const nextAlive = aliveRef.current.filter((x) => x !== id);
       setAlive(nextAlive);
@@ -380,7 +406,7 @@ export default function DorfGame({ players, settings, onExit }: GameProps<DorfSe
           </p>
           {!settings.voice && (
             <Actions>
-              <Button size="lg" block onClick={() => waiter.current?.(null)}>
+              <Button size="lg" block disabled={!awaitingTap} onClick={() => waiter.current?.(null)}>
                 Weiter
               </Button>
             </Actions>
@@ -433,9 +459,14 @@ export default function DorfGame({ players, settings, onExit }: GameProps<DorfSe
               Diskussion starten ({settings.discussionMinutes} Min.)
             </Button>
           )}
+          {!timer.running && timer.remaining > 0 && timer.remaining < timer.total && (
+            <Button variant="secondary" onClick={timer.start}>
+              Diskussion fortsetzen
+            </Button>
+          )}
           {villageStatus}
           <Actions>
-            <Button size="lg" block onClick={() => setPhase('vote')}>
+            <Button size="lg" block onClick={openVote}>
               Abstimmen
             </Button>
           </Actions>
@@ -446,13 +477,16 @@ export default function DorfGame({ players, settings, onExit }: GameProps<DorfSe
         <Stage>
           <p className="gs-eyebrow">Abstimmung</p>
           <Headline small>Wen verbannt das Dorf?</Headline>
-          <PlayerPicker players={alivePlayers} selected={pick} onSelect={(p) => setPick(p.id)} />
+          <PlayerPicker players={alivePlayers} selected={suspect} onSelect={(p) => setSuspect(p.id)} />
           <Actions>
-            <Button size="lg" block disabled={!pick} onClick={() => banish(pick)}>
-              {pick ? `${nameOf(pick)} verbannen` : 'Person wählen'}
+            <Button size="lg" block disabled={!suspect} onClick={() => banish(suspect)}>
+              {suspect ? `${nameOf(suspect)} verbannen` : 'Person wählen'}
             </Button>
             <Button variant="ghost" block onClick={() => banish(null)}>
               Niemand verbannen
+            </Button>
+            <Button variant="ghost" block onClick={backToDiscussion}>
+              Zurück zur Diskussion
             </Button>
           </Actions>
         </Stage>

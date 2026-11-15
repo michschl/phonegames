@@ -1,5 +1,6 @@
 import { Suspense, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router';
+import { Fold } from '../components/Fold.tsx';
 import { Icon } from '../components/Icon.tsx';
 import { Mascot } from '../components/Brand.tsx';
 import { Page, Section } from '../components/Layout.tsx';
@@ -55,6 +56,11 @@ function GameSetup({ game }: { game: GameDefinition }) {
   const group = useGroup(selectedId);
   const [settings, setSettings] = useGameSettings(game.id, game.defaultSettings ?? {});
   const inLibrary = library.includes(game.id);
+  const customised = useMemo(() => {
+    const defaults = (game.defaultSettings ?? {}) as Record<string, unknown>;
+    const current = settings as Record<string, unknown>;
+    return Object.keys(defaults).some((key) => JSON.stringify(current[key]) !== JSON.stringify(defaults[key]));
+  }, [game.defaultSettings, settings]);
 
   const playerCount = group?.players.length ?? 0;
   const missing = game.noGroup ? 0 : Math.max(0, game.minPlayers - playerCount);
@@ -101,16 +107,13 @@ function GameSetup({ game }: { game: GameDefinition }) {
       </div>
 
       {game.rules && (
-        <details className="rules" open>
-          <summary>
-            <Icon name="sparkles" size={18} /> So geht’s
-          </summary>
-          <ol>
+        <Fold title="So geht’s" icon="sparkles" meta={`${game.rules.length} Schritte`}>
+          <ol className="rules">
             {game.rules.map((rule) => (
               <li key={rule}>{rule}</li>
             ))}
           </ol>
-        </details>
+        </Fold>
       )}
 
       {!game.noGroup && (
@@ -138,9 +141,14 @@ function GameSetup({ game }: { game: GameDefinition }) {
       )}
 
       {game.Settings && (
-        <Section title="Einstellungen">
+        <Fold
+          title="Einstellungen"
+          icon="settings"
+          meta={<span className={`fold__tag ${customised ? 'is-custom' : ''}`}>{customised ? 'Angepasst' : 'Standard'}</span>}
+          className="fold--settings"
+        >
           <game.Settings value={settings} onChange={setSettings} />
-        </Section>
+        </Fold>
       )}
 
       <div className="start-bar">

@@ -1,10 +1,12 @@
 import {
   useEffect,
   useId,
+  useRef,
   useState,
   type ButtonHTMLAttributes,
   type CSSProperties,
   type InputHTMLAttributes,
+  type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
@@ -140,6 +142,8 @@ export function Sheet({
   children: ReactNode;
 }) {
   const [mounted, setMounted] = useState(open);
+  const [dragY, setDragY] = useState(0);
+  const drag = useRef<{ startY: number; pointerId: number } | null>(null);
   const titleId = useId();
 
   useEffect(() => {
@@ -157,17 +161,49 @@ export function Sheet({
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
+  // Swipe down on the handle / title area to close – the visible ✕ does the same.
+  const onDragStart = (event: ReactPointerEvent<HTMLDivElement>) => {
+    drag.current = { startY: event.clientY, pointerId: event.pointerId };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+  const onDragMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (drag.current?.pointerId === event.pointerId) setDragY(Math.max(0, event.clientY - drag.current.startY));
+  };
+  const onDragEnd = () => {
+    if (!drag.current) return;
+    drag.current = null;
+    if (dragY > 90) onClose();
+    setDragY(0);
+  };
+
   if (!mounted) return null;
   return createPortal(
     <div className={`sheet ${open ? 'is-open' : 'is-closing'}`}>
       <div className="sheet__backdrop" onClick={onClose} />
-      <div className="sheet__panel" role="dialog" aria-modal="true" aria-labelledby={title ? titleId : undefined}>
-        <div className="sheet__handle" />
-        {title && (
-          <h2 id={titleId} className="sheet__title">
-            {title}
-          </h2>
-        )}
+      <div
+        className="sheet__panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? titleId : undefined}
+        style={dragY ? { transform: `translateY(${dragY}px)`, transition: 'none' } : undefined}
+      >
+        <div
+          className="sheet__grip"
+          onPointerDown={onDragStart}
+          onPointerMove={onDragMove}
+          onPointerUp={onDragEnd}
+          onPointerCancel={onDragEnd}
+        >
+          <div className="sheet__handle" />
+          {title && (
+            <h2 id={titleId} className="sheet__title">
+              {title}
+            </h2>
+          )}
+        </div>
+        <button type="button" className="sheet__close" aria-label="Schliessen" onClick={onClose}>
+          <Icon name="x" size={18} strokeWidth={2.6} />
+        </button>
         {children}
       </div>
     </div>,

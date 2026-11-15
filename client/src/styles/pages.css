@@ -743,7 +743,7 @@
   box-shadow: none;
 }
 
-.rules {
+.fold {
   margin-top: 18px;
   border-radius: var(--radius-lg);
   background: var(--paper);
@@ -751,7 +751,11 @@
   box-shadow: var(--shadow);
 }
 
-.rules summary {
+.fold + .fold {
+  margin-top: 14px;
+}
+
+.fold summary {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -760,19 +764,22 @@
   font-weight: 800;
   list-style: none;
   cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
-.rules summary::-webkit-details-marker {
+.fold summary::-webkit-details-marker {
   display: none;
 }
 
-.rules summary::after {
+.fold summary::after {
   content: '+';
-  margin-left: auto;
+  flex: none;
   display: grid;
   place-items: center;
   width: 30px;
   height: 30px;
+  margin-left: 4px;
   border-radius: 10px;
   border: 2px solid var(--ink);
   background: var(--yellow);
@@ -781,15 +788,54 @@
   transition: transform 0.3s var(--ease-spring);
 }
 
-.rules[open] summary::after {
+.fold[open] summary::after {
   transform: rotate(45deg);
 }
 
-.rules ol {
+.fold__title {
+  flex: 1;
+  min-width: 0;
+}
+
+.fold__meta {
+  flex: none;
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.fold__tag {
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 2px solid var(--line);
+  background: var(--surface-2);
+}
+
+.fold__tag.is-custom {
+  border-color: var(--ink);
+  background: var(--cyan-soft);
+  color: var(--ink);
+}
+
+.fold[open] .fold__body {
+  animation: rise-in 0.3s var(--ease-out) backwards;
+}
+
+/* Settings panels bring their own card – inside a fold they blend in. */
+.fold--settings .settings-panel {
+  padding: 2px 18px 18px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.rules {
   display: grid;
   gap: 10px;
   margin: 0;
-  padding: 0 18px 18px;
+  padding: 2px 18px 18px;
   list-style: none;
   counter-reset: step;
 }
@@ -1277,4 +1323,42 @@
   flex: 1;
   height: 2px;
   background: var(--line);
+}
+
+/* ------------------------------------------------------------ trust note */
+
+.trust-note {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  color: var(--faint);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.trust-note__line {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.trust-note__flag {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  border-radius: 3px;
+  box-shadow: 0 0 0 1.5px rgba(27, 16, 51, 0.25);
+}
+
+.welcome__trust {
+  padding: 18px 24px 0;
+  animation: fade-in 0.8s 1.4s var(--ease-out) backwards;
+}
+
+.auth__trust {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 2px dashed var(--line);
 }

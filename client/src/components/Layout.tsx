@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router';
 import { Icon, type IconName } from './Icon.tsx';
 import { haptic } from '../lib/device.ts';
@@ -98,20 +98,34 @@ export function Page({
   className?: string;
 }) {
   const navigate = useNavigate();
+  const header = useRef<HTMLElement>(null);
+  // Once the header (with its back button) scrolls away, a floating back button takes over.
+  const [headerHidden, setHeaderHidden] = useState(false);
+
+  useEffect(() => {
+    if (!back || !header.current || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(([entry]) => setHeaderHidden(!entry!.isIntersecting), { threshold: 0 });
+    observer.observe(header.current);
+    return () => observer.disconnect();
+  }, [back]);
+
+  const goBack = () => {
+    haptic(6);
+    if (back === true) navigate(-1);
+    else if (back) navigate(back, { viewTransition: true });
+  };
+
   return (
     <main className={`page ${className}`}>
-      <header className="page__header">
+      {back && headerHidden && (
+        <button type="button" className="page__float-back" aria-label="Zurück" onClick={goBack}>
+          <Icon name="back" size={20} />
+          {typeof title === 'string' && <span>{title}</span>}
+        </button>
+      )}
+      <header className="page__header" ref={header}>
         {back && (
-          <button
-            type="button"
-            className="icon-btn page__back"
-            aria-label="Zurück"
-            onClick={() => {
-              haptic(6);
-              if (back === true) navigate(-1);
-              else navigate(back, { viewTransition: true });
-            }}
-          >
+          <button type="button" className="icon-btn page__back" aria-label="Zurück" onClick={goBack}>
             <Icon name="back" />
           </button>
         )}

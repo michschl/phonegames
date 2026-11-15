@@ -344,6 +344,13 @@
   animation: sheet-down 0.26s ease-in both;
 }
 
+.sheet__grip {
+  margin: -10px -22px 0;
+  padding: 10px 70px 0 22px;
+  touch-action: none;
+  cursor: grab;
+}
+
 .sheet__handle {
   width: 46px;
   height: 6px;
@@ -351,6 +358,27 @@
   border-radius: 999px;
   background: var(--ink);
   opacity: 0.25;
+  transform: translateX(24px);
+}
+
+.sheet__close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 2px 0 var(--ink);
+}
+
+.sheet__close:active {
+  transform: translateY(2px);
+  box-shadow: none;
 }
 
 .sheet__title {
@@ -1665,4 +1693,90 @@ button.list__item:active {
   font-weight: 800;
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+.voice-fold summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: var(--border);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-sm);
+  list-style: none;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.voice-fold summary::-webkit-details-marker {
+  display: none;
+}
+
+.voice-fold__label {
+  font-weight: 800;
+}
+
+.voice-fold__current {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.voice-fold__change {
+  flex: none;
+  font-weight: 800;
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.voice-fold[open] .voice-fold__change {
+  visibility: hidden;
+}
+
+.voice-fold[open] summary {
+  margin-bottom: 12px;
+}
+
+.voice-fold[open] .voice-picker {
+  animation: rise-in 0.3s var(--ease-out) backwards;
+}
+
+/* Floating back button once the page header has scrolled away. */
+.page__float-back {
+  position: fixed;
+  z-index: 45;
+  top: calc(var(--safe-top) + 10px);
+  left: max(12px, calc(50% - var(--page-max) / 2 + 12px));
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100% - 24px);
+  padding: 6px 16px 6px 8px;
+  border-radius: 999px;
+  border: var(--border);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+  animation: pop-in 0.3s var(--ease-spring) backwards;
+}
+
+.page__float-back span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.page__float-back:active {
+  transform: translateY(2px);
+  box-shadow: none;
 }
