@@ -770,3 +770,70 @@
   border-color: var(--green);
   background: rgba(61, 220, 151, 0.2);
 }
+
+.song-artist {
+  display: block;
+  margin-top: 10px;
+  font-family: var(--font-body);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* ------------------------------------------------------------ text inputs */
+
+.term-form {
+  display: grid;
+  gap: 10px;
+  width: min(100%, 460px);
+}
+
+.term-form__row {
+  display: flex;
+  gap: 8px;
+}
+
+.term-form__row input {
+  flex: 1;
+  min-width: 0;
+  height: 54px;
+  padding: 0 16px;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--stroke);
+  background: rgba(255, 255, 255, 0.07);
+  outline: none;
+  font-size: 18px;
+}
+
+.term-form__row input:focus {
+  border-color: color-mix(in srgb, var(--accent) 80%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.term-form__row button {
+  flex: none;
+  width: 54px;
+  border: 1.5px solid var(--stroke);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-size: 22px;
+}
+
+.round-badge {
+  display: inline-grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 900;
+}
+
+.pool-count {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--muted);
+}

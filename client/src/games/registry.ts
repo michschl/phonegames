@@ -3,40 +3,18 @@ import { bombe } from './bombe/index.ts';
 import { spion } from './spion/index.tsx';
 import { doppelgaenger } from './doppelgaenger/index.tsx';
 import { dorf } from './dorf/index.tsx';
+import { werBinIch } from './wer-bin-ich/index.tsx';
+import { pantomime } from './pantomime/index.tsx';
+import { verboteneWoerter } from './verbotene-woerter/index.tsx';
+import { hutspiel } from './hutspiel/index.tsx';
+import { zeichnen } from './zeichnen/index.tsx';
+import { summRaten } from './summ-raten/index.tsx';
 
 /**
  * Coming-soon entries make the catalogue searchable before the games exist.
  * Replace them with real definitions once they are implemented.
  */
 const comingSoon: GameDefinition[] = [
-  {
-    id: 'pantomime',
-    name: 'Pantomime',
-    tagline: 'Ohne Worte zum Sieg',
-    description: 'Begriffe pantomimisch darstellen, das Team rät gegen die Uhr.',
-    emoji: '🎭',
-    colors: ['#8b5cf6', '#2de2e6'],
-    minPlayers: 4,
-    maxPlayers: 20,
-    duration: '15–45 Min.',
-    age: 'ab 8 J.',
-    tags: ['Teams', 'Bewegung', 'Raten'],
-    status: 'soon',
-  },
-  {
-    id: 'wer-bin-ich',
-    name: 'Wer bin ich?',
-    tagline: 'Handy an die Stirn und los',
-    description: 'Halte das Handy an die Stirn und errate die Figur anhand der Hinweise deiner Freunde.',
-    emoji: '🤔',
-    colors: ['#3ddc97', '#2de2e6'],
-    minPlayers: 2,
-    maxPlayers: 12,
-    duration: '10–30 Min.',
-    age: 'ab 8 J.',
-    tags: ['Raten', 'Schnell'],
-    status: 'soon',
-  },
   {
     id: 'schaetzmeister',
     name: 'Schätzmeister',
@@ -53,7 +31,19 @@ const comingSoon: GameDefinition[] = [
   },
 ];
 
-export const GAMES: GameDefinition[] = [bombe, spion, doppelgaenger, dorf, ...comingSoon];
+export const GAMES: GameDefinition[] = [
+  bombe,
+  spion,
+  doppelgaenger,
+  dorf,
+  werBinIch,
+  pantomime,
+  verboteneWoerter,
+  hutspiel,
+  zeichnen,
+  summRaten,
+  ...comingSoon,
+];
 
 export function getGame(id: string | undefined): GameDefinition | undefined {
   return GAMES.find((game) => game.id === id);

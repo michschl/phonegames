@@ -1,0 +1,121 @@
+.zeichnen {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 8px;
+}
+
+.zeichnen__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.zeichnen__peek {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px dashed var(--stroke-2);
+  background: var(--surface);
+  font-weight: 700;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+.draw {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.draw__canvas {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  border-radius: var(--radius-lg);
+  background: #fffdf7;
+  box-shadow:
+    0 20px 40px -20px rgba(0, 0, 0, 0.7),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.draw__tools {
+  display: grid;
+  gap: 8px;
+  flex: none;
+}
+
+.draw__colors {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.draw__color {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  background: var(--c);
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.25);
+  transition: transform 0.2s var(--ease-spring);
+}
+
+.draw__color.is-active {
+  transform: scale(1.18);
+  box-shadow: 0 0 0 3px #fff;
+}
+
+.draw__row {
+  display: flex;
+  gap: 6px;
+}
+
+.draw__size,
+.draw__tool {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  height: 44px;
+  border-radius: 14px;
+  border: 1.5px solid var(--stroke);
+  background: var(--surface);
+  font-size: 20px;
+}
+
+.draw__size span {
+  border-radius: 50%;
+  background: #fff;
+}
+
+.draw__size.is-active,
+.draw__tool.is-active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.draw__tool:disabled {
+  opacity: 0.35;
+}
+
+.zeichnen__picture {
+  width: min(100%, 360px);
+  max-height: 42dvh;
+  object-fit: contain;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.7);
+  animation: pop-in 0.5s var(--ease-spring) both;
+}
