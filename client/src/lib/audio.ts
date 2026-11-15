@@ -48,27 +48,75 @@ class SoundEngine {
   private noise: AudioBuffer | null = null;
   private muted = false;
   private gesturesInstalled = false;
+  /** Audio is released (suspended, no iOS media session) – nothing plays until it is woken. */
+  private asleep = false;
+  /** A game screen is open and wants sound. */
+  private wanted = false;
+  private sleepTimer: number | undefined;
 
   /**
-   * Browsers (above all iOS) only start or resume audio inside a user gesture and
-   * suspend it again when the app goes to the background. Listening to every tap
-   * keeps the sound engine alive, so no game has to remember to unlock it.
+   * Audio lifecycle:
+   * - Taps bring back a context that iOS interrupted – but only while a game wants sound.
+   * - When the app goes to the background or is closed, audio is released, so iOS
+   *   does not keep showing a "now playing" media entry for Phonegames.
    */
   installGestureUnlock(): void {
     if (this.gesturesInstalled || typeof document === 'undefined') return;
     this.gesturesInstalled = true;
     const wake = () => {
-      if (!this.ctx) this.unlock();
-      else if (this.ctx.state !== 'running') void this.ctx.resume().catch(() => undefined);
+      if (this.wanted && this.ctx && this.ctx.state !== 'running') this.unlock();
     };
     for (const type of ['pointerup', 'touchend', 'click', 'keydown']) {
       document.addEventListener(type, wake, { capture: true, passive: true });
     }
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible' && this.ctx && this.ctx.state !== 'running') {
-        void this.ctx.resume().catch(() => undefined);
-      }
+      if (document.visibilityState === 'hidden') this.sleep();
+      // Back in a running game: the next tap (or the next sound) wakes the audio again.
+      else if (this.wanted) this.asleep = false;
     });
+    window.addEventListener('pagehide', () => this.sleep());
+  }
+
+  private setSessionType(type: 'playback' | 'auto'): void {
+    try {
+      // iOS: "playback" plays even when the ring/silent switch is set to silent.
+      const nav = navigator as AudioSessionNavigator;
+      if (nav.audioSession) nav.audioSession.type = type;
+    } catch {
+      /* not supported */
+    }
+  }
+
+  /** A game screen opened: keep sound available. */
+  hold(): void {
+    this.wanted = true;
+    this.asleep = false;
+    window.clearTimeout(this.sleepTimer);
+  }
+
+  /** A game screen closed: release the audio shortly after (last sounds may finish). */
+  release(delayMs = 1500): void {
+    this.wanted = false;
+    window.clearTimeout(this.sleepTimer);
+    this.sleepTimer = window.setTimeout(() => {
+      if (!this.wanted) this.sleep();
+    }, delayMs);
+  }
+
+  /** Suspends the audio and ends the media session (removes iOS "now playing"). */
+  sleep(): void {
+    window.clearTimeout(this.sleepTimer);
+    this.asleep = true;
+    if (this.ctx && this.ctx.state === 'running') void this.ctx.suspend().catch(() => undefined);
+    this.setSessionType('auto');
+    try {
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = 'none';
+        navigator.mediaSession.metadata = null;
+      }
+    } catch {
+      /* not supported */
+    }
   }
 
   /**
@@ -76,16 +124,13 @@ class SoundEngine {
    * user gesture, so call it from click handlers (e.g. the start button).
    */
   unlock(): AudioContext | null {
+    window.clearTimeout(this.sleepTimer);
+    this.asleep = false;
+    if (typeof window === 'undefined') return null;
+    this.setSessionType('playback');
     if (!this.ctx) {
       const Ctor = window.AudioContext ?? (window as WebkitWindow).webkitAudioContext;
       if (!Ctor) return null;
-      try {
-        // iOS: play even when the ring/silent switch is set to silent.
-        const nav = navigator as AudioSessionNavigator;
-        if (nav.audioSession) nav.audioSession.type = 'playback';
-      } catch {
-        /* not supported */
-      }
       const ctx = new Ctor({ latencyHint: 'interactive' });
       const compressor = ctx.createDynamicsCompressor();
       compressor.threshold.value = -12;
@@ -105,11 +150,17 @@ class SoundEngine {
       this.ctx = ctx;
       this.master = master;
     }
-    if (this.ctx.state === 'suspended') void this.ctx.resume().catch(() => undefined);
+    if (this.ctx.state !== 'running') void this.ctx.resume().catch(() => undefined);
     return this.ctx;
   }
 
+  /** The running audio context – null while asleep, so nothing piles up to play later. */
   get context(): AudioContext | null {
+    return this.ctx && !this.asleep && this.ctx.state !== 'closed' ? this.ctx : null;
+  }
+
+  /** Context for decoding audio data, also while asleep. */
+  get decoder(): AudioContext | null {
     return this.ctx && this.ctx.state !== 'closed' ? this.ctx : null;
   }
 
