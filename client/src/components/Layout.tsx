@@ -4,23 +4,51 @@ import { Icon, type IconName } from './Icon.tsx';
 import { haptic } from '../lib/device.ts';
 import { dismissToast, useUi } from '../store/ui.ts';
 
-/** Animated colour blobs behind everything. */
-export function Aurora() {
+type ShapeKind = 'star' | 'squiggle' | 'ring' | 'triangle' | 'plus' | 'dot';
+
+const SHAPES: { kind: ShapeKind; color: string; style: Record<string, string> }[] = [
+  { kind: 'star', color: '#ffd23f', style: { top: '7%', left: '-18px', '--s': '62px', '--d': '17s', '--dx': '18px', '--dy': '26px', '--r': '40deg' } },
+  { kind: 'squiggle', color: '#ff4fa3', style: { top: '19%', right: '-26px', '--s': '96px', '--d': '21s', '--dx': '-14px', '--dy': '22px', '--r': '-18deg' } },
+  { kind: 'ring', color: '#2ec5ff', style: { bottom: '22%', left: '-24px', '--s': '74px', '--d': '19s', '--dx': '22px', '--dy': '-18px', '--r': '60deg' } },
+  { kind: 'triangle', color: '#9be15d', style: { bottom: '9%', right: '6%', '--s': '46px', '--d': '15s', '--dx': '-20px', '--dy': '-24px', '--r': '-50deg', '--delay': '-4s' } },
+  { kind: 'plus', color: '#7c5cff', style: { top: '52%', right: '-6px', '--s': '38px', '--d': '14s', '--dx': '-16px', '--dy': '20px', '--r': '90deg' } },
+  { kind: 'dot', color: '#ff8a3d', style: { top: '38%', left: '5%', '--s': '18px', '--d': '12s', '--dx': '14px', '--dy': '-16px' } },
+];
+
+function Shape({ kind, color }: { kind: ShapeKind; color: string }) {
+  const ink = { stroke: '#1b1033', strokeWidth: 3, strokeLinejoin: 'round' as const, strokeLinecap: 'round' as const };
   return (
-    <div className="aurora" aria-hidden="true">
-      <span className="aurora__blob aurora__blob--1" />
-      <span className="aurora__blob aurora__blob--2" />
-      <span className="aurora__blob aurora__blob--3" />
-      <span className="aurora__noise" />
+    <svg viewBox="0 0 60 60" width="100%" height="100%">
+      {kind === 'star' && <path d="M30 4l7 16 17 3-12 12 3 17-15-8-15 8 3-17L6 23l17-3z" fill={color} {...ink} />}
+      {kind === 'squiggle' && (
+        <path d="M4 36c8-16 14 16 22 0s14 16 22 0" fill="none" stroke={color} strokeWidth={7} strokeLinecap="round" />
+      )}
+      {kind === 'ring' && <circle cx="30" cy="30" r="20" fill="none" stroke={color} strokeWidth={9} />}
+      {kind === 'triangle' && <path d="M30 6l24 44H6z" fill={color} {...ink} />}
+      {kind === 'plus' && <path d="M24 6h12v18h18v12H36v18H24V36H6V24h18z" fill={color} {...ink} />}
+      {kind === 'dot' && <circle cx="30" cy="30" r="24" fill={color} {...ink} strokeWidth={6} />}
+    </svg>
+  );
+}
+
+/** Playful floating shapes behind everything. */
+export function Backdrop() {
+  return (
+    <div className="backdrop" aria-hidden="true">
+      {SHAPES.map((shape, i) => (
+        <span key={i} className="backdrop__shape" style={shape.style as CSSProperties}>
+          <Shape kind={shape.kind} color={shape.color} />
+        </span>
+      ))}
     </div>
   );
 }
 
-const TABS: { to: string; label: string; icon: IconName }[] = [
-  { to: '/', label: 'Spiele', icon: 'games' },
-  { to: '/entdecken', label: 'Entdecken', icon: 'compass' },
-  { to: '/gruppen', label: 'Gruppen', icon: 'users' },
-  { to: '/konto', label: 'Konto', icon: 'user' },
+const TABS: { to: string; label: string; icon: IconName; color: string }[] = [
+  { to: '/', label: 'Spiele', icon: 'games', color: '#ff4fa3' },
+  { to: '/entdecken', label: 'Entdecken', icon: 'compass', color: '#ffd23f' },
+  { to: '/gruppen', label: 'Gruppen', icon: 'users', color: '#2ec5ff' },
+  { to: '/konto', label: 'Konto', icon: 'user', color: '#9be15d' },
 ];
 
 export function TabBar() {
@@ -30,7 +58,11 @@ export function TabBar() {
     TABS.findIndex((tab) => (tab.to === '/' ? pathname === '/' : pathname.startsWith(tab.to))),
   );
   return (
-    <nav className="tabbar" aria-label="Hauptnavigation" style={{ '--index': active } as CSSProperties}>
+    <nav
+      className="tabbar"
+      aria-label="Hauptnavigation"
+      style={{ '--index': active, '--tab-color': TABS[active]!.color } as CSSProperties}
+    >
       <span className="tabbar__pill" aria-hidden="true" />
       {TABS.map((tab) => (
         <NavLink

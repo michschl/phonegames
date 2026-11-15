@@ -1,50 +1,85 @@
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { BombArt } from '../games/bombe/BombGraphic.tsx';
+import { Mascot, type Mood } from '../components/Brand.tsx';
 import { Button, TextField } from '../components/ui.tsx';
+import { GAMES } from '../games/registry.ts';
 import { errorMessage } from '../lib/api.ts';
 import { confetti } from '../lib/confetti.ts';
+import { haptic } from '../lib/device.ts';
 import { login, register } from '../lib/session.ts';
 import { toast, useUi } from '../store/ui.ts';
 import { LIMITS } from '../../../shared/types.ts';
 
-const FLOATERS = ['🎲', '🎉', '🃏', '🎯', '🍕', '🎤', '🧩', '🥳'];
-
-export function WelcomePage() {
+/** Endless band of game stickers. */
+function Marquee({ reverse }: { reverse?: boolean }) {
+  const games = reverse ? [...GAMES].reverse() : GAMES;
+  const items = [...games, ...games];
   return (
-    <main className="welcome">
-      <div className="welcome__floaters" aria-hidden="true">
-        {FLOATERS.map((emoji, i) => (
-          <span key={emoji} className={`floater floater--${i}`}>
-            {emoji}
+    <div className={`marquee ${reverse ? 'marquee--reverse' : ''}`} aria-hidden="true">
+      <div className="marquee__track">
+        {items.map((game, i) => (
+          <span key={`${game.id}-${i}`} className="sticker" style={{ '--g1': game.colors[0] } as CSSProperties}>
+            <span className="sticker__emoji">{game.emoji}</span>
+            {game.name}
           </span>
         ))}
       </div>
+    </div>
+  );
+}
+
+export function WelcomePage() {
+  const [mood, setMood] = useState<Mood>('party');
+  return (
+    <main className="welcome">
       <div className="welcome__hero">
-        <div className="welcome__bomb">
-          <BombArt size={170} />
-        </div>
-        <h1 className="welcome__title">
-          Plausch<span className="welcome__dot">.</span>
+        <button
+          type="button"
+          className="welcome__mascot"
+          aria-label="Phoni antippen"
+          onClick={(event) => {
+            haptic([10, 30, 10]);
+            setMood((m) => (m === 'party' ? 'wink' : m === 'wink' ? 'wow' : 'party'));
+            const r = event.currentTarget.getBoundingClientRect();
+            confetti({ x: r.left + r.width / 2, y: r.top + r.height / 3, count: 60 });
+          }}
+        >
+          <Mascot size={150} mood={mood} />
+        </button>
+        <h1 className="welcome__title" aria-label="Phonegames">
+          {'phone'.split('').map((c, i) => (
+            <span key={`p${i}`} className="welcome__letter" style={{ animationDelay: `${0.25 + i * 0.05}s` }}>
+              {c}
+            </span>
+          ))}
+          <br />
+          {'games'.split('').map((c, i) => (
+            <span
+              key={`g${i}`}
+              className="welcome__letter welcome__letter--pop"
+              style={{ animationDelay: `${0.5 + i * 0.06}s`, '--rot': `${(i % 2 ? 1 : -1) * (3 + i)}deg` } as CSSProperties}
+            >
+              {c}
+            </span>
+          ))}
         </h1>
-        <p className="welcome__tagline">Partyspiele für dein Handy – laut, schnell und auch offline.</p>
+        <p className="welcome__tagline">
+          <strong>Ein Handy. Die ganze Runde.</strong>
+          <br />
+          {GAMES.length} Partyspiele – laut, lustig und auch offline.
+        </p>
       </div>
-      <ul className="welcome__features">
-        <li>
-          <span aria-hidden="true">💣</span> Bombe & bald mehr
-        </li>
-        <li>
-          <span aria-hidden="true">👯</span> Spielgruppen speichern
-        </li>
-        <li>
-          <span aria-hidden="true">✈️</span> Funktioniert offline
-        </li>
-      </ul>
+
+      <div className="welcome__bands">
+        <Marquee />
+        <Marquee reverse />
+      </div>
+
       <div className="welcome__actions">
         <Link to="/registrieren" className="btn btn--primary btn--lg btn--block" viewTransition>
-          <span>Konto erstellen</span>
+          <span>Los geht’s – Konto erstellen</span>
         </Link>
-        <Link to="/anmelden" className="btn btn--ghost btn--lg btn--block" viewTransition>
+        <Link to="/anmelden" className="btn btn--secondary btn--lg btn--block" viewTransition>
           <span>Ich habe schon ein Konto</span>
         </Link>
       </div>
@@ -52,14 +87,17 @@ export function WelcomePage() {
   );
 }
 
-function AuthShell({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
+function AuthShell({ title, subtitle, mood, children }: { title: string; subtitle: string; mood: Mood; children: ReactNode }) {
   const online = useUi((s) => s.online);
   return (
     <main className="auth">
-      <Link to="/willkommen" className="auth__back" viewTransition aria-label="Zurück">
+      <Link to="/willkommen" className="icon-btn auth__back" viewTransition aria-label="Zurück">
         ←
       </Link>
       <div className="auth__card">
+        <span className="auth__mascot">
+          <Mascot size={96} mood={mood} />
+        </span>
         <h1 className="auth__title">{title}</h1>
         <p className="auth__subtitle">{subtitle}</p>
         {!online && (
@@ -85,8 +123,8 @@ export function RegisterPage() {
     setLoading(true);
     try {
       const user = await register({ name: name.trim(), email: email.trim(), password });
-      confetti({ count: 160 });
-      toast(`Willkommen bei Plausch, ${user.name}! 🎉`, { tone: 'success' });
+      confetti({ count: 180 });
+      toast(`Willkommen bei Phonegames, ${user.name}! 🎉`, { tone: 'success' });
       navigate('/', { replace: true, viewTransition: true });
     } catch (err) {
       setError(errorMessage(err));
@@ -96,7 +134,7 @@ export function RegisterPage() {
   };
 
   return (
-    <AuthShell title="Konto erstellen" subtitle="Dauert keine 30 Sekunden. Versprochen.">
+    <AuthShell title="Konto erstellen" subtitle="Dauert keine 30 Sekunden. Versprochen." mood={error ? 'oops' : 'happy'}>
       <form className="form" onSubmit={submit} noValidate>
         <TextField
           label="Dein Name"
@@ -162,7 +200,7 @@ export function LoginPage() {
   };
 
   return (
-    <AuthShell title="Willkommen zurück" subtitle="Melde dich an und leg los.">
+    <AuthShell title="Willkommen zurück" subtitle="Melde dich an und leg los." mood={error ? 'oops' : 'wink'}>
       <form className="form" onSubmit={submit} noValidate>
         <TextField
           label="E-Mail"
