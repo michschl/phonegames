@@ -82,3 +82,21 @@ export function formatRelative(ts: number | null): string {
   if (diff < 86_400_000) return `vor ${Math.round(diff / 3_600_000)} Std.`;
   return new Date(ts).toLocaleDateString('de-CH');
 }
+
+/** Word joints where long game names may break ("Zufalls|finger"), marked with soft hyphens. */
+const NAME_JOINTS: Record<string, string> = {
+  Doppelgänger: 'Doppel­gänger',
+  Flaschendrehen: 'Flaschen­drehen',
+  Pantomime: 'Panto­mime',
+  Schätzmeister: 'Schätz­meister',
+  Zufallsfinger: 'Zufalls­finger',
+  Hutspiel: 'Hut­spiel',
+};
+
+/**
+ * Game name for big titles: breaks only at real word joints. Pair with `hyphens: manual`
+ * so the browser never invents its own break like "Zufallsfin-ger".
+ */
+export function breakableName(name: string): string {
+  return name.replace(/[A-Za-zÄÖÜäöüß]+/g, (word) => NAME_JOINTS[word] ?? word);
+}

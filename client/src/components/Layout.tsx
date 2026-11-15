@@ -7,7 +7,7 @@ import { dismissToast, useUi } from '../store/ui.ts';
 type ShapeKind = 'star' | 'squiggle' | 'ring' | 'triangle' | 'plus' | 'dot';
 
 const SHAPES: { kind: ShapeKind; color: string; style: Record<string, string> }[] = [
-  { kind: 'star', color: '#ffd23f', style: { top: '7%', left: '-18px', '--s': '62px', '--d': '17s', '--dx': '18px', '--dy': '26px', '--r': '40deg' } },
+  { kind: 'star', color: '#ffd23f', style: { top: '46%', left: '-30px', '--s': '62px', '--d': '17s', '--dx': '18px', '--dy': '26px', '--r': '40deg' } },
   { kind: 'squiggle', color: '#ff4fa3', style: { top: '19%', right: '-26px', '--s': '96px', '--d': '21s', '--dx': '-14px', '--dy': '22px', '--r': '-18deg' } },
   { kind: 'ring', color: '#2ec5ff', style: { bottom: '22%', left: '-24px', '--s': '74px', '--d': '19s', '--dx': '22px', '--dy': '-18px', '--r': '60deg' } },
   { kind: 'triangle', color: '#9be15d', style: { bottom: '9%', right: '6%', '--s': '46px', '--d': '15s', '--dx': '-20px', '--dy': '-24px', '--r': '-50deg', '--delay': '-4s' } },

@@ -23,6 +23,7 @@ const COLORS = ['#ff3d8b', '#ff8a3d', '#ffd23f', '#3ddc97', '#2de2e6', '#8b5cf6'
 export function confetti(options: { x?: number; y?: number; count?: number; spread?: number } = {}): void {
   if (prefersReducedMotion()) return;
   const canvas = document.createElement('canvas');
+  canvas.setAttribute('aria-hidden', 'true');
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const width = window.innerWidth;
   const height = window.innerHeight;

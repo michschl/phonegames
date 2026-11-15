@@ -510,7 +510,7 @@
 
 .loser-chip.is-selected {
   background: var(--red);
-  color: #fff;
+  color: var(--ink);
   transform: rotate(-2deg);
   animation: pop-in 0.4s var(--ease-spring);
 }
@@ -576,7 +576,7 @@
 .ranking__pos {
   width: 22px;
   font-weight: 900;
-  color: var(--faint);
+  color: var(--muted);
 }
 
 .ranking__name {

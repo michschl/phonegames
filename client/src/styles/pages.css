@@ -230,11 +230,15 @@
   font-weight: 900;
   line-height: 1.08;
   letter-spacing: -0.025em;
+  /* Never split a name with a hyphen ("Mi-chael"). */
+  hyphens: manual;
+  overflow-wrap: break-word;
 }
 
 .home-greeting__name {
   background: linear-gradient(transparent 58%, var(--yellow) 58%, var(--yellow) 92%, transparent 92%);
   padding: 0 4px;
+  white-space: nowrap;
 }
 
 .home-hero {
@@ -319,6 +323,7 @@
   font-size: 13px;
   font-weight: 800;
   line-height: 1.15;
+  hyphens: manual;
 }
 
 .mini-card__add {
@@ -491,12 +496,14 @@
 
 .size-pill.is-active {
   background: var(--pink);
-  color: #fff;
+  color: var(--ink);
   transform: rotate(-4deg);
 }
 
 .results-count {
   margin-bottom: 12px;
+  font-family: var(--font-body);
+  font-size: 15px;
   font-weight: 800;
   color: var(--muted);
 }
@@ -644,7 +651,7 @@
 .app-version {
   font-size: 13px;
   font-weight: 700;
-  color: var(--faint);
+  color: var(--muted);
 }
 
 /* =========================================================== Game setup */
@@ -860,7 +867,7 @@
   border-radius: 50%;
   border: 2px solid var(--ink);
   background: var(--pink);
-  color: #fff;
+  color: var(--ink);
   font-family: var(--font-display);
   font-size: 13px;
   font-weight: 900;
@@ -1331,7 +1338,7 @@
   display: grid;
   justify-items: center;
   gap: 2px;
-  color: var(--faint);
+  color: var(--muted);
   font-size: 13px;
   font-weight: 700;
   line-height: 1.4;

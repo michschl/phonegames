@@ -13,6 +13,24 @@ import { login, register } from '../lib/session.ts';
 import { toast, useUi } from '../store/ui.ts';
 import { LIMITS } from '../../../shared/types.ts';
 
+type FieldErrors = Partial<Record<'invite' | 'name' | 'email' | 'password', string>>;
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function emailProblem(email: string): string | undefined {
+  if (!email.trim()) return 'Bitte gib deine E-Mail-Adresse ein.';
+  if (!EMAIL_PATTERN.test(email.trim())) return 'Das sieht nicht nach einer E-Mail-Adresse aus.';
+  return undefined;
+}
+
+/**
+ * Put the cursor into the first field with a problem, so the person sees right away what is missing
+ * (instead of a grey button that does not say why).
+ */
+function focusFirstInvalid(form: HTMLFormElement | null): void {
+  requestAnimationFrame(() => form?.querySelector<HTMLInputElement>('[aria-invalid="true"]')?.focus());
+}
+
 /** Endless band of game stickers. */
 function Marquee({ reverse }: { reverse?: boolean }) {
   const games = reverse ? [...GAMES].reverse() : GAMES;
@@ -125,12 +143,28 @@ export function RegisterPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [inviteError, setInviteError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [loading, setLoading] = useState(false);
+  const clearFieldError = (field: keyof FieldErrors) =>
+    setFieldErrors((current) => (current[field] ? { ...current, [field]: undefined } : current));
 
-  const submit = async (event: FormEvent) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
     setInviteError(null);
+    const problems: FieldErrors = {
+      invite: showInvite && !inviteCode.trim() ? 'Bitte gib deinen Einladungscode ein.' : undefined,
+      name: name.trim() ? undefined : 'Wie sollen wir dich nennen?',
+      email: emailProblem(email),
+      password:
+        password.length < LIMITS.passwordMin ? `Dein Passwort braucht mindestens ${LIMITS.passwordMin} Zeichen.` : undefined,
+    };
+    setFieldErrors(problems);
+    if (Object.values(problems).some(Boolean)) {
+      haptic([30, 40, 30]);
+      focusFirstInvalid(event.currentTarget);
+      return;
+    }
     setLoading(true);
     try {
       const user = await register({
@@ -158,7 +192,7 @@ export function RegisterPage() {
     <AuthShell
       title="Konto erstellen"
       subtitle={showInvite ? 'Noch geheim – nur mit Einladung.' : 'Dauert keine 30 Sekunden. Versprochen.'}
-      mood={error || inviteError ? 'oops' : 'happy'}
+      mood={error || inviteError || Object.values(fieldErrors).some(Boolean) ? 'oops' : 'happy'}
     >
       <form className="form" onSubmit={submit} noValidate>
         {showInvite && (
@@ -169,13 +203,14 @@ export function RegisterPage() {
             onChange={(e) => {
               setInviteCode(e.target.value.toUpperCase());
               setInviteError(null);
+              clearFieldError('invite');
             }}
             autoComplete="off"
             autoCapitalize="characters"
             autoCorrect="off"
             spellCheck={false}
             maxLength={64}
-            error={inviteError}
+            error={inviteError ?? fieldErrors.invite}
             hint={linkCode ? 'Aus deiner Einladung übernommen 🎟️' : 'Den Code bekommst du von der Person, die dich eingeladen hat.'}
             required
           />
@@ -184,9 +219,13 @@ export function RegisterPage() {
           label="Dein Name"
           icon="user"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => {
+            setName(e.target.value);
+            clearFieldError('name');
+          }}
           autoComplete="nickname"
           maxLength={LIMITS.nameMax}
+          error={fieldErrors.name}
           required
         />
         <TextField
@@ -196,7 +235,11 @@ export function RegisterPage() {
           inputMode="email"
           autoComplete="email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            clearFieldError('email');
+          }}
+          error={fieldErrors.email}
           required
         />
         <TextField
@@ -205,18 +248,16 @@ export function RegisterPage() {
           type="password"
           autoComplete="new-password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            clearFieldError('password');
+          }}
+          error={fieldErrors.password}
           hint={`Mindestens ${LIMITS.passwordMin} Zeichen`}
           required
         />
         {error && <p className="notice notice--error">{error}</p>}
-        <Button
-          type="submit"
-          size="lg"
-          block
-          loading={loading}
-          disabled={!name || !email || !password || (showInvite && !inviteCode.trim())}
-        >
+        <Button type="submit" size="lg" block loading={loading}>
           Los geht’s
         </Button>
       </form>
@@ -234,6 +275,7 @@ export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [loading, setLoading] = useState(false);
   const [passkeyLoading, setPasskeyLoading] = useState(false);
   const canUsePasskey = !!options?.passkeys && passkeysSupported();
@@ -258,9 +300,19 @@ export function LoginPage() {
     }
   };
 
-  const submit = async (event: FormEvent) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
+    const problems: FieldErrors = {
+      email: emailProblem(email),
+      password: password ? undefined : 'Bitte gib dein Passwort ein.',
+    };
+    setFieldErrors(problems);
+    if (Object.values(problems).some(Boolean)) {
+      haptic([30, 40, 30]);
+      focusFirstInvalid(event.currentTarget);
+      return;
+    }
     setLoading(true);
     try {
       const user = await login({ email: email.trim(), password });
@@ -283,7 +335,11 @@ export function LoginPage() {
           inputMode="email"
           autoComplete="email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            setFieldErrors((current) => ({ ...current, email: undefined }));
+          }}
+          error={fieldErrors.email}
           required
         />
         <TextField
@@ -292,11 +348,15 @@ export function LoginPage() {
           type="password"
           autoComplete="current-password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            setFieldErrors((current) => ({ ...current, password: undefined }));
+          }}
+          error={fieldErrors.password}
           required
         />
         {error && <p className="notice notice--error">{error}</p>}
-        <Button type="submit" size="lg" block loading={loading} disabled={!email || !password}>
+        <Button type="submit" size="lg" block loading={loading}>
           Anmelden
         </Button>
       </form>
