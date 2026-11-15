@@ -9,3 +9,10 @@
 
 	reverse_proxy app:3000
 }
+
+# Further domains (e.g. phonegames.ch) redirect permanently to the main address,
+# so the app, its logins, passkeys and the installed PWA live on one origin.
+# Without REDIRECT_DOMAINS this is a harmless placeholder (see docker-compose.yml).
+{$REDIRECT_DOMAINS} {
+	redir https://{$APP_DOMAIN}{uri} permanent
+}

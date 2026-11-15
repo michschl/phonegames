@@ -51,6 +51,9 @@ services:
       - '443:443/udp'
     environment:
       APP_DOMAIN: ${APP_DOMAIN:?APP_DOMAIN fehlt}
+      # Domains that redirect to APP_DOMAIN, e.g. "phonegames.ch, www.phonegames.ch".
+      # The placeholder only listens on port 80 for a name that never resolves.
+      REDIRECT_DOMAINS: ${REDIRECT_DOMAINS:-http://redirect.invalid}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data

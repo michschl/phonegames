@@ -68,6 +68,10 @@ Beim DNS-Anbieter der Domain (z. B. Infomaniak → Domain → DNS-Zone):
 | A | `phonegames` (oder `@`) | IPv4-Adresse des VPS |
 | AAAA | `phonegames` (oder `@`) | IPv6-Adresse des VPS (falls vorhanden) |
 
+Weitere Domains (z. B. eine zweite Endung oder `www.`) bekommen denselben Eintrag und werden in der Variable
+`REDIRECT_DOMAINS` aufgeführt (siehe Schritt 5). Sie leiten auf die Hauptdomain weiter – so gibt es Anmeldung,
+Passkeys und die installierte App nur unter einer Adresse.
+
 Prüfen (kann einige Minuten dauern):
 
 ```bash
@@ -124,6 +128,7 @@ Environment geladen ist.
 | --- | --- | --- | --- |
 | `VPS_HOST` | ✅ | `phonegames.example.ch` oder IP | Ohne diese Variable wird der Deploy-Schritt übersprungen |
 | `APP_DOMAIN` | ✅ | `phonegames.example.ch` | Domain, für die Caddy das Zertifikat holt |
+| `REDIRECT_DOMAINS` | – | `phonegames.example.com, www.phonegames.example.ch` | Weitere Domains, die dauerhaft (301) auf `APP_DOMAIN` weiterleiten – mit Komma getrennt. Jede braucht einen DNS-Eintrag auf den VPS |
 | `VPS_USER` | – | `deploy` | Standard: `deploy` |
 | `VPS_PORT` | – | `22` | Standard: `22` |
 | `APP_DIR` | – | `/opt/phonegames` | Standard: `/opt/phonegames` |
