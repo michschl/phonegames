@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { GameProps } from '../types.ts';
 import { Button } from '../../components/ui.tsx';
 import { sound } from '../../lib/audio.ts';
@@ -28,20 +28,35 @@ export default function WerWuerdeEherGame({ players, settings, onExit }: GamePro
   const [chosen, setChosen] = useState<string | null>(null);
   const [tally, setTally] = useState<Record<string, number>>({});
   const ranking = <ScoreList entries={playerScores(players, tally)} unit="×" />;
+  const countdownTimer = useRef<number | undefined>(undefined);
+  const stopRoll = useRef<((finish?: boolean) => void) | null>(null);
+
+  // Leaving mid-countdown must not leave the drumroll or the interval running.
+  useEffect(
+    () => () => {
+      window.clearInterval(countdownTimer.current);
+      stopRoll.current?.(false);
+      stopRoll.current = null;
+    },
+    [],
+  );
 
   const point = () => {
     sound.unlock();
     setPhase('countdown');
-    const stop = sound.drumroll();
+    window.clearInterval(countdownTimer.current);
+    stopRoll.current?.(false);
+    stopRoll.current = sound.drumroll();
     let n = 3;
     setCountdown(n);
-    const id = window.setInterval(() => {
+    countdownTimer.current = window.setInterval(() => {
       n -= 1;
       haptic(10);
       if (n > 0) setCountdown(n);
       else {
-        window.clearInterval(id);
-        stop();
+        window.clearInterval(countdownTimer.current);
+        stopRoll.current?.();
+        stopRoll.current = null;
         haptic([40, 30, 80]);
         setPhase('point');
       }
@@ -49,9 +64,12 @@ export default function WerWuerdeEherGame({ players, settings, onExit }: GamePro
   };
 
   const pick = (id: string) => {
+    const votes = (tally[id] ?? 0) + 1;
     setChosen(id);
     setTally((t) => ({ ...t, [id]: (t[id] ?? 0) + 1 }));
-    sound.reveal();
+    // The third time earns the 👑 title – that deserves the big fanfare.
+    if (votes === 3) sound.fanfare();
+    else sound.reveal();
     setPhase('chosen');
   };
 

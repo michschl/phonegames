@@ -8,7 +8,7 @@ import { drawFresh } from '../shared/deck.ts';
 import { Actions, GameShell, Headline, Stage } from '../shared/GameShell.tsx';
 import { PassTurns, SecretReveal } from '../shared/PassTurns.tsx';
 import { PlayerPicker, playerScores, ScoreList } from '../shared/players.tsx';
-import { TimerRing, useCountdown } from '../shared/Timer.tsx';
+import { TimerRing, useCountdown, useHeartbeat, useSuspense } from '../shared/Timer.tsx';
 import { LOCATIONS } from './locations.ts';
 import { scoreRound, setupRound, type SpionOutcome, type SpionRound, type SpionSettings } from './logic.ts';
 
@@ -32,7 +32,19 @@ export default function SpionGame({ players, settings, onExit }: GameProps<Spion
   const [outcome, setOutcome] = useState<SpionOutcome | null>(null);
   const [scores, setScores] = useState<Record<string, number>>({});
   const [listOpen, setListOpen] = useState(false);
-  const timer = useCountdown(settings.minutes * 60, { onEnd: () => setPhase('vote'), beepFrom: 10 });
+  const timer = useCountdown(settings.minutes * 60, {
+    // Time up sends the questioning to the vote – but never interrupts a vote or the spy's guess.
+    onEnd: () => setPhase((current) => (current === 'play' ? 'vote' : current)),
+    beepFrom: 10,
+    // Clock ticks from 20 s, beeps for the last 10, and a bell when one minute is left.
+    ticking: 20,
+    onSecond: (left) => {
+      if (left === 60) sound.ding();
+    },
+  });
+  const suspense = useSuspense();
+  // Heartbeat while voting (faster once someone is suspected) and while the spy has to name the location.
+  useHeartbeat(suspense.pending ? null : phase === 'vote' ? (suspect ? 92 : 66) : phase === 'guess' ? 104 : null);
 
   const nameOf = (id: string | null) => players.find((p) => p.id === id)?.name ?? '';
   const spies = players.filter((p) => round.spyIds.includes(p.id));
@@ -46,35 +58,48 @@ export default function SpionGame({ players, settings, onExit }: GameProps<Spion
     setPhase('result');
     const spiesWin = result === 'spy-escaped' || result === 'spy-guessed';
     if (spiesWin) {
-      sound.buzzer(0.5);
+      // Sad trombone for everybody who was fooled.
+      sound.fail();
       haptic([100, 50, 100]);
     } else {
-      sound.reveal();
+      sound.fanfare();
       confetti({ count: 150 });
     }
   };
 
   const accuse = () => {
-    if (!suspect) return;
-    if (round.spyIds.includes(suspect)) {
-      // Caught – the spy gets one last chance to name the location.
-      sound.correct();
-      setGuessMode('caught');
-      setGuess(null);
-      setPhase('guess');
-    } else {
-      finish('spy-escaped');
-    }
+    if (!suspect || suspense.pending) return;
+    const caught = round.spyIds.includes(suspect);
+    // Rising tension before the verdict.
+    suspense.run(
+      () => {
+        if (caught) {
+          // Caught – the spy gets one last chance to name the location.
+          sound.sting();
+          if (timer.running) timer.pause();
+          setGuessMode('caught');
+          setGuess(null);
+          setPhase('guess');
+        } else {
+          finish('spy-escaped');
+        }
+      },
+      { style: 'tension', ms: 1600 },
+    );
   };
 
   const submitGuess = () => {
-    if (!guess) return;
+    if (!guess || suspense.pending) return;
     const correct = guess === round.location.id;
-    if (correct) finish('spy-guessed');
-    else finish(guessMode === 'caught' ? 'spy-caught' : 'spy-wrong-guess');
+    // Drumroll before the location is resolved.
+    suspense.run(() => {
+      if (correct) finish('spy-guessed');
+      else finish(guessMode === 'caught' ? 'spy-caught' : 'spy-wrong-guess');
+    });
   };
 
   const next = () => {
+    sound.swirl();
     setRound(newRound(players, settings.spies));
     setRoundNo((n) => n + 1);
     setSuspect(null);
@@ -92,7 +117,15 @@ export default function SpionGame({ players, settings, onExit }: GameProps<Spion
           key={loc.id}
           type="button"
           className={`loc-tile ${guess === loc.id ? 'is-selected' : ''}`}
-          onClick={selectable ? () => setGuess(loc.id) : undefined}
+          onClick={
+            selectable
+              ? () => {
+                  if (suspense.pending) return;
+                  sound.tap();
+                  setGuess(loc.id);
+                }
+              : undefined
+          }
           disabled={!selectable}
         >
           <span aria-hidden="true">{loc.emoji}</span>
@@ -165,16 +198,32 @@ export default function SpionGame({ players, settings, onExit }: GameProps<Spion
             anderen, den Spion zu entlarven.
           </p>
           <Actions>
-            <Button size="lg" block onClick={() => setPhase('vote')}>
+            <Button
+              size="lg"
+              block
+              onClick={() => {
+                sound.tap();
+                setPhase('vote');
+              }}
+            >
               Abstimmen
             </Button>
             <div className="gs-actions gs-actions--row">
-              <Button variant="secondary" onClick={() => setListOpen(true)}>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  sound.tap();
+                  setListOpen(true);
+                }}
+              >
                 Alle Orte
               </Button>
               <Button
                 variant="secondary"
                 onClick={() => {
+                  // The spy unmasks themselves.
+                  sound.sting();
+                  if (timer.running) timer.pause();
                   setGuessMode('voluntary');
                   setGuess(null);
                   setPhase('guess');
@@ -192,13 +241,26 @@ export default function SpionGame({ players, settings, onExit }: GameProps<Spion
           <p className="gs-eyebrow">Abstimmung</p>
           <Headline small>Wer ist der Spion?</Headline>
           <p className="gs-text">Einigt euch auf eine Person – oder zählt die Finger auf «3».</p>
-          <PlayerPicker players={players} selected={suspect} onSelect={(p) => setSuspect(p.id)} />
+          <PlayerPicker
+            players={players}
+            selected={suspect}
+            onSelect={(p) => setSuspect(p.id)}
+            disabled={() => suspense.pending}
+          />
           <Actions>
-            <Button size="lg" block disabled={!suspect} onClick={accuse}>
+            <Button size="lg" block disabled={!suspect || suspense.pending} onClick={accuse}>
               {suspect ? `${nameOf(suspect)} anklagen` : 'Person wählen'}
             </Button>
             {timer.remaining > 0 && (
-              <Button variant="ghost" block onClick={() => setPhase('play')}>
+              <Button
+                variant="ghost"
+                block
+                disabled={suspense.pending}
+                onClick={() => {
+                  sound.tap();
+                  setPhase('play');
+                }}
+              >
                 Zurück – weiter fragen
               </Button>
             )}
@@ -212,11 +274,20 @@ export default function SpionGame({ players, settings, onExit }: GameProps<Spion
           <Headline small>{guessMode === 'caught' ? `${nameOf(suspect)}, wo seid ihr?` : 'Spion, wo seid ihr?'}</Headline>
           {locationGrid(true)}
           <Actions>
-            <Button size="lg" block disabled={!guess} onClick={submitGuess}>
+            <Button size="lg" block disabled={!guess || suspense.pending} onClick={submitGuess}>
               Ort auflösen
             </Button>
             {guessMode === 'voluntary' && (
-              <Button variant="ghost" block onClick={() => setPhase('play')}>
+              <Button
+                variant="ghost"
+                block
+                disabled={suspense.pending}
+                onClick={() => {
+                  sound.unpluck();
+                  if (timer.remaining > 0) timer.start();
+                  setPhase('play');
+                }}
+              >
                 Doch nicht
               </Button>
             )}

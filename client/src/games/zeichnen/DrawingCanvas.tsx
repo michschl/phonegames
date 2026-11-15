@@ -8,6 +8,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type Ref,
 } from 'react';
+import { sound } from '../../lib/audio.ts';
 import { haptic } from '../../lib/device.ts';
 
 interface Stroke {
@@ -100,6 +101,7 @@ export function DrawingCanvas({ ref }: { ref?: Ref<DrawingCanvasHandle> }) {
   };
 
   const undo = () => {
+    sound.unpluck();
     haptic(8);
     strokes.current.pop();
     setCount(strokes.current.length);
@@ -107,6 +109,7 @@ export function DrawingCanvas({ ref }: { ref?: Ref<DrawingCanvasHandle> }) {
   };
 
   const clear = () => {
+    sound.whoosh();
     haptic([10, 30, 10]);
     strokes.current = [];
     setCount(0);
@@ -134,6 +137,7 @@ export function DrawingCanvas({ ref }: { ref?: Ref<DrawingCanvasHandle> }) {
               style={{ '--c': c } as CSSProperties}
               aria-label={`Farbe ${c}`}
               onClick={() => {
+                sound.tap();
                 haptic(5);
                 setColor(c);
                 setErasing(false);
@@ -148,12 +152,22 @@ export function DrawingCanvas({ ref }: { ref?: Ref<DrawingCanvasHandle> }) {
               type="button"
               className={`draw__size ${size === s ? 'is-active' : ''}`}
               aria-label={`Strichstärke ${s}`}
-              onClick={() => setSize(s)}
+              onClick={() => {
+                sound.tap();
+                setSize(s);
+              }}
             >
               <span style={{ width: s + 2, height: s + 2 }} />
             </button>
           ))}
-          <button type="button" className={`draw__tool ${erasing ? 'is-active' : ''}`} onClick={() => setErasing((e) => !e)}>
+          <button
+            type="button"
+            className={`draw__tool ${erasing ? 'is-active' : ''}`}
+            onClick={() => {
+              sound.tap();
+              setErasing((e) => !e);
+            }}
+          >
             🧽
           </button>
           <button type="button" className="draw__tool" onClick={undo} disabled={count === 0} aria-label="Rückgängig">

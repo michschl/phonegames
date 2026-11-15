@@ -8,7 +8,7 @@ import { drawFresh } from '../shared/deck.ts';
 import { Actions, GameShell, Headline, Stage } from '../shared/GameShell.tsx';
 import { PassPrompt } from '../shared/PassTurns.tsx';
 import { playerScores, ScoreList } from '../shared/players.tsx';
-import { CountdownOverlay, useCountdown, useStartCountdown } from '../shared/Timer.tsx';
+import { CountdownOverlay, useCountdown, useStartCountdown, useTurnTally } from '../shared/Timer.tsx';
 import { DECKS } from './decks.ts';
 import './wer-bin-ich.css';
 
@@ -60,10 +60,12 @@ export default function WerBinIchGame({ players, settings, onExit }: GameProps<W
     setCard(next);
   };
 
+  // The guesser can't see the screen: clock ticks from 10 s, beeps for the last 5, buzzer at the end.
   const timer = useCountdown(settings.seconds, {
     onEnd: () => {
       setPhase('summary');
     },
+    ticking: 10,
   });
 
   const start = useStartCountdown(() => {
@@ -81,7 +83,9 @@ export default function WerBinIchGame({ players, settings, onExit }: GameProps<W
       sound.correct();
       haptic(30);
     } else {
+      // The guesser can't see the screen – the swoosh makes "passed" unmistakable.
       sound.wrong();
+      sound.whoosh();
       haptic([15, 30, 15]);
     }
     draw();
@@ -98,6 +102,9 @@ export default function WerBinIchGame({ players, settings, onExit }: GameProps<W
   const nextPlayer = () => {
     const points = log.filter((e) => e.correct).length;
     setScores((s) => ({ ...s, [player.id]: (s[player.id] ?? 0) + points }));
+    // Everyone had a turn → a new round begins.
+    if ((turn + 1) % players.length === 0) sound.ding();
+    else sound.tap();
     setTurn((t) => t + 1);
     setCard(null);
     timer.reset();
@@ -105,6 +112,8 @@ export default function WerBinIchGame({ players, settings, onExit }: GameProps<W
   };
 
   const correctCount = log.filter((e) => e.correct).length;
+  // Score jingle on the summary screen (or the sad trombone for zero).
+  useTurnTally(phase === 'summary', correctCount);
   const fontSize = card && card.word.length > 16 ? 'clamp(30px, 10vw, 64px)' : 'clamp(40px, 14vw, 96px)';
 
   return (

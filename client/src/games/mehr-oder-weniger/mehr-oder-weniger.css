@@ -87,6 +87,11 @@
   animation: pop-in 0.45s var(--ease-spring) both;
 }
 
+/* Locked in, waiting for the numbers to be uncovered. */
+.mow-card.is-chosen:not(.is-winner):not(.is-loser) {
+  background: var(--yellow-soft);
+}
+
 .mow-card.is-winner {
   background: var(--lime);
 }

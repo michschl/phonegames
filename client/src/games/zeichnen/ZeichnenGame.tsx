@@ -52,12 +52,14 @@ export default function ZeichnenGame({ players, settings, onExit }: GameProps<Ze
     if (winner) {
       setScores((s) => ({ ...s, [winner]: (s[winner] ?? 0) + 1, [drawer.id]: (s[drawer.id] ?? 0) + 1 }));
       sound.reveal();
+      sound.sparkle();
       confetti({ count: 120 });
     }
     setPhase('reveal');
   };
 
-  const timer = useCountdown(settings.seconds, { onEnd: () => finish(null) });
+  // Clock ticks in the last 15 s build up to the final beeps and the buzzer.
+  const timer = useCountdown(settings.seconds, { onEnd: () => finish(null), ticking: 15 });
 
   const next = () => {
     setTurn((t) => t + 1);
@@ -89,7 +91,8 @@ export default function ZeichnenGame({ players, settings, onExit }: GameProps<Ze
         <SecretReveal
           doneLabel="Ich hab’s – zeichnen!"
           onDone={() => {
-            sound.whoosh();
+            // "Los!" – the drawing time starts now.
+            sound.beep(true);
             setPhase('draw');
             timer.start();
           }}
@@ -107,7 +110,10 @@ export default function ZeichnenGame({ players, settings, onExit }: GameProps<Ze
             <button
               type="button"
               className="zeichnen__peek"
-              onPointerDown={() => setPeeking(true)}
+              onPointerDown={() => {
+                sound.flip();
+                setPeeking(true);
+              }}
               onPointerUp={() => setPeeking(false)}
               onPointerLeave={() => setPeeking(false)}
             >
@@ -116,6 +122,7 @@ export default function ZeichnenGame({ players, settings, onExit }: GameProps<Ze
             <Button
               size="sm"
               onClick={() => {
+                sound.pop();
                 haptic(15);
                 timer.pause();
                 setPhase('who');

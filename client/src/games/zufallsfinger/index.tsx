@@ -25,7 +25,7 @@ export const zufallsfinger: GameDefinition<FingerSettings> = {
   name: 'Zufallsfinger',
   tagline: 'Alle Finger aufs Display – wen trifft’s?',
   description:
-    'Wer beginnt? Wer holt die Getränke? Alle legen einen Finger aufs Handy, nach einem kurzen Trommelwirbel entscheidet der Zufall. Auch für Teams und Reihenfolgen.',
+    'Wer beginnt? Wer holt die Getränke? Alle legen einen Finger aufs Handy, nach kurzem Herzklopfen entscheidet der Zufall. Auch für Teams und Reihenfolgen.',
   emoji: '☝️',
   colors: ['#8b5cf6', '#ff3d8b'],
   minPlayers: 2,
@@ -37,7 +37,7 @@ export const zufallsfinger: GameDefinition<FingerSettings> = {
   noGroup: true,
   rules: [
     'Alle legen gleichzeitig einen Finger auf das Display und halten still.',
-    'Nach einem Trommelwirbel wählt das Handy eine Person aus – oder teilt Teams ein oder bestimmt die Reihenfolge.',
+    'Nach kurzem Herzklopfen wählt das Handy eine Person aus – oder teilt Teams ein oder bestimmt die Reihenfolge.',
     'Finger weg und nochmals – so oft ihr wollt.',
   ],
   defaultSettings: { mode: 'eins' },
