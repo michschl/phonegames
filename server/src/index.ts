@@ -14,6 +14,7 @@ const app = await buildApp({
   clientDir: config.clientDir,
   version: config.version,
   inviteCodes: config.inviteCodes,
+  tts: config.ttsUrl ? { url: config.ttsUrl, cacheDir: path.join(config.dataDir, 'tts-cache') } : null,
   webauthn: config.appOrigins.length
     ? { rpID: new URL(config.appOrigins[0]!).hostname, rpName: 'Phonegames', origins: config.appOrigins }
     : null,
@@ -29,6 +30,7 @@ app.log.info(
     ? `Passkeys aktiv für ${config.appOrigins.join(', ')}`
     : 'Passkeys ausgeschaltet (APP_ORIGIN nicht gesetzt)',
 );
+app.log.info(config.ttsUrl ? `Erzählstimme über ${config.ttsUrl}` : 'Erzählstimme: nur Gerätestimmen (TTS_URL nicht gesetzt)');
 
 const shutdown = async (signal: string) => {
   app.log.info(`${signal} received, shutting down`);

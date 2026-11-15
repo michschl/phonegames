@@ -13,10 +13,26 @@ services:
       INVITE_CODES: ${INVITE_CODES:-}
       # Passkeys are bound to this address.
       APP_ORIGIN: https://${APP_DOMAIN:?APP_DOMAIN fehlt}
+      # Narrator voice (Piper), only reachable inside this stack.
+      TTS_URL: http://tts:5000
     volumes:
       - app-data:/data
     expose:
       - '3000'
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
+  # Natural German narrator voice (Piper TTS). Not exposed to the internet –
+  # the app calls it and caches every rendered sentence.
+  tts:
+    image: ${TTS_IMAGE:?TTS_IMAGE fehlt}
+    restart: unless-stopped
+    expose:
+      - '5000'
+    mem_limit: 1g
     logging:
       driver: json-file
       options:

@@ -16,6 +16,8 @@ export interface AuthRoutesOptions {
   inviteCodes: readonly string[];
   /** Passkey relying party, or null when passkeys are switched off. */
   passkeys: { rpID: string } | null;
+  /** Server narrator voices, or null without a TTS service. */
+  tts: AuthOptions['tts'];
 }
 
 export const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (app, opts) => {
@@ -24,7 +26,7 @@ export const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (app, opt
   });
   const inviteRequired = opts.inviteCodes.length > 0;
 
-  app.get('/options', async (): Promise<AuthOptions> => ({ inviteRequired, passkeys: opts.passkeys }));
+  app.get('/options', async (): Promise<AuthOptions> => ({ inviteRequired, passkeys: opts.passkeys, tts: opts.tts }));
 
   app.post('/register', { config: limit(20) }, async (request, reply) => {
     const body = registerSchema.parse(request.body);
