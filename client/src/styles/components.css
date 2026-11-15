@@ -649,7 +649,9 @@
 }
 
 .page__content {
-  animation: rise-in 0.5s 0.05s var(--ease-out) both;
+  /* "backwards", not "both": a lingering transform would turn this element into
+     the containing block of position: fixed children (e.g. the start bar). */
+  animation: rise-in 0.5s 0.05s var(--ease-out) backwards;
 }
 
 .wave {

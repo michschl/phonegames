@@ -427,7 +427,7 @@
 /* =========================================================== Game setup */
 
 .setup {
-  padding-bottom: calc(var(--safe-bottom) + 110px);
+  padding-bottom: calc(var(--safe-bottom) + 140px);
 }
 
 .setup-hero {
