@@ -25,6 +25,19 @@
 Ein einziger Node-Prozess liefert die API **und** die gebaute PWA aus. Caddy davor kümmert sich um HTTPS,
 Kompression und HTTP/3.
 
+## Design-System
+
+Das Aussehen steckt komplett in CSS-Variablen ([`client/src/styles/global.css`](../client/src/styles/global.css)):
+Tinte (`--ink`) für Konturen und Text, Creme-Papier (`--bg`), kräftige Akzentfarben (`--pink`, `--yellow`, `--cyan`,
+`--lime` …), harte Schatten (`--shadow`, `--shadow-lg`) und Konturen (`--border`). Komponenten
+([`components.css`](../client/src/styles/components.css)), Seiten ([`pages.css`](../client/src/styles/pages.css)) und
+Spiele ([`games/shared/game-shell.css`](../client/src/games/shared/game-shell.css)) bauen darauf auf. Jedes Spiel setzt
+mit `accent` seine eigene Farbe; `GameShell` mit `night` schaltet auf die dunkle Variante um.
+
+Maskottchen und Logo sind reine SVG-Komponenten (`Mascot`, `Logo` in
+[`components/Brand.tsx`](../client/src/components/Brand.tsx)) mit den Stimmungen `happy`, `wink`, `wow`, `party`,
+`sleepy` und `oops`. Die App-Icons werden mit `npm run icons` aus `client/public/favicon.svg` erzeugt.
+
 ## Offline-first
 
 **Was offline geht:** alles nach der Anmeldung – Spiele starten und spielen, Spielgruppen anlegen und

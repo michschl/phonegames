@@ -1,36 +1,38 @@
-# 🎉 Plausch – Partyspiele fürs Handy
+# 📱 Phonegames – Partyspiele fürs Handy
 
-**Plausch** ist eine Progressive Web App (PWA) mit lustigen, einfachen Gesellschaftsspielen für das Mobiltelefon.
-Konto erstellen, Spiele entdecken, Spielgruppe anlegen – und los geht’s. Nach der Anmeldung funktioniert alles **auch offline**.
+**Ein Handy. Die ganze Runde.** Phonegames ist eine Progressive Web App (PWA) mit 17 lustigen Gesellschaftsspielen
+für das Mobiltelefon. Konto erstellen, Spiele entdecken, Spielgruppe anlegen – und los geht’s. Nach der Anmeldung
+funktioniert alles **auch offline**.
 
-**17 Spiele** sind dabei – vom tickenden Klassiker **💣 Bombe** über Bluff-Spiele wie **🕵️ Spion unter uns** und
-**🐺 Nachts im Dorf** (mit Erzählstimme) bis zu Team-Ratespielen, Schätzfragen und kleinen Helfern wie dem **☝️ Zufallsfinger**.
+Mit dabei: vom tickenden Klassiker **💣 Bombe** über Bluff-Spiele wie **🕵️ Spion unter uns** und **🐺 Nachts im Dorf**
+(mit Erzählstimme) bis zu Team-Ratespielen, Schätzfragen und kleinen Helfern wie dem **☝️ Zufallsfinger**.
 
 <p align="center">
-  <img src="docs/screenshots/welcome.jpg" width="180" alt="Willkommen">
-  <img src="docs/screenshots/home.jpg" width="180" alt="Meine Spiele">
-  <img src="docs/screenshots/setup.jpg" width="180" alt="Spielgruppe und Einstellungen">
-  <img src="docs/screenshots/ready.jpg" width="180" alt="Zufälliger Startspieler">
+  <img src="docs/screenshots/welcome.jpg" width="180" alt="Willkommen mit Phoni">
+  <img src="docs/screenshots/home.jpg" width="180" alt="Startseite mit Weiterspielen">
+  <img src="docs/screenshots/discover.jpg" width="180" alt="Entdecken mit Spiel des Tages">
+  <img src="docs/screenshots/setup.jpg" width="180" alt="Spiel vorbereiten">
 </p>
 <p align="center">
-  <img src="docs/screenshots/catalog.jpg" width="180" alt="Spielkatalog">
+  <img src="docs/screenshots/ticking.jpg" width="180" alt="Bombe tickt">
+  <img src="docs/screenshots/boom.jpg" width="180" alt="BUMM!">
   <img src="docs/screenshots/spion.jpg" width="180" alt="Spion unter uns">
-  <img src="docs/screenshots/wer-bin-ich.jpg" width="180" alt="Wer bin ich?">
-  <img src="docs/screenshots/zufallsfinger.jpg" width="180" alt="Zufallsfinger">
+  <img src="docs/screenshots/dorf.jpg" width="180" alt="Nachts im Dorf">
 </p>
 <p align="center">
-  <img src="docs/screenshots/ticking.jpg" width="180" alt="Die Bombe tickt">
-  <img src="docs/screenshots/blast.jpg" width="180" alt="Explosion">
-  <img src="docs/screenshots/boom.jpg" width="180" alt="Wer hatte die Bombe?">
-  <img src="docs/screenshots/groups.jpg" width="180" alt="Spielgruppen">
+  <img src="docs/screenshots/wer-bin-ich.jpg" width="180" alt="Wer bin ich?">
+  <img src="docs/screenshots/verbotene-woerter.jpg" width="180" alt="Verbotene Wörter">
+  <img src="docs/screenshots/mehr-oder-weniger.jpg" width="180" alt="Mehr oder weniger">
+  <img src="docs/screenshots/zufallsfinger.jpg" width="180" alt="Zufallsfinger">
 </p>
 
 ## Funktionen
 
 | Bereich | Was es kann |
 | --- | --- |
+| **Start** | «Weiterspielen» mit dem zuletzt gespielten Spiel und der Gruppe · kompakte Kacheln für «Meine Spiele» · Vorschläge zum direkten Hinzufügen |
 | **Konto** | Registrieren mit Name, E-Mail und Passwort · Anmelden/Abmelden · Name, E-Mail, Avatar (Emoji + Farbe) und Passwort ändern · Datenexport (JSON) · Konto löschen |
-| **Entdecken** | Spielkatalog mit Volltextsuche (umlaut-tolerant) und Filter-Chips · Spiele mit einem Tipp zu «Meine Spiele» hinzufügen/entfernen |
+| **Entdecken** | «Spiel des Tages» · Filter «Wie viele seid ihr?» · Volltextsuche (umlaut-tolerant) und Kategorien · Spiele mit einem Tipp hinzufügen/entfernen |
 | **Spielgruppen** | Gruppen mit Namen, Symbol und Mitspielenden anlegen · beim Spielstart wird die Gruppe angezeigt und kann direkt angepasst werden (Personen hinzufügen/entfernen) |
 | **Spiele** | 17 Spiele mit über 2’500 Begriffen, Fragen und Karten – siehe Tabelle unten |
 | **PWA** | Installierbar (Android & iOS) · komplett offline spielbar · Offline-Änderungen werden automatisch synchronisiert · Update-Hinweis bei neuer Version · Bildschirm bleibt während des Spiels an |
@@ -58,6 +60,18 @@ Konto erstellen, Spiele entdecken, Spielgruppe anlegen – und los geht’s. Nac
 | 🍾 **Flaschendrehen** | beliebig | Wischen und drehen lassen – auf Wunsch mit Wahrheit-oder-Pflicht-Karte |
 
 Alle Inhalte sind in Schweizer Hochdeutsch geschrieben (ohne «ß») und funktionieren offline.
+
+## Design & Marke
+
+- **Phoni**, das fröhliche Handy-Maskottchen, ist Logo und Gastgeber zugleich: Es begrüsst, staunt bei leeren Listen,
+  feiert mit Partyhut und schaut verdutzt, wenn etwas schiefgeht ([`client/src/components/Brand.tsx`](client/src/components/Brand.tsx)).
+- **Sticker-Pop-Look:** warmes Creme-Papier mit Punktraster, kräftige Farben, dicke Konturen, harte Schatten,
+  leicht schräge «Sticker»-Elemente und schwebende Formen im Hintergrund
+  ([`client/src/styles/global.css`](client/src/styles/global.css)).
+- **Knöpfe zum Draufdrücken:** Alles Klickbare senkt sich beim Antippen spürbar ein – mit Vibration und Sound.
+- **Spiele:** helle, farbige Bühnen pro Spiel; bewusst dunkel sind nur die Nacht im Dorf und der Knall der Bombe.
+- Interne technische Namen (Datenbank `plausch.db`, Cookie, Docker-Volume, Ordner `/opt/plausch`) heissen aus
+  Kompatibilitätsgründen weiterhin «plausch» – so bleiben bestehende Konten und Daten erhalten.
 
 ## Technik
 

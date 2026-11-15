@@ -1,6 +1,6 @@
 # Deployment auf einen Infomaniak-VPS
 
-Diese Anleitung bringt Plausch auf einen VPS bei [Infomaniak](https://www.infomaniak.com) (VPS Cloud oder VPS Lite).
+Diese Anleitung bringt Phonegames auf einen VPS bei [Infomaniak](https://www.infomaniak.com) (VPS Cloud oder VPS Lite).
 Nach der einmaligen Einrichtung wird **jeder Push auf `main` automatisch ausgerollt**.
 
 ## Überblick
@@ -33,11 +33,13 @@ Nach der einmaligen Einrichtung wird **jeder Push auf `main` automatisch ausgero
 - **Caddy** besorgt und erneuert das TLS-Zertifikat automatisch. HTTPS ist Pflicht, sonst funktioniert der
   Service Worker (Offline-Modus) nicht.
 - Die Datenbank (SQLite) liegt im Docker-Volume `plausch_app-data` und überlebt Updates.
+- Technische Namen (Ordner `/opt/plausch`, Docker-Projekt und Volume, Datenbankdatei) heissen aus
+  Kompatibilitätsgründen weiterhin «plausch» – bitte nicht umbenennen, sonst ist die Datenbank «weg».
 
 ## Voraussetzungen
 
 - Infomaniak **VPS Cloud** oder **VPS Lite** – die kleinste Variante (1–2 vCPU, 2 GB RAM) reicht gut.
-- Eine **Domain** oder Subdomain, z. B. `plausch.example.ch`.
+- Eine **Domain** oder Subdomain, z. B. `phonegames.example.ch`.
 - Zugriff auf die **Einstellungen des GitHub-Repositorys** (Secrets & Variables).
 
 ## 1. VPS bestellen
@@ -63,13 +65,13 @@ Beim DNS-Anbieter der Domain (z. B. Infomaniak → Domain → DNS-Zone):
 
 | Typ | Name | Wert |
 | --- | --- | --- |
-| A | `plausch` (oder `@`) | IPv4-Adresse des VPS |
-| AAAA | `plausch` (oder `@`) | IPv6-Adresse des VPS (falls vorhanden) |
+| A | `phonegames` (oder `@`) | IPv4-Adresse des VPS |
+| AAAA | `phonegames` (oder `@`) | IPv6-Adresse des VPS (falls vorhanden) |
 
 Prüfen (kann einige Minuten dauern):
 
 ```bash
-dig +short plausch.example.ch
+dig +short phonegames.example.ch
 ```
 
 ## 3. Deploy-Schlüssel erzeugen
@@ -120,8 +122,8 @@ Environment geladen ist.
 
 | Name | Pflicht | Beispiel | Beschreibung |
 | --- | --- | --- | --- |
-| `VPS_HOST` | ✅ | `plausch.example.ch` oder IP | Ohne diese Variable wird der Deploy-Schritt übersprungen |
-| `APP_DOMAIN` | ✅ | `plausch.example.ch` | Domain, für die Caddy das Zertifikat holt |
+| `VPS_HOST` | ✅ | `phonegames.example.ch` oder IP | Ohne diese Variable wird der Deploy-Schritt übersprungen |
+| `APP_DOMAIN` | ✅ | `phonegames.example.ch` | Domain, für die Caddy das Zertifikat holt |
 | `VPS_USER` | – | `deploy` | Standard: `deploy` |
 | `VPS_PORT` | – | `22` | Standard: `22` |
 | `APP_DIR` | – | `/opt/plausch` | Standard: `/opt/plausch` |
@@ -142,15 +144,15 @@ gh secret set VPS_SSH_KEY --env production < plausch_deploy
 ```
 
 ```bash
-ssh-keyscan -H plausch.example.ch | gh secret set VPS_KNOWN_HOSTS --env production
+ssh-keyscan -H phonegames.example.ch | gh secret set VPS_KNOWN_HOSTS --env production
 ```
 
 ```bash
-gh variable set VPS_HOST --body "plausch.example.ch"
+gh variable set VPS_HOST --body "phonegames.example.ch"
 ```
 
 ```bash
-gh variable set APP_DOMAIN --body "plausch.example.ch"
+gh variable set APP_DOMAIN --body "phonegames.example.ch"
 ```
 
 > 💡 Danach den privaten Schlüssel `plausch_deploy` lokal löschen oder sicher aufbewahren.
@@ -161,7 +163,7 @@ gh variable set APP_DOMAIN --body "plausch.example.ch"
 - in GitHub unter **Actions → Deploy → Run workflow** manuell starten.
 
 Der Workflow ([`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml)) zeigt am Ende
-`✅ https://plausch.example.ch läuft`. Beim allerersten Start holt Caddy das Zertifikat – das dauert einige Sekunden.
+`✅ https://phonegames.example.ch läuft`. Beim allerersten Start holt Caddy das Zertifikat – das dauert einige Sekunden.
 
 ## Betrieb
 

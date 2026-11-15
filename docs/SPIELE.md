@@ -97,7 +97,7 @@ Die meisten Spiele bestehen nur aus Inhalten, ein bisschen Logik und diesen Baus
 
 | Baustein | Datei | Zweck |
 | --- | --- | --- |
-| `GameShell`, `Stage`, `Headline`, `PromptCard`, `Actions` | `shared/GameShell.tsx` | Vollbild-Rahmen mit Beenden-Dialog, Ton-Schalter, Spielstand-Sheet, Wake Lock und dem Plausch-Look |
+| `GameShell`, `Stage`, `Headline`, `PromptCard`, `Actions` | `shared/GameShell.tsx` | Vollbild-Rahmen mit Beenden-Dialog, Ton-Schalter, Spielstand-Sheet, Wake Lock und dem Phonegames-Look |
 | `PassPrompt`, `SecretReveal`, `PassTurns` | `shared/PassTurns.tsx` | «Gib das Handy an …» und Geheimnisse, die nur sichtbar sind, solange der Finger auf der Karte liegt. `PassTurns` reicht das Handy der Reihe nach an alle weiter |
 | `useCountdown`, `TimerRing`, `useStartCountdown`, `CountdownOverlay` | `shared/Timer.tsx` | Zeitlimit mit Ring, Piepsen in den letzten Sekunden, Buzzer am Ende, «3 – 2 – 1»-Start |
 | `TeamTurnGame` | `shared/TeamTurnGame.tsx` | Komplette Engine für Teamspiele (Teams, Weitergeben, Zug mit Zeitlimit, Auswertung mit Korrektur, Sieger) – Pantomime, Verbotene Wörter und Summ-Raten sind damit je ~50 Zeilen |
