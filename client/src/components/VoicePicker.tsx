@@ -17,6 +17,7 @@ function useGermanVoices(): VoiceInfo[] {
 }
 
 function upgradeHint(best: VoiceInfo | undefined): string | null {
+  if (best?.server) return null;
   if (isIos()) {
     // WebKit only exposes the built-in voices to web pages – downloaded Premium/Enhanced voices stay reserved for apps.
     return 'Hinweis: Auf iPhone und iPad dürfen Web-Apps nur die vorinstallierten Stimmen verwenden. Heruntergeladene Premium-Stimmen wie «Anna (Premium)» stellt Apple leider nur Apps zur Verfügung.';
@@ -96,7 +97,13 @@ export function VoicePicker() {
       <ul className="voice-picker__list">
         {option(null, 'Automatisch', `Beste Stimme: ${voices[0]!.name}`)}
         {shown.map((v) =>
-          option(v.id, v.name, [QUALITY[v.quality], v.region, v.online ? 'online' : ''].filter(Boolean).join(' · ')),
+          option(
+            v.id,
+            v.name,
+            v.server
+              ? 'Natürlich · Phonegames-Stimme · klingt auf jedem Gerät gleich'
+              : [QUALITY[v.quality], v.region, v.online ? 'online' : ''].filter(Boolean).join(' · '),
+          ),
         )}
       </ul>
       {voices.length > VISIBLE && (

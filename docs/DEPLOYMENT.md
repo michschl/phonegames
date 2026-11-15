@@ -9,9 +9,10 @@ Nach der einmaligen Einrichtung wird **jeder Push auf `main` automatisch ausgero
  git push main
       │
       ▼
- GitHub Actions ─────────────────────────────────────────────────────────────┐
+ GitHub Actions ──────────────────────────────────────────────────────────────┐
  │ 1. CI: Typecheck, Tests, Build                                             │
- │ 2. Docker-Image bauen → ghcr.io/<owner>/<repo>:<commit-sha>  (+ :latest)  │
+ │ 2. Docker-Image bauen → ghcr.io/<owner>/<repo>:<commit-sha>  (+ :latest)   │
+ │    Stimmen-Image <repo>-tts nur, wenn sich der Ordner tts/ geändert hat    │
  │ 3. SSH auf den VPS: docker-compose.yml, Caddyfile, .env kopieren           │
  │    → docker compose pull && docker compose up -d --wait                    │
  │ 4. Health-Check https://<domain>/api/health                                │
@@ -23,7 +24,8 @@ Nach der einmaligen Einrichtung wird **jeder Push auf `main` automatisch ausgero
  │  caddy  :80/:443  ── HTTPS (Let’s Encrypt)   │
  │    │                                         │
  │    └──► app :3000  (Fastify: API + PWA)      │
- │          └── Volume app-data → phonegames.db │
+ │          ├── Volume app-data → phonegames.db │
+ │          └──► tts :5000 (Piper-Erzählstimme) │
  └──────────────────────────────────────────────┘
 ```
 
@@ -213,6 +215,14 @@ docker compose start app
 
 (`docker compose run` läuft als Benutzer `node`, damit die App die Datei danach wieder beschreiben darf.)
 
+### Erzählstimme
+
+Die natürliche Erzählstimme läuft im Container `tts` ([Piper](https://github.com/OHF-Voice/piper1-gpl), GPL-3.0) mit
+zwei deutschen Stimmen («Thorsten», «Kerstin», beide auf CC0-Daten trainiert). Das Image enthält die Stimmmodelle
+(rund 170 MB, mit Prüfsumme geprüft) und wird nur neu gebaut, wenn sich der Ordner [`tts/`](../tts) ändert. Der
+Dienst ist von aussen nicht erreichbar; die App ruft ihn auf und speichert jeden Satz im Volume (`tts-cache/`,
+max. 500 MB). Er braucht rund 400 MB Arbeitsspeicher (Limit 1 GB). Fällt er aus, lesen die Geräte selbst vor.
+
 ### Passkeys
 
 Passkeys (Anmelden mit Face ID, Fingerabdruck oder Geräte-PIN) funktionieren ohne weitere Einrichtung:
@@ -276,8 +286,19 @@ docker build -t phonegames:manual .
 docker save phonegames:manual | ssh deploy@<host> docker load
 ```
 
+Für die Erzählstimme ebenso das Stimmen-Image bauen und übertragen:
+
+```bash
+docker build -t phonegames-tts:manual tts
+```
+
+```bash
+docker save phonegames-tts:manual | ssh deploy@<host> docker load
+```
+
 Auf dem VPS in `/opt/phonegames` die Dateien aus `deploy/` ablegen, `.env` nach Vorlage
-[`deploy/.env.example`](../deploy/.env.example) anlegen (`APP_IMAGE=phonegames:manual`) und starten:
+[`deploy/.env.example`](../deploy/.env.example) anlegen (`APP_IMAGE=phonegames:manual`,
+`TTS_IMAGE=phonegames-tts:manual`) und starten:
 
 ```bash
 docker compose up -d

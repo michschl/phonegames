@@ -4,7 +4,7 @@ import { Avatar, Button } from '../../components/ui.tsx';
 import { sound } from '../../lib/audio.ts';
 import { confetti } from '../../lib/confetti.ts';
 import { haptic, setHapticsEnabled } from '../../lib/device.ts';
-import { primeSpeech, speak, stopSpeaking } from '../../lib/speech.ts';
+import { preloadSpeech, primeSpeech, speak, stopSpeaking } from '../../lib/speech.ts';
 import { pickRandom } from '../../lib/util.ts';
 import { useSettings } from '../../store/settings.ts';
 import { Actions, GameShell, Headline, Stage } from '../shared/GameShell.tsx';
@@ -44,6 +44,14 @@ const LINES = {
     'Die Sonne geht auf, und alle sind noch da. Die Werwölfe gingen heute leer aus!',
   ],
   discuss: 'Wer von euch ist ein Werwolf? Diskutiert!',
+  protectorWake: 'Beschützer, öffne die Augen. Wen möchtest du heute Nacht beschützen?',
+  protectorSleep: 'Beschützer, schliesse die Augen.',
+  wolvesSleep: 'Werwölfe, schliesst die Augen.',
+  seerWake: 'Seherin, öffne die Augen. Wen möchtest du durchschauen?',
+  seerSleep: 'Seherin, schliesse die Augen.',
+  nobodyBanished: 'Heute wird niemand verbannt.',
+  villageWins: 'Alle Werwölfe sind besiegt. Das Dorf gewinnt!',
+  wolvesWin: 'Die Werwölfe haben das Dorf übernommen. Die Werwölfe gewinnen!',
   banish: [
     (name: string) => `Das Dorf hat entschieden: ${name} muss das Dorf verlassen.`,
     (name: string) => `${name} wird aus dem Dorf verbannt.`,
@@ -80,6 +88,14 @@ export default function DorfGame({ players, settings, onExit }: GameProps<DorfSe
   const holder = (role: Role) => players.find((p) => rolesRef.current[p.id] === role);
   const inGame = (role: Role) => Object.values(rolesRef.current).includes(role);
   const isAlive = (id: string | undefined) => !!id && aliveRef.current.includes(id);
+
+  // Load the whole narration while roles are handed out: no waiting at night, and it works offline later.
+  useEffect(() => {
+    if (!settings.voice) return;
+    const fixed = Object.values(LINES).flatMap((line) => (typeof line === 'string' ? [line] : line.filter((l) => typeof l === 'string')));
+    const named = players.flatMap((p) => [...LINES.death, ...LINES.banish].map((line) => line(p.name)));
+    void preloadSpeech([...fixed, ...named]);
+  }, [settings.voice, players]);
 
   useEffect(
     () => () => {
@@ -146,10 +162,10 @@ export default function DorfGame({ players, settings, onExit }: GameProps<DorfSe
 
       let protectedId: string | null = null;
       if (inGame('beschuetzer')) {
-        await say('Beschützer, öffne die Augen. Wen möchtest du heute Nacht beschützen?');
+        await say(LINES.protectorWake);
         if (isAlive(holder('beschuetzer')?.id)) protectedId = await ask('beschuetzer');
         else await fakeTurn();
-        await say('Beschützer, schliesse die Augen.');
+        await say(LINES.protectorSleep);
         await pause(1200);
       }
 
@@ -157,11 +173,11 @@ export default function DorfGame({ players, settings, onExit }: GameProps<DorfSe
       await pause(1200);
       await say(pickRandom(LINES.wolvesWake));
       const victim = await ask('werwolf');
-      await say('Werwölfe, schliesst die Augen.');
+      await say(LINES.wolvesSleep);
       await pause(1200);
 
       if (inGame('seherin')) {
-        await say('Seherin, öffne die Augen. Wen möchtest du durchschauen?');
+        await say(LINES.seerWake);
         const seer = holder('seherin');
         if (isAlive(seer?.id)) {
           const target = await ask('seherin');
@@ -173,7 +189,7 @@ export default function DorfGame({ players, settings, onExit }: GameProps<DorfSe
         } else {
           await fakeTurn();
         }
-        await say('Seherin, schliesse die Augen.');
+        await say(LINES.seerSleep);
         await pause(1200);
       }
 
@@ -211,7 +227,7 @@ export default function DorfGame({ players, settings, onExit }: GameProps<DorfSe
     setResult(w);
     setPhase('end');
     stopAmbience.current?.();
-    const text = w === 'dorf' ? 'Alle Werwölfe sind besiegt. Das Dorf gewinnt!' : 'Die Werwölfe haben das Dorf übernommen. Die Werwölfe gewinnen!';
+    const text = w === 'dorf' ? LINES.villageWins : LINES.wolvesWin;
     if (settings.voice) void speak(text);
     if (w === 'dorf') {
       sound.fanfare();
@@ -245,8 +261,8 @@ export default function DorfGame({ players, settings, onExit }: GameProps<DorfSe
       haptic([120, 60, 120]);
       if (finishIfWon(nextAlive)) return;
     } else {
-      setNarration('Heute wird niemand verbannt.');
-      if (settings.voice) void speak('Heute wird niemand verbannt.');
+      setNarration(LINES.nobodyBanished);
+      if (settings.voice) void speak(LINES.nobodyBanished);
       sound.whoosh();
     }
     setPhase('dusk');

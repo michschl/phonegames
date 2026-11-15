@@ -116,6 +116,7 @@ Alle Antworten sind JSON. Fehler haben die Form `{ "error": "code", "message": "
 | Methode & Pfad | Auth | Body | Antwort |
 | --- | --- | --- | --- |
 | `GET /api/health` | – | – | `{ ok, version }` |
+| `GET /api/tts?voice=thorsten&text=…` | ✅ | – | `audio/wav` (ein Satz, max. 300 Zeichen) · `503 tts_unavailable` |
 | `GET /api/auth/options` | – | – | `{ inviteRequired }` |
 | `POST /api/auth/register` | – | `{ name, email, password, inviteCode? }` | `201 { user }` + Cookie · `403 invite_required` / `invalid_invite` |
 | `POST /api/auth/login` | – | `{ email, password }` | `{ user }` + Cookie |
@@ -149,6 +150,7 @@ Die Typen stehen in [`shared/types.ts`](../shared/types.ts).
 | `LOG_LEVEL` | `info` / `debug` | Fastify/Pino-Loglevel |
 | `APP_VERSION` | `dev` | Wird im Health-Check und in der App angezeigt |
 | `INVITE_CODES` | – | Einladungscodes, mit Komma getrennt. Gesetzt = Registrierung nur mit Code; leer = offen |
+| `TTS_URL` | – | Piper-Dienst für die Erzählstimme (Docker: `http://tts:5000`). Ohne Wert gibt es nur Gerätestimmen |
 | `APP_ORIGIN` | Dev: `http://localhost:5173,http://localhost:3000` | Öffentliche Adresse der App (Docker: `https://${APP_DOMAIN}`). Passkeys sind an diese Domain gebunden; ohne Wert sind sie in Produktion ausgeschaltet |
 
 ## Sound, Grafik & Haptik
@@ -170,7 +172,15 @@ Die Typen stehen in [`shared/types.ts`](../shared/types.ts).
   Blitz, Screen-Shake und Comic-Schriftzug. Bei «Bewegung reduzieren» wird alles abgeschwächt.
 - **Haptik:** Vibration (Android) beim Ticken in der heissen Phase, bei der Explosion, bei richtigen/falschen Antworten.
 - **Wake Lock:** Der Bildschirm bleibt während des Spiels eingeschaltet.
-- **Sprachausgabe:** «Nachts im Dorf» liest die Nacht mit der Web Speech API vor
+- **Erzählstimme (Phonegames-Stimmen):** Natürliche neuronale Stimmen («Thorsten», «Kerstin») von
+  [Piper](https://github.com/OHF-Voice/piper1-gpl) laufen in einem eigenen Container ([`tts/`](../tts)) auf dem
+  Server. Die App fragt `GET /api/tts?voice=…&text=…` ab; der Server reicht an Piper weiter und speichert jeden
+  fertigen Satz als WAV im Daten-Volume (`tts-cache/`, max. 500 MB). Im Browser werden die Sätze per Web Audio
+  abgespielt und in der Cache Storage abgelegt – «Nachts im Dorf» lädt beim Rollenverteilen alle Ansagen (auch mit
+  den Spielernamen) vor, damit es nachts ohne Wartezeit und später auch offline klingt. So klingt die Stimme auf
+  jedem Gerät gleich, auch auf dem iPhone. Ist ein Satz nicht verfügbar (offline und nicht im Cache, Dienst
+  gestört), liest ihn die beste Gerätestimme.
+- **Gerätestimmen:** Ohne Phonegames-Stimme liest die Web Speech API vor
   ([`client/src/lib/speech.ts`](../client/src/lib/speech.ts)). Die Qualität hängt fast nur von der Stimme ab, deshalb
   werden die deutschen Stimmen des Geräts bewertet: natürliche/neuronale, Premium- und erweiterte Stimmen zuerst,
   Schweizer vor deutschen und österreichischen, alte Desktop-Stimmen zuletzt, Spassstimmen von iOS («Eddy»,
