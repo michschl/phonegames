@@ -2,7 +2,7 @@ import type { Database } from './db.ts';
 import { transaction } from './db.ts';
 import { randomToken, sha256 } from './security.ts';
 import { TOMBSTONE_TTL_MS, shouldReplace } from '../../shared/sync.ts';
-import type { LibraryItem, Player, PlayerGroup, PublicUser, SyncPayload } from '../../shared/types.ts';
+import type { LibraryItem, PasskeyInfo, Player, PlayerGroup, PublicUser, SyncPayload } from '../../shared/types.ts';
 
 export const SESSION_TTL_MS = 180 * 24 * 60 * 60 * 1000;
 /** Sessions are extended at most once per day to limit writes. */
@@ -17,7 +17,11 @@ interface UserRow {
   password_hash: string;
   created_at: number;
   updated_at: number;
+  passkey_hint_dismissed: number;
+  passkey_count: number;
 }
+
+const SELECT_USER = 'SELECT u.*, (SELECT COUNT(*) FROM passkeys p WHERE p.user_id = u.id) AS passkey_count FROM users u';
 
 export interface UserRecord extends PublicUser {
   passwordHash: string;
@@ -31,6 +35,8 @@ function toUser(row: UserRow): UserRecord {
     avatar: row.avatar,
     color: row.color,
     createdAt: row.created_at,
+    passkeys: row.passkey_count,
+    passkeyHintDismissed: row.passkey_hint_dismissed === 1,
     passwordHash: row.password_hash,
   };
 }
@@ -43,12 +49,12 @@ export function toPublicUser(user: UserRecord): PublicUser {
 /* ------------------------------------------------------------------ users */
 
 export function findUserByEmail(db: Database, email: string): UserRecord | null {
-  const row = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as UserRow | undefined;
+  const row = db.prepare(`${SELECT_USER} WHERE u.email = ?`).get(email) as UserRow | undefined;
   return row ? toUser(row) : null;
 }
 
 export function findUserById(db: Database, id: string): UserRecord | null {
-  const row = db.prepare('SELECT * FROM users WHERE id = ?').get(id) as UserRow | undefined;
+  const row = db.prepare(`${SELECT_USER} WHERE u.id = ?`).get(id) as UserRow | undefined;
   return row ? toUser(row) : null;
 }
 
@@ -67,7 +73,14 @@ export function createUser(
 export function updateUser(
   db: Database,
   id: string,
-  patch: Partial<{ email: string; name: string; avatar: string; color: string; passwordHash: string }>,
+  patch: Partial<{
+    email: string;
+    name: string;
+    avatar: string;
+    color: string;
+    passwordHash: string;
+    passkeyHintDismissed: boolean;
+  }>,
 ): UserRecord {
   const columns: Record<string, string> = {
     email: 'email',
@@ -75,13 +88,14 @@ export function updateUser(
     avatar: 'avatar',
     color: 'color',
     passwordHash: 'password_hash',
+    passkeyHintDismissed: 'passkey_hint_dismissed',
   };
   const sets: string[] = [];
-  const values: string[] = [];
+  const values: (string | number)[] = [];
   for (const [key, value] of Object.entries(patch)) {
     if (value === undefined) continue;
     sets.push(`${columns[key]} = ?`);
-    values.push(value);
+    values.push(typeof value === 'boolean' ? Number(value) : value);
   }
   if (sets.length > 0) {
     db.prepare(`UPDATE users SET ${sets.join(', ')}, updated_at = ? WHERE id = ?`).run(...values, Date.now(), id);
@@ -91,6 +105,96 @@ export function updateUser(
 
 export function deleteUser(db: Database, id: string): void {
   db.prepare('DELETE FROM users WHERE id = ?').run(id);
+}
+
+/* --------------------------------------------------------------- passkeys */
+
+interface PasskeyRow {
+  id: string;
+  user_id: string;
+  public_key: Uint8Array;
+  counter: number;
+  transports: string;
+  device_type: string;
+  backed_up: number;
+  name: string;
+  created_at: number;
+  last_used_at: number | null;
+}
+
+/** Everything the server needs to verify a passkey sign-in. */
+export interface PasskeyRecord extends PasskeyInfo {
+  userId: string;
+  publicKey: Uint8Array<ArrayBuffer>;
+  counter: number;
+  transports: string[];
+}
+
+function toPasskey(row: PasskeyRow): PasskeyRecord {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    publicKey: new Uint8Array(row.public_key),
+    counter: row.counter,
+    transports: JSON.parse(row.transports) as string[],
+    name: row.name,
+    createdAt: row.created_at,
+    lastUsedAt: row.last_used_at,
+    synced: row.backed_up === 1,
+  };
+}
+
+export function toPasskeyInfo({ id, name, createdAt, lastUsedAt, synced }: PasskeyRecord): PasskeyInfo {
+  return { id, name, createdAt, lastUsedAt, synced };
+}
+
+export function listPasskeys(db: Database, userId: string): PasskeyRecord[] {
+  const rows = db.prepare('SELECT * FROM passkeys WHERE user_id = ? ORDER BY created_at').all(userId) as unknown as PasskeyRow[];
+  return rows.map(toPasskey);
+}
+
+export function findPasskey(db: Database, id: string): PasskeyRecord | null {
+  const row = db.prepare('SELECT * FROM passkeys WHERE id = ?').get(id) as PasskeyRow | undefined;
+  return row ? toPasskey(row) : null;
+}
+
+export function insertPasskey(
+  db: Database,
+  passkey: {
+    id: string;
+    userId: string;
+    publicKey: Uint8Array;
+    counter: number;
+    transports: string[];
+    deviceType: string;
+    backedUp: boolean;
+    name: string;
+  },
+): PasskeyRecord {
+  db.prepare(
+    `INSERT INTO passkeys (id, user_id, public_key, counter, transports, device_type, backed_up, name, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    passkey.id,
+    passkey.userId,
+    passkey.publicKey,
+    passkey.counter,
+    JSON.stringify(passkey.transports),
+    passkey.deviceType,
+    Number(passkey.backedUp),
+    passkey.name.slice(0, 80),
+    Date.now(),
+  );
+  return findPasskey(db, passkey.id)!;
+}
+
+export function markPasskeyUsed(db: Database, id: string, counter: number): void {
+  db.prepare('UPDATE passkeys SET counter = ?, last_used_at = ? WHERE id = ?').run(counter, Date.now(), id);
+}
+
+/** Deletes one of the user's passkeys; false when it does not exist (or belongs to someone else). */
+export function deletePasskey(db: Database, userId: string, id: string): boolean {
+  return db.prepare('DELETE FROM passkeys WHERE id = ? AND user_id = ?').run(id, userId).changes > 0;
 }
 
 /* --------------------------------------------------------------- sessions */

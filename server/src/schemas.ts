@@ -42,6 +42,8 @@ export const updateAccountSchema = z.object({
   email: emailSchema.optional(),
   avatar: avatarSchema.optional(),
   color: hexColor.optional(),
+  /** Hide the passkey hint on the home screen for good. */
+  passkeyHintDismissed: z.literal(true).optional(),
   /** Required when the e-mail address changes. */
   password: z.string().max(LIMITS.passwordMax).optional(),
 });
@@ -82,3 +84,21 @@ export const syncSchema = z.object({
   library: z.array(libraryItemSchema).max(LIMITS.library * 2),
   groups: z.array(groupSchema).max(LIMITS.groups * 2),
 });
+
+/* ---------------------------------------------------------------- passkeys */
+
+const base64url = z.string().regex(/^[A-Za-z0-9_-]+$/, 'Ungültige Daten.').max(4096);
+
+/** Shape of a WebAuthn credential (JSON) – the details are verified by SimpleWebAuthn. */
+const credentialSchema = z
+  .object({
+    id: base64url,
+    rawId: base64url,
+    type: z.literal('public-key'),
+    response: z.record(z.string(), z.unknown()),
+    clientExtensionResults: z.record(z.string(), z.unknown()).default({}),
+    authenticatorAttachment: z.string().max(40).optional(),
+  })
+  .loose();
+
+export const passkeyResponseSchema = z.object({ response: credentialSchema });

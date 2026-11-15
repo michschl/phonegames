@@ -52,6 +52,23 @@ const MIGRATIONS: string[] = [
     PRIMARY KEY (user_id, id)
   );
   `,
+  `
+  ALTER TABLE users ADD COLUMN passkey_hint_dismissed INTEGER NOT NULL DEFAULT 0;
+
+  CREATE TABLE passkeys (
+    id           TEXT PRIMARY KEY,
+    user_id      TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    public_key   BLOB NOT NULL,
+    counter      INTEGER NOT NULL DEFAULT 0,
+    transports   TEXT NOT NULL DEFAULT '[]',
+    device_type  TEXT NOT NULL,
+    backed_up    INTEGER NOT NULL DEFAULT 0,
+    name         TEXT NOT NULL,
+    created_at   INTEGER NOT NULL,
+    last_used_at INTEGER
+  );
+  CREATE INDEX passkeys_user ON passkeys(user_id);
+  `,
 ];
 
 export function openDatabase(file: string): Database {

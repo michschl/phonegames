@@ -12,6 +12,21 @@ export interface PublicUser {
   /** Hex colour used as avatar background. */
   color: string;
   createdAt: number;
+  /** Number of passkeys registered for this account. */
+  passkeys: number;
+  /** The user dismissed the hint to set up a passkey (for good, on all devices). */
+  passkeyHintDismissed: boolean;
+}
+
+/** A passkey as shown in the account settings (no key material). */
+export interface PasskeyInfo {
+  id: string;
+  /** Provider or device, e.g. «iCloud-Schlüsselbund» or «Passkey auf Android». */
+  name: string;
+  createdAt: number;
+  lastUsedAt: number | null;
+  /** Synced between devices (e.g. via iCloud or Google). */
+  synced: boolean;
 }
 
 export interface Player {
@@ -52,6 +67,8 @@ export interface SyncResponse extends SyncPayload {
 export interface AuthOptions {
   /** Registering requires an invitation code. */
   inviteRequired: boolean;
+  /** Passkey settings, or null when the server has no app origin configured. */
+  passkeys: { rpID: string } | null;
 }
 
 export interface ApiErrorBody {

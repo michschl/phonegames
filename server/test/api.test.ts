@@ -142,9 +142,9 @@ describe('invitation codes', () => {
 
   it('tells the client whether a code is needed', async () => {
     const open = await app.inject({ method: 'GET', url: '/api/auth/options' });
-    expect(open.json()).toEqual({ inviteRequired: false });
+    expect(open.json()).toEqual({ inviteRequired: false, passkeys: null });
     const closed = await gated.inject({ method: 'GET', url: '/api/auth/options' });
-    expect(closed.json()).toEqual({ inviteRequired: true });
+    expect(closed.json()).toMatchObject({ inviteRequired: true });
   });
 
   it('rejects registrations without or with a wrong code', async () => {

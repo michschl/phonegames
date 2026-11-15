@@ -4,7 +4,8 @@ import { handleSessionExpired, syncNow } from './sync.ts';
 import { useAuth } from '../store/auth.ts';
 import { useData } from '../store/data.ts';
 
-function signIn(user: PublicUser): void {
+/** Store the signed-in user and start syncing their data. */
+export function signIn(user: PublicUser): void {
   const data = useData.getState();
   if (data.ownerId !== user.id) data.resetFor(user.id);
   useAuth.setState({ user });
@@ -51,7 +52,7 @@ export async function refreshSession(): Promise<void> {
 }
 
 export async function updateProfile(
-  patch: Partial<{ name: string; email: string; avatar: string; color: string; password: string }>,
+  patch: Partial<{ name: string; email: string; avatar: string; color: string; password: string; passkeyHintDismissed: true }>,
 ): Promise<PublicUser> {
   const { user } = await api.updateAccount(patch);
   useAuth.setState({ user });

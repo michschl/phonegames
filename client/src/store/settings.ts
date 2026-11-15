@@ -13,12 +13,15 @@ interface SettingsState {
   lastPlayed: { gameId: string; groupId?: string; at: number } | null;
   /** Preferred narrator voice (voiceURI); null = pick the best one automatically. */
   voiceId: string | null;
+  /** Hints that were dismissed on this device, e.g. `passkey:<userId>`. */
+  dismissedHints: string[];
   setSound(on: boolean): void;
   setHaptics(on: boolean): void;
   setGameSettings(gameId: string, value: unknown): void;
   setLastGroup(gameId: string, groupId: string): void;
   setLastPlayed(gameId: string, groupId?: string): void;
   setVoiceId(voiceId: string | null): void;
+  dismissHint(key: string): void;
 }
 
 export const useSettings = create<SettingsState>()(
@@ -30,12 +33,14 @@ export const useSettings = create<SettingsState>()(
       lastGroupByGame: {},
       lastPlayed: null,
       voiceId: null,
+      dismissedHints: [],
       setSound: (sound) => set({ sound }),
       setHaptics: (haptics) => set({ haptics }),
       setGameSettings: (gameId, value) => set((s) => ({ gameSettings: { ...s.gameSettings, [gameId]: value } })),
       setLastGroup: (gameId, groupId) => set((s) => ({ lastGroupByGame: { ...s.lastGroupByGame, [gameId]: groupId } })),
       setLastPlayed: (gameId, groupId) => set({ lastPlayed: { gameId, groupId, at: Date.now() } }),
       setVoiceId: (voiceId) => set({ voiceId }),
+      dismissHint: (key) => set((s) => ({ dismissedHints: s.dismissedHints.includes(key) ? s.dismissedHints : [...s.dismissedHints, key] })),
     }),
     { name: 'phonegames-settings', version: 1 },
   ),
