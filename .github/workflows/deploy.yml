@@ -94,6 +94,7 @@ jobs:
       VPS_PORT: ${{ vars.VPS_PORT || '22' }}
       APP_DIR: ${{ vars.APP_DIR || '/opt/phonegames' }}
       APP_DOMAIN: ${{ vars.APP_DOMAIN }}
+      REDIRECT_DOMAINS: ${{ vars.REDIRECT_DOMAINS }}
       IMAGE_TAG: ${{ inputs.image_tag || needs.image.outputs.tag }}
     steps:
       - uses: actions/checkout@v5
@@ -108,6 +109,11 @@ jobs:
             if [ -z "${!v}" ]; then echo "::error::Variable $v fehlt"; missing=1; fi
           done
           if [ "$HAS_SSH_KEY" != "true" ]; then echo "::error::Secret VPS_SSH_KEY fehlt"; missing=1; fi
+          domains_pattern='^[A-Za-z0-9.-]+([ ,]+[A-Za-z0-9.-]+)*$'
+          if [ -n "$REDIRECT_DOMAINS" ] && ! [[ "$REDIRECT_DOMAINS" =~ $domains_pattern ]]; then
+            echo "::error::REDIRECT_DOMAINS: Domains mit Komma trennen, z. B. «phonegames.ch, www.phonegames.ch»."
+            missing=1
+          fi
           codes_pattern='^[A-Za-z0-9_, -]+$'
           if [ -z "$INVITE_CODES" ]; then
             echo "::warning::Secret INVITE_CODES fehlt – die Registrierung ist für alle offen."
@@ -154,6 +160,8 @@ jobs:
             echo "TTS_IMAGE=${IMAGE}-tts:${TTS_TAG}"
             echo "APP_VERSION=${IMAGE_TAG::7}"
             echo "APP_DOMAIN=${APP_DOMAIN}"
+            # "a.ch b.ch" or "a.ch,b.ch" -> "a.ch, b.ch" (Caddy site addresses)
+            if [ -n "$REDIRECT_DOMAINS" ]; then echo "REDIRECT_DOMAINS=\"$(echo "$REDIRECT_DOMAINS" | tr ', ' '\n\n' | grep -v '^$' | paste -sd, - | sed 's/,/, /g')\""; fi
             echo "INVITE_CODES=${INVITE_CODES// /}"
           } > deploy/.env
           if ! ssh vps "mkdir -p '$APP_DIR' 2>/dev/null && test -w '$APP_DIR'"; then
@@ -184,3 +192,18 @@ jobs:
           echo "::error::Health-Check fehlgeschlagen"
           ssh vps "cd '$APP_DIR' && docker compose ps && docker compose logs --tail 80"
           exit 1
+
+      - name: Weiterleitungen prüfen
+        if: env.REDIRECT_DOMAINS != ''
+        run: |
+          # New domains need a few seconds for their certificate – this only warns.
+          for domain in $(echo "$REDIRECT_DOMAINS" | tr ',' ' '); do
+            ok=0
+            for i in $(seq 1 10); do
+              location=$(curl -s -o /dev/null -w '%{redirect_url}' "https://${domain}/" || true)
+              if [ "$location" = "https://${APP_DOMAIN}/" ]; then ok=1; break; fi
+              sleep 6
+            done
+            if [ $ok = 1 ]; then echo "✅ https://${domain} → https://${APP_DOMAIN}"
+            else echo "::warning::https://${domain} leitet (noch) nicht weiter – zeigt der DNS-Eintrag auf den VPS?"; fi
+          done
