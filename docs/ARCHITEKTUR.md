@@ -80,6 +80,7 @@ Spieleinstellungen (z. B. Zünddauer), Ton und Vibration sind **Geräteeinstellu
 | Passwörter | `scrypt` (N=2¹⁵, r=8, p=3, 16-Byte-Salt) aus `node:crypto`; Parameter werden mit dem Hash gespeichert und sind damit später erhöhbar |
 | Sessions | Zufälliges 256-Bit-Token im Cookie `phonegames_session` (`HttpOnly`, `Secure`, `SameSite=Lax`); in der DB liegt nur der SHA-256-Hash. Gültig 180 Tage, verlängert sich bei Nutzung |
 | CSRF | Ändernde API-Aufrufe brauchen den Header `X-Requested-With: phonegames`. Browser senden eigene Header nur bei Same-Origin-Anfragen (CORS ist nicht aktiviert) |
+| Passkeys | WebAuthn mit [SimpleWebAuthn](https://simplewebauthn.dev): auffindbare Passkeys mit Pflicht zur Benutzerprüfung (Face ID, Fingerabdruck, PIN), keine Attestierung. Challenges sind einmalig und 5 Minuten gültig; Origin und RP-ID kommen aus `APP_ORIGIN`. In der DB liegt nur der öffentliche Schlüssel. Gelöschte Passkeys werden dem Gerät per Signal-API gemeldet, damit es sie vergisst |
 | Einladungscodes | Vergleich in konstanter Zeit (SHA-256 + `timingSafeEqual`), geprüft **vor** der E-Mail-Prüfung – ohne gültigen Code lässt sich nicht herausfinden, ob ein Konto existiert |
 | Brute Force | Rate-Limit auf Registrierung, Anmeldung, Passwort- und Kontoänderungen; konstante Antwortzeit bei unbekannten E-Mails |
 | Passwortänderung | Meldet alle anderen Geräte ab. E-Mail-Änderung und Kontolöschung erfordern das aktuelle Passwort |
@@ -98,7 +99,8 @@ die Daten in der Schweiz.
 
 | Tabelle | Inhalt |
 | --- | --- |
-| `users` | `id`, `email` (eindeutig, case-insensitive), `name`, `avatar`, `color`, `password_hash`, Zeitstempel |
+| `users` | `id`, `email` (eindeutig, case-insensitive), `name`, `avatar`, `color`, `password_hash`, `passkey_hint_dismissed`, Zeitstempel |
+| `passkeys` | `id` (Credential-ID), `user_id`, `public_key`, `counter`, `transports`, `device_type`, `backed_up`, `name`, `created_at`, `last_used_at` |
 | `sessions` | `token_hash`, `user_id`, `expires_at`, `last_seen_at`, `user_agent` |
 | `library` | `user_id`, `game_id`, `added_at`, `updated_at`, `deleted` |
 | `player_groups` | `user_id`, `id`, `name`, `emoji`, `players` (JSON), `created_at`, `updated_at`, `deleted` |
@@ -118,8 +120,14 @@ Alle Antworten sind JSON. Fehler haben die Form `{ "error": "code", "message": "
 | `POST /api/auth/register` | – | `{ name, email, password, inviteCode? }` | `201 { user }` + Cookie · `403 invite_required` / `invalid_invite` |
 | `POST /api/auth/login` | – | `{ email, password }` | `{ user }` + Cookie |
 | `POST /api/auth/logout` | – | – | `204` |
+| `POST /api/passkeys/login/options` | – | – | WebAuthn-Optionen zum Anmelden |
+| `POST /api/passkeys/login/verify` | – | `{ response }` | `{ user }` + Cookie · `404 unknown_passkey` |
+| `GET /api/passkeys` | ✅ | – | `{ passkeys, userHandle }` |
+| `POST /api/passkeys/register/options` | ✅ | – | WebAuthn-Optionen zum Einrichten |
+| `POST /api/passkeys/register/verify` | ✅ | `{ response }` | `201 { passkey, user }` |
+| `DELETE /api/passkeys/:id` | ✅ | – | `{ user, remaining }` |
 | `GET /api/auth/me` | ✅ | – | `{ user }` |
-| `PATCH /api/account` | ✅ | `{ name?, avatar?, color?, email?, password? }` | `{ user }` |
+| `PATCH /api/account` | ✅ | `{ name?, avatar?, color?, email?, password?, passkeyHintDismissed? }` | `{ user }` |
 | `POST /api/account/password` | ✅ | `{ currentPassword, newPassword }` | `204` |
 | `DELETE /api/account` | ✅ | `{ password }` | `204` |
 | `GET /api/account/export` | ✅ | – | JSON-Datei mit allen Daten |
@@ -141,6 +149,7 @@ Die Typen stehen in [`shared/types.ts`](../shared/types.ts).
 | `LOG_LEVEL` | `info` / `debug` | Fastify/Pino-Loglevel |
 | `APP_VERSION` | `dev` | Wird im Health-Check und in der App angezeigt |
 | `INVITE_CODES` | – | Einladungscodes, mit Komma getrennt. Gesetzt = Registrierung nur mit Code; leer = offen |
+| `APP_ORIGIN` | Dev: `http://localhost:5173,http://localhost:3000` | Öffentliche Adresse der App (Docker: `https://${APP_DOMAIN}`). Passkeys sind an diese Domain gebunden; ohne Wert sind sie in Produktion ausgeschaltet |
 
 ## Sound, Grafik & Haptik
 

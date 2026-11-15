@@ -3,7 +3,9 @@ import { Link, useNavigate, useSearchParams } from 'react-router';
 import { Mascot, type Mood } from '../components/Brand.tsx';
 import { Button, TextField } from '../components/ui.tsx';
 import { GAMES } from '../games/registry.ts';
-import { api, ApiError, errorMessage } from '../lib/api.ts';
+import { ApiError, errorMessage } from '../lib/api.ts';
+import { useAuthOptions } from '../lib/authOptions.ts';
+import { PasskeyCancelled, passkeysSupported, preparePasskeySignIn, signInWithPasskey } from '../lib/passkeys.ts';
 import { confetti } from '../lib/confetti.ts';
 import { haptic } from '../lib/device.ts';
 import { login, register } from '../lib/session.ts';
@@ -109,30 +111,12 @@ function AuthShell({ title, subtitle, mood, children }: { title: string; subtitl
   );
 }
 
-/** Whether the server currently requires an invitation code (null = not known yet). */
-function useInviteRequired(): boolean | null {
-  const [required, setRequired] = useState<boolean | null>(null);
-  useEffect(() => {
-    let active = true;
-    api
-      .authOptions()
-      .then((options) => active && setRequired(options.inviteRequired))
-      .catch(() => {
-        // Offline or server unreachable: keep showing the field, registering needs the server anyway.
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-  return required;
-}
-
 export function RegisterPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const linkCode = (params.get('code') ?? '').trim().toUpperCase().slice(0, 64);
-  const inviteRequired = useInviteRequired();
-  const showInvite = inviteRequired !== false;
+  // Unknown (offline, loading): keep showing the field, registering needs the server anyway.
+  const showInvite = useAuthOptions()?.inviteRequired !== false;
   const [inviteCode, setInviteCode] = useState(linkCode);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -243,10 +227,33 @@ export function RegisterPage() {
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const options = useAuthOptions();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [passkeyLoading, setPasskeyLoading] = useState(false);
+  const canUsePasskey = !!options?.passkeys && passkeysSupported();
+
+  useEffect(() => {
+    if (canUsePasskey) preparePasskeySignIn();
+  }, [canUsePasskey]);
+
+  const withPasskey = async () => {
+    setError(null);
+    setPasskeyLoading(true);
+    try {
+      const user = await signInWithPasskey();
+      confetti({ count: 90 });
+      toast(`Schön, dass du da bist, ${user.name}!`, { tone: 'success' });
+      navigate('/', { replace: true, viewTransition: true });
+    } catch (err) {
+      if (!(err instanceof PasskeyCancelled)) setError(err instanceof Error ? err.message : errorMessage(err));
+    } finally {
+      setPasskeyLoading(false);
+      preparePasskeySignIn();
+    }
+  };
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -290,6 +297,16 @@ export function LoginPage() {
           Anmelden
         </Button>
       </form>
+      {canUsePasskey && (
+        <>
+          <p className="auth__divider">
+            <span>oder</span>
+          </p>
+          <Button variant="secondary" size="lg" block icon="key" loading={passkeyLoading} onClick={() => void withPasskey()}>
+            Mit Passkey anmelden
+          </Button>
+        </>
+      )}
       <p className="auth__switch">
         Neu hier? <Link to="/registrieren">Konto erstellen</Link>
       </p>

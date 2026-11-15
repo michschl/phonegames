@@ -213,6 +213,13 @@ docker compose start app
 
 (`docker compose run` läuft als Benutzer `node`, damit die App die Datei danach wieder beschreiben darf.)
 
+### Passkeys
+
+Passkeys (Anmelden mit Face ID, Fingerabdruck oder Geräte-PIN) funktionieren ohne weitere Einrichtung:
+`docker-compose.yml` setzt `APP_ORIGIN` automatisch auf `https://<APP_DOMAIN>`. Passkeys sind fest an diese
+Domain gebunden – wechselt die Domain, müssen alle ihre Passkeys neu einrichten (Anmelden mit Passwort geht
+weiterhin).
+
 ### Einladungscodes
 
 Solange das Secret `INVITE_CODES` gesetzt ist, braucht die Registrierung einen dieser Codes. Gross-/Kleinschreibung

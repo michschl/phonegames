@@ -7,6 +7,7 @@ import { api, errorMessage } from '../lib/api.ts';
 import { isIos, isStandalone, setHapticsEnabled } from '../lib/device.ts';
 import { speechAvailable, stopSpeaking } from '../lib/speech.ts';
 import { VoicePicker } from '../components/VoicePicker.tsx';
+import { PasskeySettings } from '../components/PasskeySettings.tsx';
 import { promptInstall, usePwa } from '../lib/pwa.ts';
 import { deleteAccount, logout, updateProfile } from '../lib/session.ts';
 import { syncNow } from '../lib/sync.ts';
@@ -81,6 +82,8 @@ export function AccountPage() {
           <ListButton icon="lock" label="Passwort ändern" onClick={() => setSheet('password')} />
         </div>
       </Section>
+
+      <PasskeySettings />
 
       <Section title="App">
         <div className="list">

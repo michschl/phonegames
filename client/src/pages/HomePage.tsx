@@ -3,6 +3,7 @@ import { Logo } from '../components/Brand.tsx';
 import { GameHero, GameMini, GameTile } from '../components/GameCard.tsx';
 import { Icon } from '../components/Icon.tsx';
 import { OfflinePill } from '../components/Layout.tsx';
+import { PasskeyHint } from '../components/PasskeyHint.tsx';
 import { Avatar, EmptyState } from '../components/ui.tsx';
 import { GAMES, getGame } from '../games/registry.ts';
 import type { GameDefinition } from '../games/types.ts';
@@ -84,6 +85,8 @@ export function HomePage() {
             <GameHero game={games[0]} eyebrow="Jetzt spielen" text={games[0].tagline} />
           </div>
         ) : null}
+
+        <PasskeyHint />
 
         {installEvent && !isStandalone() && (
           <button type="button" className="install-banner" onClick={() => void promptInstall()}>

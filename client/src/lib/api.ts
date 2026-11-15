@@ -1,4 +1,10 @@
-import type { ApiErrorBody, AuthOptions, PublicUser, SyncPayload, SyncResponse } from '../../../shared/types.ts';
+import type {
+  AuthenticationResponseJSON,
+  PublicKeyCredentialCreationOptionsJSON,
+  PublicKeyCredentialRequestOptionsJSON,
+  RegistrationResponseJSON,
+} from '@simplewebauthn/browser';
+import type { ApiErrorBody, AuthOptions, PasskeyInfo, PublicUser, SyncPayload, SyncResponse } from '../../../shared/types.ts';
 
 export class ApiError extends Error {
   readonly status: number;
@@ -58,13 +64,23 @@ export const api = {
   login: (body: { email: string; password: string }) => request<{ user: PublicUser }>('POST', '/api/auth/login', body),
   logout: () => request<void>('POST', '/api/auth/logout'),
   me: () => request<{ user: PublicUser }>('GET', '/api/auth/me'),
-  updateAccount: (body: Partial<{ name: string; email: string; avatar: string; color: string; password: string }>) =>
-    request<{ user: PublicUser }>('PATCH', '/api/account', body),
+  updateAccount: (
+    body: Partial<{ name: string; email: string; avatar: string; color: string; password: string; passkeyHintDismissed: true }>,
+  ) => request<{ user: PublicUser }>('PATCH', '/api/account', body),
   changePassword: (body: { currentPassword: string; newPassword: string }) =>
     request<void>('POST', '/api/account/password', body),
   deleteAccount: (body: { password: string }) => request<void>('DELETE', '/api/account', body),
   exportData: () => request<unknown>('GET', '/api/account/export'),
   sync: (body: SyncPayload) => request<SyncResponse>('POST', '/api/sync', body),
+  passkeys: () => request<{ passkeys: PasskeyInfo[]; userHandle: string }>('GET', '/api/passkeys'),
+  passkeyRegisterOptions: () => request<PublicKeyCredentialCreationOptionsJSON>('POST', '/api/passkeys/register/options', {}),
+  passkeyRegisterVerify: (response: RegistrationResponseJSON) =>
+    request<{ passkey: PasskeyInfo; user: PublicUser }>('POST', '/api/passkeys/register/verify', { response }),
+  deletePasskey: (id: string) =>
+    request<{ user: PublicUser; remaining: string[] }>('DELETE', `/api/passkeys/${encodeURIComponent(id)}`),
+  passkeyLoginOptions: () => request<PublicKeyCredentialRequestOptionsJSON>('POST', '/api/passkeys/login/options', {}),
+  passkeyLoginVerify: (response: AuthenticationResponseJSON) =>
+    request<{ user: PublicUser }>('POST', '/api/passkeys/login/verify', { response }),
 };
 
 export function errorMessage(error: unknown): string {
