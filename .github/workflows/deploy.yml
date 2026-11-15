@@ -204,6 +204,10 @@ jobs:
               if [ "$location" = "https://${APP_DOMAIN}/" ]; then ok=1; break; fi
               sleep 6
             done
-            if [ $ok = 1 ]; then echo "✅ https://${domain} → https://${APP_DOMAIN}"
-            else echo "::warning::https://${domain} leitet (noch) nicht weiter – zeigt der DNS-Eintrag auf den VPS?"; fi
+            if [ $ok = 1 ]; then echo "✅ https://${domain} → https://${APP_DOMAIN}"; continue; fi
+            echo "::warning::https://${domain} leitet (noch) nicht weiter – zeigt der DNS-Eintrag auf den VPS?"
+            # Diagnosis: DNS compared with the main domain, CAA and Caddy's certificate errors.
+            echo "DNS ${APP_DOMAIN}: A=$(dig +short A "$APP_DOMAIN" | paste -sd' ' -) AAAA=$(dig +short AAAA "$APP_DOMAIN" | paste -sd' ' -)"
+            echo "DNS ${domain}: A=$(dig +short A "$domain" | paste -sd' ' -) AAAA=$(dig +short AAAA "$domain" | paste -sd' ' -) CAA=$(dig +short CAA "$domain" | paste -sd' ' -)"
+            ssh vps "cd '$APP_DIR' && docker compose logs caddy --since 15m 2>&1 | grep -i '$domain' | grep -iE 'error|fail|challenge' | tail -5" || true
           done
