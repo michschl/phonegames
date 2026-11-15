@@ -19,12 +19,7 @@ function DorfSettingsPanel({ value, onChange }: GameSettingsProps<DorfSettings>)
         checked={value.voice && speechAvailable()}
         onChange={(voice) => onChange({ ...value, voice })}
       />
-      {value.voice && speechAvailable() && (
-        <div className="settings-panel__group">
-          <span className="settings-panel__label">Stimme</span>
-          <VoicePicker />
-        </div>
-      )}
+      {value.voice && speechAvailable() && <VoicePicker collapsed />}
       <Toggle
         label="Seherin"
         description="Sieht jede Nacht, ob eine Person ein Werwolf ist."

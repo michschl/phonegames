@@ -1666,3 +1666,56 @@ button.list__item:active {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+.voice-fold summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: var(--border);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-sm);
+  list-style: none;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.voice-fold summary::-webkit-details-marker {
+  display: none;
+}
+
+.voice-fold__label {
+  font-weight: 800;
+}
+
+.voice-fold__current {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.voice-fold__change {
+  flex: none;
+  font-weight: 800;
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.voice-fold[open] .voice-fold__change {
+  visibility: hidden;
+}
+
+.voice-fold[open] summary {
+  margin-bottom: 12px;
+}
+
+.voice-fold[open] .voice-picker {
+  animation: rise-in 0.3s var(--ease-out) backwards;
+}

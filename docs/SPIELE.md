@@ -3,6 +3,8 @@
 Jedes Spiel ist ein eigener Ordner in [`client/src/games/`](../client/src/games/) und wird in
 [`registry.ts`](../client/src/games/registry.ts) eingetragen. Aktuell sind es 17 Spiele. Katalog, Suche, «Meine Spiele», Spielgruppen,
 Einstellungen und der Vollbild-Spielmodus funktionieren danach automatisch.
+Regeln («So geht’s») und Einstellungen erscheinen auf dem Startbildschirm des Spiels zugeklappt; bei den
+Einstellungen zeigt ein Etikett, ob sie angepasst wurden.
 
 ## Ein neues Spiel in 5 Schritten
 
@@ -12,7 +14,7 @@ Einstellungen und der Vollbild-Spielmodus funktionieren danach automatisch.
 client/src/games/mein-spiel/
 ├── index.tsx           Definition (Name, Farben, Regeln, Einstellungen …)
 ├── MeinSpielGame.tsx   Das Spiel (Default-Export)
-├── Settings.tsx        optional: Einstellungen auf dem Startbildschirm
+├── Settings.tsx        optional: Einstellungen auf dem Startbildschirm (zugeklappt)
 └── mein-spiel.css      optional: Styles
 ```
 

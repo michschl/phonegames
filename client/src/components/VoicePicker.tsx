@@ -29,8 +29,11 @@ function upgradeHint(best: VoiceInfo | undefined): string | null {
   return 'Tipp: In Microsoft Edge und Google Chrome stehen natürlich klingende Online-Stimmen zur Verfügung.';
 }
 
-/** Choose the narrator voice, with a spoken preview. */
-export function VoicePicker() {
+/**
+ * Choose the narrator voice, with a spoken preview. `collapsed` shows only the
+ * current choice; the list opens on tap (used inside game settings).
+ */
+export function VoicePicker({ collapsed = false }: { collapsed?: boolean }) {
   const voices = useGermanVoices();
   const voiceId = useSettings((s) => s.voiceId);
   const setVoiceId = useSettings((s) => s.setVoiceId);
@@ -92,7 +95,7 @@ export function VoicePicker() {
   };
 
   const hint = upgradeHint(voices[0]);
-  return (
+  const content = (
     <div className="voice-picker">
       <ul className="voice-picker__list">
         {option(null, 'Automatisch', `Beste Stimme: ${voices[0]!.name}`)}
@@ -113,5 +116,23 @@ export function VoicePicker() {
       )}
       {hint && <p className="settings-panel__hint">{hint}</p>}
     </div>
+  );
+
+  if (!collapsed) return content;
+  const currentName = selected ? selected.name : `Automatisch (${voices[0]!.name})`;
+  return (
+    <details
+      className="voice-fold"
+      onToggle={(event) => {
+        if (!(event.currentTarget as HTMLDetailsElement).open) stopSpeaking();
+      }}
+    >
+      <summary>
+        <span className="voice-fold__label">Stimme</span>
+        <span className="voice-fold__current">{currentName}</span>
+        <span className="voice-fold__change">ändern</span>
+      </summary>
+      {content}
+    </details>
   );
 }
