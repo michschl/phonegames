@@ -34,7 +34,7 @@ bearbeiten, Spiele zur Liste hinzufügen oder entfernen.
 ### Caching (Service Worker)
 
 `vite-plugin-pwa` erzeugt beim Build einen Workbox-Service-Worker, der alle Dateien des Builds vorab cacht
-(App-Shell, JavaScript, CSS, Schriften, Icons – zusammen rund 750 KB). Navigationen fallen offline auf
+(App-Shell, JavaScript aller 17 Spiele inklusive Inhalten, CSS, Schriften, Icons – zusammen rund 1 MB). Navigationen fallen offline auf
 `index.html` zurück. `/api/*` wird **nicht** gecacht – die Daten verwaltet die App selbst.
 
 Bei einer neuen Version erscheint ein Hinweis «Eine neue Version ist bereit – Aktualisieren». So wird nie mitten
@@ -135,5 +135,15 @@ Die Typen stehen in [`shared/types.ts`](../shared/types.ts).
   selbst misst `performance.now()`. So bleibt das Ticken gleichmässig, auch wenn die Animation viel Rechenzeit braucht.
 - **Explosion:** Canvas-Partikelsystem (Feuerball, Schockwellen, Funken mit Schweif, Trümmer, Rauch, Glut) plus
   Blitz, Screen-Shake und Comic-Schriftzug. Bei «Bewegung reduzieren» wird alles abgeschwächt.
-- **Haptik:** Vibration (Android) beim Ticken in der heissen Phase und bei der Explosion.
+- **Haptik:** Vibration (Android) beim Ticken in der heissen Phase, bei der Explosion, bei richtigen/falschen Antworten.
 - **Wake Lock:** Der Bildschirm bleibt während des Spiels eingeschaltet.
+- **Sprachausgabe:** «Nachts im Dorf» liest die Nacht mit der Web Speech API vor
+  ([`client/src/lib/speech.ts`](../client/src/lib/speech.ts)) – mit den auf dem Gerät installierten deutschen
+  Stimmen, also auch offline. Ohne Sprachausgabe übernimmt eine Person die Spielleitung.
+- **Bewegungssensor:** «Wer bin ich?» erkennt Nicken nach vorne/hinten über `deviceorientation`
+  ([`client/src/lib/motion.ts`](../client/src/lib/motion.ts)). Die Neigung wird als vertikale Komponente der
+  Display-Normalen berechnet (`cos β · cos γ`) und ist damit unabhängig von Hoch- oder Querformat. iOS fragt einmal
+  um Erlaubnis; ohne Sensor wird per Tippen gesteuert.
+- **Multi-Touch:** «Zufallsfinger» verfolgt bis zu zehn Finger gleichzeitig über Pointer Events.
+- **Zeichenfläche:** «Zeichnen & Raten» speichert Striche als normalisierte Punkte und zeichnet sie mit Quadratkurven
+  geglättet neu – so bleibt die Zeichnung bei Grössenänderungen erhalten.

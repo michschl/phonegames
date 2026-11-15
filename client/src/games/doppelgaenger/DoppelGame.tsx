@@ -132,7 +132,7 @@ export default function DoppelGame({ players, settings, onExit }: GameProps<Dopp
         <Stage>
           <div className="result-banner">
             <span className="gs-big-emoji" aria-hidden="true">
-              {caught ? '🎯' : '🎭'}
+              {caught ? '🎯' : '🪞'}
             </span>
             <span className="result-banner__title">{caught ? 'Erwischt!' : 'Doppelgänger gewinnt!'}</span>
           </div>

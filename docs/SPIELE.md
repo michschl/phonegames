@@ -1,7 +1,7 @@
 # Spiele entwickeln
 
 Jedes Spiel ist ein eigener Ordner in [`client/src/games/`](../client/src/games/) und wird in
-[`registry.ts`](../client/src/games/registry.ts) eingetragen. Katalog, Suche, «Meine Spiele», Spielgruppen,
+[`registry.ts`](../client/src/games/registry.ts) eingetragen. Aktuell sind es 17 Spiele. Katalog, Suche, «Meine Spiele», Spielgruppen,
 Einstellungen und der Vollbild-Spielmodus funktionieren danach automatisch.
 
 ## Ein neues Spiel in 5 Schritten
@@ -10,13 +10,13 @@ Einstellungen und der Vollbild-Spielmodus funktionieren danach automatisch.
 
 ```
 client/src/games/mein-spiel/
-├── index.ts            Definition (Name, Farben, Regeln …)
+├── index.tsx           Definition (Name, Farben, Regeln, Einstellungen …)
 ├── MeinSpielGame.tsx   Das Spiel (Default-Export)
 ├── Settings.tsx        optional: Einstellungen auf dem Startbildschirm
 └── mein-spiel.css      optional: Styles
 ```
 
-### 2. Definition schreiben (`index.ts`)
+### 2. Definition schreiben (`index.tsx`)
 
 ```ts
 import { lazy } from 'react';
@@ -73,18 +73,18 @@ Die Komponente wird im Vollbild (ohne Tab-Leiste) dargestellt.
 In [`client/src/games/registry.ts`](../client/src/games/registry.ts):
 
 ```ts
-import { meinSpiel } from './mein-spiel/index.ts';
+import { meinSpiel } from './mein-spiel/index.tsx';
 
-export const GAMES: GameDefinition[] = [bombe, meinSpiel, ...comingSoon];
+export const GAMES: GameDefinition[] = [bombe, /* … */, meinSpiel];
 ```
 
-Steht das Spiel bereits als «Demnächst» in `comingSoon`, den Eintrag dort entfernen und **dieselbe `id`**
-weiterverwenden.
+Mit `status: 'soon'` erscheint ein Spiel als «Demnächst» im Katalog, ist aber noch nicht spielbar.
 
 ### 5. Testen
 
-Reine Spiellogik (Zufall, Punkte, Timer-Berechnungen) in eine eigene Datei auslagern und mit Vitest testen –
-siehe [`bombe/logic.test.ts`](../client/src/games/bombe/logic.test.ts).
+Reine Spiellogik (Zufall, Punkte, Timer-Berechnungen) in eine eigene `logic.ts` auslagern und mit Vitest testen –
+siehe [`bombe/logic.test.ts`](../client/src/games/bombe/logic.test.ts) und
+[`shared/logic.test.ts`](../client/src/games/shared/logic.test.ts).
 
 ```bash
 npm test && npm run typecheck
@@ -92,20 +92,77 @@ npm test && npm run typecheck
 
 ## Wiederverwendbare Bausteine
 
+Die meisten Spiele bestehen nur aus Inhalten, ein bisschen Logik und diesen Bausteinen aus
+[`client/src/games/shared/`](../client/src/games/shared/):
+
 | Baustein | Datei | Zweck |
 | --- | --- | --- |
-| `StarterRoulette` | `components/StarterRoulette.tsx` | Animierte Auslosung eines Startspielers (mit Sound, Konfetti, «Tippen zum Überspringen») |
-| `sound` | `lib/audio.ts` | Web-Audio-Engine: `unlock()`, `tone()`, `noiseBurst()`, `blip()`, `pop()`, `reveal()` |
-| `confetti()` | `lib/confetti.ts` | Konfetti-Explosion an einer Bildschirmposition |
-| `haptic()` | `lib/device.ts` | Vibration (respektiert die Einstellung des Nutzers) |
-| `useWakeLock()` | `lib/device.ts` | Bildschirm wach halten |
-| `Button`, `Sheet`, `ConfirmSheet`, `Segmented`, `Toggle`, `Avatar` | `components/ui.tsx` | UI-Komponenten im Plausch-Design |
-| `useGameSettings()` | `store/settings.ts` | Spieleinstellungen pro Gerät speichern |
+| `GameShell`, `Stage`, `Headline`, `PromptCard`, `Actions` | `shared/GameShell.tsx` | Vollbild-Rahmen mit Beenden-Dialog, Ton-Schalter, Spielstand-Sheet, Wake Lock und dem Plausch-Look |
+| `PassPrompt`, `SecretReveal`, `PassTurns` | `shared/PassTurns.tsx` | «Gib das Handy an …» und Geheimnisse, die nur sichtbar sind, solange der Finger auf der Karte liegt. `PassTurns` reicht das Handy der Reihe nach an alle weiter |
+| `useCountdown`, `TimerRing`, `useStartCountdown`, `CountdownOverlay` | `shared/Timer.tsx` | Zeitlimit mit Ring, Piepsen in den letzten Sekunden, Buzzer am Ende, «3 – 2 – 1»-Start |
+| `TeamTurnGame` | `shared/TeamTurnGame.tsx` | Komplette Engine für Teamspiele (Teams, Weitergeben, Zug mit Zeitlimit, Auswertung mit Korrektur, Sieger) – Pantomime, Verbotene Wörter und Summ-Raten sind damit je ~50 Zeilen |
+| `makeTeams`, `TeamCards`, `ScoreList`, `PlayerPicker`, `fillPerson` | `shared/players.tsx` | Teams einteilen, Ranglisten mit Medaillen, Personen antippen (Abstimmungen), `{person}` in Karten ersetzen |
+| `drawFresh` | `shared/deck.ts` | Zufällige Karte ziehen, ohne kürzlich gezeigte Karten zu wiederholen (merkt sich das pro Gerät) |
+| `OptionRow`, `ChipSelect`, `SettingsPanel` | `shared/settings.tsx` | Bausteine für die Einstellungen auf dem Startbildschirm |
+| `PackSettingsPanel`, `filterPacks` | `shared/packs.tsx` | Kartenpakete «Familie / Freunde / Party» |
+| `StarterRoulette` | `components/StarterRoulette.tsx` | Animierte Auslosung, wer beginnt |
+| `sound` | `lib/audio.ts` | Synthetisierte Sounds: `correct()`, `wrong()`, `buzzer()`, `beep()`, `drumroll()`, `reveal()`, `pop()`, `whoosh()`, `click()`, `howl()`, `crickets()` … |
+| `speak()` | `lib/speech.ts` | Deutsche Sprachausgabe (z. B. Erzählstimme bei «Nachts im Dorf») |
+| `useTilt()`, `requestTiltPermission()` | `lib/motion.ts` | Kipp-Gesten über den Bewegungssensor (z. B. «Wer bin ich?») |
+| `confetti()`, `haptic()`, `useWakeLock()` | `lib/confetti.ts`, `lib/device.ts` | Konfetti, Vibration, Bildschirm wach halten |
 
-### Wichtig für Sound auf dem Handy
+### Spiele ohne Spielgruppe
+
+Werkzeuge wie «Zufallsfinger» oder «Flaschendrehen» brauchen keine Namen. Mit `noGroup: true` in der
+Definition entfällt die Gruppenauswahl auf dem Startbildschirm, und `players` ist leer.
+
+### Ein Teamspiel in wenigen Zeilen
+
+```tsx
+export default function MeinTeamspiel({ players, settings, onExit }: GameProps<TurnSettings>) {
+  return (
+    <TeamTurnGame
+      players={players}
+      onExit={onExit}
+      accent="#8b5cf6"
+      verb="erklärt"
+      turnSeconds={settings.seconds}
+      targetScore={settings.target}
+      draw={(used) => drawFresh('mein-teamspiel', KARTEN, (k) => k.id, { exclude: used })}
+      cardLabel={(k) => k.text}
+      renderCard={(k) => <PromptCard>{k.text}</PromptCard>}
+      rulesHint="Erkläre den Begriff, ohne ihn zu nennen."
+    />
+  );
+}
+```
+
+### Wichtig für Sound und Sensoren auf dem Handy
 
 Browser erlauben Audio erst nach einer Berührung. `sound.unlock()` deshalb immer **direkt im Klick-Handler**
 aufrufen (z. B. im Start-Button) – der «Spiel starten»-Button auf dem Startbildschirm macht das bereits.
+Dasselbe gilt auf iOS für den Bewegungssensor (`requestTiltPermission()`) und die erste Sprachausgabe.
+
+## Inhalte ergänzen
+
+Alle Inhalte liegen als TypeScript-Dateien neben dem jeweiligen Spiel und lassen sich ohne Programmierkenntnisse
+erweitern – einfach einen Eintrag nach dem Muster der vorhandenen ergänzen. IDs müssen eindeutig bleiben.
+
+| Spiel | Datei |
+| --- | --- |
+| Bombe | `bombe/questions.ts` |
+| Spion unter uns | `spion/locations.ts` |
+| Doppelgänger | `doppelgaenger/pairs.ts` |
+| Wer bin ich? | `wer-bin-ich/decks.ts` |
+| Pantomime | `pantomime/terms.ts` |
+| Verbotene Wörter | `verbotene-woerter/cards.ts` |
+| Zeichnen & Raten | `zeichnen/terms.ts` |
+| Summ-Raten | `summ-raten/songs.ts` |
+| Schätzmeister | `schaetzmeister/questions.ts` (nur gut belegte Zahlen!) |
+| Mehr oder weniger | `mehr-oder-weniger/facts.ts` (nur gut belegte Zahlen!) |
+| Wer würde eher …? | `wer-wuerde-eher/questions.ts` |
+| Wahrheit oder Pflicht | `wahrheit-oder-pflicht/cards.ts` (`{person}` = zufällige andere Person) |
+| Ich hab noch nie … | `ich-hab-noch-nie/statements.ts` |
 
 ## Fragen für «Bombe» ergänzen
 

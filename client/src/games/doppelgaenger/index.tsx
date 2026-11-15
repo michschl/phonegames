@@ -33,7 +33,7 @@ export const doppelgaenger: GameDefinition<DoppelSettings> = {
   description:
     'Alle bekommen geheim dasselbe Wort – nur der Doppelgänger ein ähnliches und weiss nichts davon. ' +
     'Reihum sagt jede Person ein passendes Wort. Wer fällt auf?',
-  emoji: '🎭',
+  emoji: '🪞',
   colors: ['#2de2e6', '#5b8cff'],
   minPlayers: 3,
   maxPlayers: 16,
