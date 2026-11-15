@@ -1,4 +1,4 @@
-import { useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { GameProps } from '../types.ts';
 import { Avatar, Button } from '../../components/ui.tsx';
 import { sound } from '../../lib/audio.ts';
@@ -11,6 +11,9 @@ import { FACT_SETS } from './facts.ts';
 import { duelKey, pickDuel, type Duel, type MehrSettings } from './logic.ts';
 import './mehr-oder-weniger.css';
 
+/** Short suspense between locking in an answer and uncovering the numbers. */
+const REVEAL_MS = 900;
+
 export default function MehrOderWenigerGame({ players, settings, onExit }: GameProps<MehrSettings>) {
   const seen = useRef(new Set<string>());
   const nextDuel = () => {
@@ -22,6 +25,9 @@ export default function MehrOderWenigerGame({ players, settings, onExit }: GameP
   const [turn, setTurn] = useState(0);
   const [duel, setDuel] = useState<Duel>(nextDuel);
   const [choice, setChoice] = useState<'left' | 'right' | null>(null);
+  const [revealed, setRevealed] = useState(false);
+  const revealTimer = useRef<number | undefined>(undefined);
+  const bestStreak = useRef(0);
   const [scores, setScores] = useState<Record<string, number>>({});
   const [streaks, setStreaks] = useState<Record<string, number>>({});
   const [finished, setFinished] = useState(false);
@@ -29,21 +35,40 @@ export default function MehrOderWenigerGame({ players, settings, onExit }: GameP
   const totalTurns = settings.rounds * players.length;
   const player = players[turn % players.length]!;
   const ranking = <ScoreList entries={playerScores(players, scores)} />;
-  const correct = choice !== null && choice === duel.winner;
+  const correct = revealed && choice === duel.winner;
+
+  useEffect(() => () => window.clearTimeout(revealTimer.current), []);
 
   const choose = (side: 'left' | 'right') => {
     if (choice) return;
     setChoice(side);
+    sound.tap();
+    sound.tension(REVEAL_MS / 1000);
+    haptic(10);
+    revealTimer.current = window.setTimeout(() => reveal(side), REVEAL_MS);
+  };
+
+  const reveal = (side: 'left' | 'right') => {
+    setRevealed(true);
     const right = side === duel.winner;
     if (right) {
-      sound.correct();
       haptic(25);
       const streak = (streaks[player.id] ?? 0) + 1;
       setStreaks((s) => ({ ...s, [player.id]: streak }));
       setScores((s) => ({ ...s, [player.id]: (s[player.id] ?? 0) + 1 }));
+      if (streak >= 3 && streak > bestStreak.current) {
+        // New longest streak of the evening.
+        sound.fanfare();
+      } else {
+        sound.correct();
+        if (streak >= 3) sound.sparkle();
+      }
+      bestStreak.current = Math.max(bestStreak.current, streak);
       if (streak >= 3) confetti({ count: 80 });
     } else {
-      sound.wrong();
+      // Losing a hot streak hurts more than a single miss.
+      if ((streaks[player.id] ?? 0) >= 3) sound.fail();
+      else sound.wrong();
       haptic([30, 40, 30]);
       setStreaks((s) => ({ ...s, [player.id]: 0 }));
     }
@@ -52,18 +77,20 @@ export default function MehrOderWenigerGame({ players, settings, onExit }: GameP
   const next = () => {
     if (turn + 1 >= totalTurns) {
       setFinished(true);
-      sound.reveal();
+      sound.fanfare();
       confetti({ count: 200 });
       return;
     }
+    sound.whoosh();
     setTurn((t) => t + 1);
     setDuel(nextDuel());
     setChoice(null);
+    setRevealed(false);
   };
 
   const card = (side: 'left' | 'right') => {
     const item = duel[side];
-    const state = choice === null ? '' : side === duel.winner ? 'is-winner' : 'is-loser';
+    const state = !revealed ? '' : side === duel.winner ? 'is-winner' : 'is-loser';
     return (
       <button
         type="button"
@@ -75,7 +102,7 @@ export default function MehrOderWenigerGame({ players, settings, onExit }: GameP
           {item.emoji ?? '❓'}
         </span>
         <span className="mow-card__name">{item.name}</span>
-        {choice !== null && <span className="mow-card__value">{formatValue(item.value, duel.set.unit)}</span>}
+        {revealed && <span className="mow-card__value">{formatValue(item.value, duel.set.unit)}</span>}
       </button>
     );
   };
@@ -123,16 +150,16 @@ export default function MehrOderWenigerGame({ players, settings, onExit }: GameP
           <span className="mow-vs">VS</span>
           {card('right')}
         </div>
-        {choice && (
+        {revealed && (
           <p className={`mow-verdict ${correct ? 'is-correct' : 'is-wrong'}`}>{correct ? 'Richtig! +1' : 'Leider falsch'}</p>
         )}
         <Actions>
-          {choice ? (
+          {revealed ? (
             <Button size="lg" block onClick={next}>
               {turn + 1 >= totalTurns ? 'Zur Rangliste' : `Weiter zu ${players[(turn + 1) % players.length]!.name}`}
             </Button>
           ) : (
-            <p className="gs-text">Tippe auf deine Antwort.</p>
+            <p className="gs-text">{choice ? 'Mal sehen …' : 'Tippe auf deine Antwort.'}</p>
           )}
         </Actions>
       </Stage>

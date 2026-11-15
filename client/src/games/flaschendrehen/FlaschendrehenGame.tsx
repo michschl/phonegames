@@ -26,7 +26,7 @@ export default function FlaschendrehenGame({ onExit }: GameProps<Record<string, 
   const angle = useRef(Math.random() * 360);
   const velocity = useRef(0);
   const raf = useRef(0);
-  const drag = useRef<{ last: number; time: number; v: number } | null>(null);
+  const drag = useRef<{ last: number; time: number; v: number; click: number } | null>(null);
 
   const render = () => {
     if (bottle.current) bottle.current.style.transform = `rotate(${angle.current}deg)`;
@@ -44,6 +44,7 @@ export default function FlaschendrehenGame({ onExit }: GameProps<Record<string, 
     setSpinning(true);
     setStopped(false);
     setCard(null);
+    sound.swirl();
     haptic(20);
     let last = performance.now();
     let lastClick = Math.floor(angle.current / CLICK_EVERY);
@@ -66,7 +67,9 @@ export default function FlaschendrehenGame({ onExit }: GameProps<Record<string, 
       if (Math.abs(next) < 4) {
         setSpinning(false);
         setStopped(true);
-        sound.reveal();
+        // The bottle has landed on someone.
+        sound.ding();
+        sound.sparkle();
         haptic([30, 40, 80]);
         return;
       }
@@ -86,7 +89,7 @@ export default function FlaschendrehenGame({ onExit }: GameProps<Record<string, 
   const down = (event: ReactPointerEvent) => {
     if (spinning) return;
     event.currentTarget.setPointerCapture(event.pointerId);
-    drag.current = { last: pointerAngle(event), time: performance.now(), v: 0 };
+    drag.current = { last: pointerAngle(event), time: performance.now(), v: 0, click: Math.floor(angle.current / CLICK_EVERY) };
   };
 
   const move = (event: ReactPointerEvent) => {
@@ -98,8 +101,11 @@ export default function FlaschendrehenGame({ onExit }: GameProps<Record<string, 
     if (delta < -180) delta += 360;
     angle.current += delta;
     render();
+    // Turning the bottle by hand ratchets just like a real spin.
+    const click = Math.floor(angle.current / CLICK_EVERY);
+    if (click !== drag.current.click) sound.click(0.6);
     const dt = Math.max(1, now - drag.current.time) / 1000;
-    drag.current = { last: a, time: now, v: drag.current.v * 0.5 + (delta / dt) * 0.5 };
+    drag.current = { last: a, time: now, v: drag.current.v * 0.5 + (delta / dt) * 0.5, click };
   };
 
   const up = () => {
@@ -113,8 +119,10 @@ export default function FlaschendrehenGame({ onExit }: GameProps<Record<string, 
   const draw = (kind: 'wahrheit' | 'pflicht') => {
     const pool = CARDS.filter((c) => c.type === kind && c.pack !== 'party');
     const text = pickRandom(pool).text.replaceAll('{person}', 'der Person links von dir');
+    // First card is turned over, swapping to the other kind is a card change.
+    if (card) sound.whoosh();
+    else sound.flip();
     setCard({ kind, text });
-    sound.whoosh();
   };
 
   return (
@@ -164,7 +172,13 @@ export default function FlaschendrehenGame({ onExit }: GameProps<Record<string, 
           <Button block onClick={() => card && draw(card.kind === 'pflicht' ? 'wahrheit' : 'pflicht')} variant="secondary">
             Lieber {card?.kind === 'pflicht' ? 'Wahrheit' : 'Pflicht'}
           </Button>
-          <Button block onClick={() => setCard(null)}>
+          <Button
+            block
+            onClick={() => {
+              sound.correct();
+              setCard(null);
+            }}
+          >
             Erledigt
           </Button>
         </div>

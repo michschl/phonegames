@@ -29,7 +29,7 @@ export default function WahrheitOderPflichtGame({ players, settings, onExit }: G
   const ranking = <ScoreList entries={playerScores(players, scores)} />;
 
   const take = (kind: Kind) => {
-    sound.whoosh();
+    sound.flip();
     haptic(15);
     const ofKind = pool.filter((c) => c.type === kind);
     const drawn = drawFresh(`wop-${kind}`, ofKind.length ? ofKind : CARDS.filter((c) => c.type === kind), (c) => c.id, {
@@ -40,13 +40,20 @@ export default function WahrheitOderPflichtGame({ players, settings, onExit }: G
     setPhase('card');
   };
 
-  const random = () => take(Math.random() < 0.5 ? 'wahrheit' : 'pflicht');
+  const random = () => {
+    // Fate decides: a little magic on top of the card being turned.
+    sound.sparkle();
+    take(Math.random() < 0.5 ? 'wahrheit' : 'pflicht');
+  };
 
   const resolve = (done: boolean) => {
     if (done) {
       setScores((s) => ({ ...s, [player.id]: (s[player.id] ?? 0) + 1 }));
-      sound.correct();
-      if (card?.kind === 'pflicht') confetti({ count: 80 });
+      sound.coin();
+      if (card?.kind === 'pflicht') {
+        sound.sparkle();
+        confetti({ count: 80 });
+      }
     } else {
       setChickens((c) => ({ ...c, [player.id]: (c[player.id] ?? 0) + 1 }));
       sound.wrong();

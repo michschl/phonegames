@@ -106,8 +106,8 @@ Die meisten Spiele bestehen nur aus Inhalten, ein bisschen Logik und diesen Baus
 | `OptionRow`, `ChipSelect`, `SettingsPanel` | `shared/settings.tsx` | Bausteine für die Einstellungen auf dem Startbildschirm |
 | `PackSettingsPanel`, `filterPacks` | `shared/packs.tsx` | Kartenpakete «Familie / Freunde / Party» |
 | `StarterRoulette` | `components/StarterRoulette.tsx` | Animierte Auslosung, wer beginnt |
-| `sound` | `lib/audio.ts` | Synthetisierte Sounds: `correct()`, `wrong()`, `buzzer()`, `beep()`, `drumroll()`, `reveal()`, `pop()`, `whoosh()`, `click()`, `howl()`, `crickets()` … |
-| `speak()` | `lib/speech.ts` | Deutsche Sprachausgabe (z. B. Erzählstimme bei «Nachts im Dorf») |
+| `sound` | `lib/audio.ts` | Synthetisierte Sounds: `tap()`, `flip()`, `pluck(i)`, `whoosh()`, `swirl()`, `click()`, `ding()`, `coin()`, `correct()`, `wrong()`, `buzzer()`, `beep()`, `sparkle()`, `reveal()`, `fanfare()`, `fail()`, `sting()`, `gong()`, `tension()`, `birds()`, `howl()`; Schleifen `drumroll()`, `heartbeat()`, `crickets()` |
+| `speak()` | `lib/speech.ts` | Deutsche Sprachausgabe mit automatisch gewählter bester Stimme (z. B. Erzählstimme bei «Nachts im Dorf»); `primeSpeech()` im ersten Klick aufrufen |
 | `useTilt()`, `requestTiltPermission()` | `lib/motion.ts` | Kipp-Gesten über den Bewegungssensor (z. B. «Wer bin ich?») |
 | `confetti()`, `haptic()`, `useWakeLock()` | `lib/confetti.ts`, `lib/device.ts` | Konfetti, Vibration, Bildschirm wach halten |
 
@@ -139,9 +139,14 @@ export default function MeinTeamspiel({ players, settings, onExit }: GameProps<T
 
 ### Wichtig für Sound und Sensoren auf dem Handy
 
-Browser erlauben Audio erst nach einer Berührung. `sound.unlock()` deshalb immer **direkt im Klick-Handler**
-aufrufen (z. B. im Start-Button) – der «Spiel starten»-Button auf dem Startbildschirm macht das bereits.
-Dasselbe gilt auf iOS für den Bewegungssensor (`requestTiltPermission()`) und die erste Sprachausgabe.
+Browser erlauben Audio erst nach einer Berührung. Die Sound-Engine kümmert sich selbst darum: Sie startet bzw.
+weckt den Audio-Kontext bei jeder Berührung. Für die **Sprachausgabe** auf iOS muss die erste Ansage aus einem
+Klick heraus kommen – dafür `primeSpeech()` direkt im Klick-Handler aufrufen. Dasselbe gilt für den
+Bewegungssensor (`requestTiltPermission()`).
+
+Jedes Spiel sollte an seinen wichtigen Momenten klingen: Start, neue Karte, Auswahl, Punkte, richtig/falsch,
+Spannung vor einer Auflösung (Trommelwirbel, Herzschlag, `tension()`) und eine Belohnung danach (`ding()`,
+`sparkle()`, `fanfare()` bzw. `fail()`/`sting()`). Schleifen beim Phasenwechsel und beim Verlassen stoppen.
 
 ## Inhalte ergänzen
 

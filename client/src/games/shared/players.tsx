@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react';
 import type { Player } from '../../../../shared/types.ts';
 import { Avatar } from '../../components/ui.tsx';
+import { sound } from '../../lib/audio.ts';
 import { haptic } from '../../lib/device.ts';
 import { pickRandom, shuffle } from '../../lib/util.ts';
 
@@ -115,12 +116,15 @@ export function PlayerPicker({
   onSelect,
   disabled,
   badge,
+  quiet,
 }: {
   players: Player[];
   selected?: string | string[] | null;
   onSelect: (player: Player) => void;
   disabled?: (player: Player) => boolean;
   badge?: (player: Player) => ReactNode;
+  /** No tap sound or vibration, e.g. at night when nobody may hear who is choosing. */
+  quiet?: boolean;
 }) {
   const isSelected = (id: string) => (Array.isArray(selected) ? selected.includes(id) : selected === id);
   return (
@@ -134,7 +138,10 @@ export function PlayerPicker({
           disabled={disabled?.(player)}
           aria-pressed={isSelected(player.id)}
           onClick={() => {
-            haptic(10);
+            if (!quiet) {
+              sound.tap();
+              haptic(10);
+            }
             onSelect(player);
           }}
         >

@@ -8,7 +8,7 @@ import { pickRandom } from '../../lib/util.ts';
 import { Actions, GameShell, Headline, PromptCard, Stage } from '../shared/GameShell.tsx';
 import { PassPrompt, PassTurns } from '../shared/PassTurns.tsx';
 import { makeTeams, ScoreList, TeamCards, teamScores, type Team } from '../shared/players.tsx';
-import { CountdownOverlay, TimerRing, useCountdown, useStartCountdown } from '../shared/Timer.tsx';
+import { CountdownOverlay, TimerRing, useCountdown, useStartCountdown, useSuspense, useTurnTally } from '../shared/Timer.tsx';
 import { DRAWING_TERMS } from '../zeichnen/terms.ts';
 import { collectTerms, HUT_ROUNDS, newPool, skipCard, type HutSettings, type HutTerm } from './logic.ts';
 
@@ -48,6 +48,7 @@ function TermForm({ count, onSubmit }: { count: number; onSubmit: (terms: string
               type="button"
               aria-label="Zufälligen Begriff vorschlagen"
               onClick={() => {
+                sound.click(1.2);
                 haptic(6);
                 setValues((v) => v.map((x, j) => (j === i ? pickRandom(SUGGESTIONS) : x)));
               }}
@@ -83,7 +84,9 @@ export default function HutspielGame({ players, settings, onExit }: GameProps<Hu
   const current = terms.find((t) => t.id === pool[0]);
   const ranking = <ScoreList entries={teamScores(teams, scores)} />;
 
-  const timer = useCountdown(settings.seconds, { onEnd: () => setPhase('summary') });
+  // Soft ticks in the last 10 seconds, beeps in the last 5, buzzer at the end.
+  const timer = useCountdown(settings.seconds, { onEnd: () => setPhase('summary'), ticking: 10 });
+  const suspense = useSuspense();
   const start = useStartCountdown(() => {
     setLog([]);
     setRoundOver(false);
@@ -102,7 +105,8 @@ export default function HutspielGame({ players, settings, onExit }: GameProps<Hu
     if (rest.length === 0) {
       timer.pause();
       setRoundOver(true);
-      sound.reveal();
+      // Magic glitter: the hat is empty.
+      sound.sparkle();
       setPhase('summary');
     }
   };
@@ -116,30 +120,43 @@ export default function HutspielGame({ players, settings, onExit }: GameProps<Hu
   };
 
   const finishTurn = () => {
+    if (suspense.pending) return;
     const points = log.filter((e) => e.correct).length;
     const newScores = { ...scores, [team.id]: (scores[team.id] ?? 0) + points };
-    setScores(newScores);
-    setPerformerByTeam((p) => ({ ...p, [team.id]: (p[team.id] ?? 0) + 1 }));
-    setTeamIndex((i) => (i + 1) % teams.length);
-    timer.reset();
-    if (roundOver) {
-      if (round >= HUT_ROUNDS.length - 1) {
+    const gameOver = roundOver && round >= HUT_ROUNDS.length - 1;
+
+    const apply = () => {
+      setScores(newScores);
+      setPerformerByTeam((p) => ({ ...p, [team.id]: (p[team.id] ?? 0) + 1 }));
+      setTeamIndex((i) => (i + 1) % teams.length);
+      timer.reset();
+      if (gameOver) {
         setPhase('end');
         confetti({ count: 200 });
-        sound.reveal();
+        sound.fanfare();
         return;
       }
-      setRound((r) => r + 1);
-      setPool(newPool(terms));
-      setPhase('roundIntro');
-      return;
-    }
-    setPhase('pass');
+      if (roundOver) {
+        setRound((r) => r + 1);
+        setPool(newPool(terms));
+        setPhase('roundIntro');
+        sound.gong(); // the next round begins
+        return;
+      }
+      sound.tap();
+      setPhase('pass');
+    };
+
+    // Drumroll before the winner is announced.
+    if (gameOver) suspense.run(apply);
+    else apply();
   };
 
   const roundInfo = HUT_ROUNDS[round]!;
   const winner = teams.reduce((a, b) => ((scores[a.id] ?? 0) >= (scores[b.id] ?? 0) ? a : b));
   const turnPoints = log.filter((e) => e.correct).length;
+  // Score jingle on the summary screen (or the sad trombone for zero).
+  useTurnTally(phase === 'summary', turnPoints);
 
   return (
     <GameShell
@@ -158,10 +175,25 @@ export default function HutspielGame({ players, settings, onExit }: GameProps<Hu
             Begriffen gespielt: erklären, ein Wort, Pantomime.
           </p>
           <Actions>
-            <Button size="lg" block onClick={() => setPhase('collect')}>
+            <Button
+              size="lg"
+              block
+              onClick={() => {
+                sound.pop();
+                setPhase('collect');
+              }}
+            >
               Begriffe sammeln
             </Button>
-            <Button variant="ghost" block icon="refresh" onClick={() => setTeams(makeTeams(players))}>
+            <Button
+              variant="ghost"
+              block
+              icon="refresh"
+              onClick={() => {
+                sound.swirl();
+                setTeams(makeTeams(players));
+              }}
+            >
               Neu mischen
             </Button>
           </Actions>
@@ -177,6 +209,8 @@ export default function HutspielGame({ players, settings, onExit }: GameProps<Hu
             setTerms(collected);
             setPool(newPool(collected));
             setPhase('roundIntro');
+            // All terms are in the hat – round 1 begins.
+            sound.gong();
           }}
           render={(_player, next) => (
             <TermForm
@@ -200,7 +234,14 @@ export default function HutspielGame({ players, settings, onExit }: GameProps<Hu
           <p className="gs-text">{roundInfo.rule}</p>
           <p className="pool-count">{terms.length} Begriffe im Hut</p>
           <Actions>
-            <Button size="lg" block onClick={() => setPhase('pass')}>
+            <Button
+              size="lg"
+              block
+              onClick={() => {
+                sound.tap();
+                setPhase('pass');
+              }}
+            >
               Los geht’s
             </Button>
           </Actions>
@@ -292,7 +333,7 @@ export default function HutspielGame({ players, settings, onExit }: GameProps<Hu
             </p>
           )}
           <Actions>
-            <Button size="lg" block onClick={finishTurn}>
+            <Button size="lg" block onClick={finishTurn} disabled={suspense.pending}>
               Weiter
             </Button>
           </Actions>

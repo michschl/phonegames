@@ -23,6 +23,9 @@ const COLORS = ['#ff3d8b', '#2de2e6', '#ffd23f', '#3ddc97', '#8b5cf6', '#ff8a3d'
 const TEAM_COLORS = ['#ff3d8b', '#2de2e6'];
 const ARM_MS = 1400;
 const SUSPENSE_MS = 1900;
+/** Heartbeat tempo while waiting for everyone to hold still, and its climb during the suspense. */
+const CALM_BPM = 78;
+const SUSPENSE_BPM = [110, 140, 170];
 
 export default function ZufallsfingerGame({ settings, onExit }: GameProps<FingerSettings>) {
   const [fingers, setFingers] = useState<Finger[]>([]);
@@ -30,7 +33,8 @@ export default function ZufallsfingerGame({ settings, onExit }: GameProps<Finger
   const [result, setResult] = useState<{ winner?: number; teams?: Record<number, number>; order?: Record<number, number> }>({});
   const area = useRef<HTMLDivElement>(null);
   const timers = useRef<number[]>([]);
-  const stopRoll = useRef<(() => void) | null>(null);
+  const beat = useRef<ReturnType<typeof sound.heartbeat> | null>(null);
+  const stopTension = useRef<(() => void) | null>(null);
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
   const fingersRef = useRef(fingers);
@@ -41,27 +45,38 @@ export default function ZufallsfingerGame({ settings, onExit }: GameProps<Finger
     timers.current = [];
   };
 
+  const stopBeat = () => {
+    beat.current?.stop();
+    beat.current = null;
+    stopTension.current?.();
+    stopTension.current = null;
+  };
+
   useEffect(
     () => () => {
       clearTimers();
-      stopRoll.current?.();
+      stopBeat();
     },
     [],
   );
 
   const decide = (current: Finger[]) => {
-    stopRoll.current?.();
-    stopRoll.current = null;
+    stopBeat();
     const ids = shuffle(current.map((f) => f.id));
     if (settings.mode === 'teams') {
       setResult({ teams: Object.fromEntries(ids.map((id, i) => [id, i % 2])) });
+      sound.reveal();
     } else if (settings.mode === 'reihenfolge') {
       setResult({ order: Object.fromEntries(ids.map((id, i) => [id, i + 1])) });
+      // Climb the scale once per place, then a little glitter.
+      ids.forEach((_, i) => timers.current.push(window.setTimeout(() => sound.pluck(i), i * 110)));
+      timers.current.push(window.setTimeout(() => sound.sparkle(), ids.length * 110));
     } else {
       setResult({ winner: ids[0] });
+      sound.ding();
+      sound.sparkle();
     }
     setPhase('result');
-    sound.reveal();
     haptic([60, 40, 160]);
   };
 
@@ -69,19 +84,24 @@ export default function ZufallsfingerGame({ settings, onExit }: GameProps<Finger
   useEffect(() => {
     if (phaseRef.current === 'result') return;
     clearTimers();
-    stopRoll.current?.();
-    stopRoll.current = null;
     if (fingers.length < 2) {
+      stopBeat();
       setPhase('waiting');
       return;
     }
     setPhase('arming');
+    // A calm heartbeat while everyone holds still; it keeps beating when more fingers join.
+    if (beat.current) beat.current.setBpm(CALM_BPM);
+    else beat.current = sound.heartbeat(CALM_BPM);
     const snapshot = fingers;
     timers.current.push(
       window.setTimeout(() => {
         setPhase('choosing');
-        stopRoll.current = sound.drumroll();
+        stopTension.current = sound.tension(SUSPENSE_MS / 1000);
         haptic(20);
+        SUSPENSE_BPM.forEach((bpm, i) =>
+          timers.current.push(window.setTimeout(() => beat.current?.setBpm(bpm), (i * SUSPENSE_MS) / SUSPENSE_BPM.length)),
+        );
         timers.current.push(window.setTimeout(() => decide(snapshot), SUSPENSE_MS));
       }, ARM_MS),
     );
@@ -97,14 +117,16 @@ export default function ZufallsfingerGame({ settings, onExit }: GameProps<Finger
     event.preventDefault();
     sound.unlock();
     if (phaseRef.current === 'result') return;
+    // The ref is updated right away, so several fingers landing in the same frame
+    // still get their own colour and climb the scale note by note.
+    const list = fingersRef.current;
+    if (list.length >= COLORS.length || list.some((f) => f.id === event.pointerId)) return;
     const { x, y } = position(event);
-    setFingers((list) => {
-      if (list.length >= COLORS.length) return list;
-      const used = list.map((f) => f.color);
-      const color = COLORS.find((c) => !used.includes(c)) ?? COLORS[0]!;
-      return [...list, { id: event.pointerId, x, y, color }];
-    });
-    sound.pop();
+    const used = list.map((f) => f.color);
+    const finger = { id: event.pointerId, x, y, color: COLORS.find((c) => !used.includes(c)) ?? COLORS[0]! };
+    fingersRef.current = [...list, finger];
+    setFingers((current) => (current.some((f) => f.id === finger.id) ? current : [...current, finger]));
+    sound.pluck(list.length);
     haptic(10);
   };
 
@@ -115,7 +137,11 @@ export default function ZufallsfingerGame({ settings, onExit }: GameProps<Finger
 
   const up = (event: ReactPointerEvent) => {
     const rest = fingersRef.current.filter((f) => f.id !== event.pointerId);
+    if (rest.length === fingersRef.current.length) return;
+    fingersRef.current = rest;
     setFingers(rest);
+    // Letting go before the decision takes that finger out of the draw.
+    if (phaseRef.current !== 'result') sound.unpluck();
     if (phaseRef.current === 'result' && rest.length === 0) {
       timers.current.push(
         window.setTimeout(() => {

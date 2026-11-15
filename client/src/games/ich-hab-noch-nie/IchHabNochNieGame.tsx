@@ -29,7 +29,16 @@ export default function IchHabNochNieGame({ players, settings, onExit }: GamePro
     </>
   );
 
-  const toggle = (id: string) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+  const toggle = (id: string) => {
+    // Each confession climbs one note higher; everyone at once deserves some glitter.
+    if (selected.includes(id)) {
+      sound.unpluck();
+    } else {
+      sound.pluck(selected.length);
+      if (players.length > 1 && selected.length + 1 === players.length) sound.sparkle();
+    }
+    setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+  };
 
   const next = () => {
     if (selected.length) {

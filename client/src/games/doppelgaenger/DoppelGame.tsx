@@ -8,6 +8,7 @@ import { drawFresh } from '../shared/deck.ts';
 import { Actions, GameShell, Headline, Stage } from '../shared/GameShell.tsx';
 import { PassTurns, SecretReveal } from '../shared/PassTurns.tsx';
 import { PlayerPicker, playerScores, ScoreList } from '../shared/players.tsx';
+import { useHeartbeat, useSuspense } from '../shared/Timer.tsx';
 import { PAIRS } from './pairs.ts';
 import { setupRound, wordFor, type DoppelRound, type DoppelSettings } from './logic.ts';
 
@@ -22,6 +23,9 @@ export default function DoppelGame({ players, settings, onExit }: GameProps<Dopp
   const [suspect, setSuspect] = useState<string | null>(null);
   const [caught, setCaught] = useState(false);
   const [scores, setScores] = useState<Record<string, number>>({});
+  const suspense = useSuspense();
+  // Heartbeat while voting – faster once someone is suspected.
+  useHeartbeat(phase === 'vote' && !suspense.pending ? (suspect ? 92 : 66) : null);
 
   const nameOf = (id: string | null) => players.find((p) => p.id === id)?.name ?? '';
   const imposters = players.filter((p) => round.imposterIds.includes(p.id));
@@ -29,29 +33,34 @@ export default function DoppelGame({ players, settings, onExit }: GameProps<Dopp
   const ranking = <ScoreList entries={playerScores(players, scores)} />;
 
   const accuse = () => {
-    if (!suspect) return;
+    if (!suspect || suspense.pending) return;
     const hit = round.imposterIds.includes(suspect);
-    setCaught(hit);
-    setScores((s) =>
-      Object.fromEntries(
-        players.map((p) => {
-          const isImposter = round.imposterIds.includes(p.id);
-          const gain = hit ? (isImposter ? 0 : 1) : isImposter ? 2 : 0;
-          return [p.id, (s[p.id] ?? 0) + gain];
-        }),
-      ),
-    );
-    setPhase('result');
-    if (hit) {
-      sound.reveal();
-      confetti({ count: 150 });
-    } else {
-      sound.buzzer(0.5);
-      haptic([100, 50, 100]);
-    }
+    // Drumroll before the verdict.
+    suspense.run(() => {
+      setCaught(hit);
+      setScores((s) =>
+        Object.fromEntries(
+          players.map((p) => {
+            const isImposter = round.imposterIds.includes(p.id);
+            const gain = hit ? (isImposter ? 0 : 1) : isImposter ? 2 : 0;
+            return [p.id, (s[p.id] ?? 0) + gain];
+          }),
+        ),
+      );
+      setPhase('result');
+      if (hit) {
+        sound.fanfare();
+        confetti({ count: 150 });
+      } else {
+        // Twist: an innocent was accused, the doppelgänger slipped through.
+        sound.sting();
+        haptic([100, 50, 100]);
+      }
+    });
   };
 
   const next = () => {
+    sound.swirl();
     setRound(makeRound());
     setRoundNo((n) => n + 1);
     setSuspect(null);
@@ -105,7 +114,14 @@ export default function DoppelGame({ players, settings, onExit }: GameProps<Dopp
             merkt der Doppelgänger, worum es geht. Nach ein, zwei Runden wird abgestimmt.
           </p>
           <Actions>
-            <Button size="lg" block onClick={() => setPhase('vote')}>
+            <Button
+              size="lg"
+              block
+              onClick={() => {
+                sound.tap();
+                setPhase('vote');
+              }}
+            >
               Abstimmen
             </Button>
           </Actions>
@@ -116,12 +132,25 @@ export default function DoppelGame({ players, settings, onExit }: GameProps<Dopp
         <Stage>
           <p className="gs-eyebrow">Abstimmung</p>
           <Headline small>Wer ist der Doppelgänger?</Headline>
-          <PlayerPicker players={players} selected={suspect} onSelect={(p) => setSuspect(p.id)} />
+          <PlayerPicker
+            players={players}
+            selected={suspect}
+            onSelect={(p) => setSuspect(p.id)}
+            disabled={() => suspense.pending}
+          />
           <Actions>
-            <Button size="lg" block disabled={!suspect} onClick={accuse}>
+            <Button size="lg" block disabled={!suspect || suspense.pending} onClick={accuse}>
               {suspect ? `${nameOf(suspect)} entlarven` : 'Person wählen'}
             </Button>
-            <Button variant="ghost" block onClick={() => setPhase('describe')}>
+            <Button
+              variant="ghost"
+              block
+              disabled={suspense.pending}
+              onClick={() => {
+                sound.tap();
+                setPhase('describe');
+              }}
+            >
               Noch eine Runde Wörter
             </Button>
           </Actions>

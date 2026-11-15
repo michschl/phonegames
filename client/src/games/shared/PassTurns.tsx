@@ -68,6 +68,7 @@ export function SecretReveal({
     if (!revealed) {
       setRevealed(true);
       setSeen(true);
+      sound.flip();
       haptic(12);
     }
   };

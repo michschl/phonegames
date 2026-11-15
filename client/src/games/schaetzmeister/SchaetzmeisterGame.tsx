@@ -60,13 +60,15 @@ function CountUp({ from, to, unit, onDone }: { from: number; to: number; unit: s
     const duration = 1800;
     let raf = 0;
     let lastTick = 0;
+    let step = 0;
     const frame = (now: number) => {
       const t = Math.min(1, (now - start) / duration);
       const eased = 1 - (1 - t) ** 3;
       setValue(from + (to - from) * eased);
-      if (now - lastTick > 90 && t < 1) {
+      // Ticks climb in pitch and slow down together with the number.
+      if (now - lastTick > 55 + 160 * t && t < 1) {
         lastTick = now;
-        sound.click(0.8 + t);
+        sound.countTick(step++);
       }
       if (t < 1) raf = requestAnimationFrame(frame);
       else done.current();
@@ -97,6 +99,8 @@ export default function SchaetzmeisterGame({ players, settings, onExit }: GamePr
   const [guesses, setGuesses] = useState<Record<string, number>>({});
   const [scores, setScores] = useState<Record<string, number>>({});
   const [counted, setCounted] = useState(false);
+  const payoffTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(payoffTimer.current), []);
   const ranking = <ScoreList entries={playerScores(players, scores)} />;
 
   const results = useMemo(() => scoreGuesses(question.answer, guesses), [question, guesses]);
@@ -113,20 +117,25 @@ export default function SchaetzmeisterGame({ players, settings, onExit }: GamePr
     });
     if (results.some((r) => r.exact)) {
       sound.reveal();
+      sound.sparkle();
       confetti({ count: 160 });
     } else {
-      sound.correct();
+      // The number has landed – then the closest guess cashes in.
+      sound.ding();
+      if (results.some((r) => r.points > 0)) payoffTimer.current = window.setTimeout(() => sound.coin(), 380);
     }
     haptic(30);
   };
 
   const next = () => {
+    window.clearTimeout(payoffTimer.current);
     if (round >= settings.rounds) {
       setPhase('end');
-      sound.reveal();
+      sound.fanfare();
       confetti({ count: 200 });
       return;
     }
+    sound.whoosh();
     setRound((r) => r + 1);
     setQuestion(draw());
     setGuesses({});

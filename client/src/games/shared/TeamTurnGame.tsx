@@ -7,7 +7,7 @@ import { haptic } from '../../lib/device.ts';
 import { Actions, GameShell, Headline, Stage } from './GameShell.tsx';
 import { PassPrompt } from './PassTurns.tsx';
 import { makeTeams, ScoreList, TeamCards, teamScores, type Team } from './players.tsx';
-import { CountdownOverlay, TimerRing, useCountdown, useStartCountdown } from './Timer.tsx';
+import { CountdownOverlay, TimerRing, useCountdown, useStartCountdown, useSuspense, useTurnTally } from './Timer.tsx';
 
 export interface TurnCard {
   id: string;
@@ -71,7 +71,9 @@ export function TeamTurnGame<C extends TurnCard>({
   const team = teams[teamIndex]!;
   const performer = team.players[(performerByTeam[team.id] ?? 0) % team.players.length]!;
 
-  const timer = useCountdown(turnSeconds, { onEnd: () => setPhase('summary') });
+  // Soft ticks in the last 10 seconds, beeps in the last 5, buzzer at the end.
+  const timer = useCountdown(turnSeconds, { onEnd: () => setPhase('summary'), ticking: 10 });
+  const suspense = useSuspense();
   const start = useStartCountdown(() => {
     nextCard();
     setPhase('turn');
@@ -104,40 +106,58 @@ export function TeamTurnGame<C extends TurnCard>({
   const turnPoints = (entries: LogEntry<C>[]) =>
     entries.reduce((sum, e) => sum + (e.result === 'correct' ? 1 : e.result === 'foul' ? -1 : 0), 0);
 
-  const finishTurn = () => {
-    const newScores = { ...scores, [team.id]: (scores[team.id] ?? 0) + turnPoints(log) };
-    setScores(newScores);
-    setPerformerByTeam((p) => ({ ...p, [team.id]: (p[team.id] ?? 0) + 1 }));
-    setLog([]);
-    setCard(null);
-    timer.reset();
+  // Score jingle on the summary screen (or the sad trombone for an empty turn).
+  useTurnTally(phase === 'summary', turnPoints(log));
 
+  const finishTurn = () => {
+    if (suspense.pending) return;
+    const newScores = { ...scores, [team.id]: (scores[team.id] ?? 0) + turnPoints(log) };
     const nextIndex = (teamIndex + 1) % teams.length;
     // Only decide the winner after a full round, so every team had the same number of turns.
-    if (nextIndex === 0) {
-      const best = Math.max(...teams.map((t) => newScores[t.id] ?? 0));
-      const leaders = teams.filter((t) => (newScores[t.id] ?? 0) === best);
-      if (best >= targetScore && leaders.length === 1) {
+    const best = Math.max(...teams.map((t) => newScores[t.id] ?? 0));
+    const leaders = teams.filter((t) => (newScores[t.id] ?? 0) === best);
+    const gameOver = nextIndex === 0 && best >= targetScore && leaders.length === 1;
+
+    const apply = () => {
+      setScores(newScores);
+      setPerformerByTeam((p) => ({ ...p, [team.id]: (p[team.id] ?? 0) + 1 }));
+      setLog([]);
+      setCard(null);
+      timer.reset();
+      if (gameOver) {
         setPhase('winner');
-        sound.reveal();
+        sound.fanfare();
         confetti({ count: 200 });
         return;
       }
-      setRound((r) => r + 1);
-    }
-    setTeamIndex(nextIndex);
-    setPhase('pass');
+      if (nextIndex === 0) {
+        setRound((r) => r + 1);
+        sound.ding(); // a new round begins
+      } else {
+        sound.tap();
+      }
+      setTeamIndex(nextIndex);
+      setPhase('pass');
+    };
+
+    // Drumroll before the winner is announced.
+    if (gameOver) suspense.run(apply);
+    else apply();
   };
 
   const toggleEntry = (index: number) => {
-    setLog((entries) =>
-      entries.map((e, i) =>
-        i === index ? { ...e, result: e.result === 'correct' ? 'skipped' : e.result === 'skipped' ? (foulLabel ? 'foul' : 'correct') : 'correct' } : e,
-      ),
-    );
+    const entry = log[index];
+    if (!entry || suspense.pending) return;
+    const result: Result =
+      entry.result === 'correct' ? 'skipped' : entry.result === 'skipped' ? (foulLabel ? 'foul' : 'correct') : 'correct';
+    if (result === 'correct') sound.coin();
+    else if (result === 'foul') sound.wrong();
+    else sound.unpluck();
+    setLog((entries) => entries.map((e, i) => (i === index ? { ...e, result } : e)));
   };
 
   const restart = () => {
+    sound.swirl();
     setTeams(makeTeams(players));
     setScores({});
     setPerformerByTeam({});
@@ -162,10 +182,25 @@ export function TeamTurnGame<C extends TurnCard>({
           <p className="gs-eyebrow">Die Teams</p>
           <TeamCards teams={teams} />
           <Actions>
-            <Button size="lg" block onClick={() => setPhase('pass')}>
+            <Button
+              size="lg"
+              block
+              onClick={() => {
+                sound.pop();
+                setPhase('pass');
+              }}
+            >
               Los geht’s
             </Button>
-            <Button variant="ghost" block icon="refresh" onClick={() => setTeams(makeTeams(players))}>
+            <Button
+              variant="ghost"
+              block
+              icon="refresh"
+              onClick={() => {
+                sound.swirl();
+                setTeams(makeTeams(players));
+              }}
+            >
               Neu mischen
             </Button>
           </Actions>
@@ -263,7 +298,7 @@ export function TeamTurnGame<C extends TurnCard>({
             <p className="gs-text">Keine einzige Karte? Nächstes Mal klappt’s!</p>
           )}
           <Actions>
-            <Button size="lg" block onClick={finishTurn}>
+            <Button size="lg" block onClick={finishTurn} disabled={suspense.pending}>
               Weiter
             </Button>
           </Actions>

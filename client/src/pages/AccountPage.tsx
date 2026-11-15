@@ -5,6 +5,8 @@ import { Page, Section } from '../components/Layout.tsx';
 import { Avatar, Button, ConfirmSheet, Sheet, TextField, Toggle } from '../components/ui.tsx';
 import { api, errorMessage } from '../lib/api.ts';
 import { isIos, isStandalone, setHapticsEnabled } from '../lib/device.ts';
+import { speechAvailable, stopSpeaking } from '../lib/speech.ts';
+import { VoicePicker } from '../components/VoicePicker.tsx';
 import { promptInstall, usePwa } from '../lib/pwa.ts';
 import { deleteAccount, logout, updateProfile } from '../lib/session.ts';
 import { syncNow } from '../lib/sync.ts';
@@ -18,7 +20,7 @@ import { LIMITS } from '../../../shared/types.ts';
 export function AccountPage() {
   const user = useAuth((s) => s.user)!;
   const navigate = useNavigate();
-  const [sheet, setSheet] = useState<null | 'avatar' | 'profile' | 'password' | 'delete' | 'logout' | 'ios'>(null);
+  const [sheet, setSheet] = useState<null | 'avatar' | 'profile' | 'password' | 'delete' | 'logout' | 'ios' | 'voice'>(null);
   const close = () => setSheet(null);
 
   const online = useUi((s) => s.online);
@@ -105,6 +107,7 @@ export function AccountPage() {
           <div className="list__item list__item--toggle">
             <Toggle label="Töne" checked={sound} onChange={setSound} />
           </div>
+          {speechAvailable() && <ListButton icon="volume" label="Erzählstimme" onClick={() => setSheet('voice')} />}
           <div className="list__item list__item--toggle">
             <Toggle
               label="Vibration"
@@ -150,6 +153,28 @@ export function AccountPage() {
         danger={pending && !online}
         onConfirm={() => void doLogout()}
       />
+      <Sheet
+        open={sheet === 'voice'}
+        onClose={() => {
+          stopSpeaking();
+          close();
+        }}
+        title="Erzählstimme"
+      >
+        <p className="sheet__text">Diese Stimme führt in «Nachts im Dorf» durch die Nacht. Tippe auf eine Stimme, um sie anzuhören.</p>
+        <VoicePicker />
+        <div className="sheet__actions">
+          <Button
+            block
+            onClick={() => {
+              stopSpeaking();
+              close();
+            }}
+          >
+            Fertig
+          </Button>
+        </div>
+      </Sheet>
       <Sheet open={sheet === 'ios'} onClose={close} title="Zum Home-Bildschirm">
         <ol className="ios-steps">
           <li>

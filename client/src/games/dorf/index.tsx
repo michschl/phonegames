@@ -1,6 +1,7 @@
 import { lazy } from 'react';
 import type { GameDefinition, GameSettingsProps } from '../types.ts';
 import { Toggle } from '../../components/ui.tsx';
+import { VoicePicker } from '../../components/VoicePicker.tsx';
 import { speechAvailable } from '../../lib/speech.ts';
 import { OptionRow, SettingsPanel } from '../shared/settings.tsx';
 import { DEFAULT_SETTINGS, type DorfSettings } from './logic.ts';
@@ -18,6 +19,12 @@ function DorfSettingsPanel({ value, onChange }: GameSettingsProps<DorfSettings>)
         checked={value.voice && speechAvailable()}
         onChange={(voice) => onChange({ ...value, voice })}
       />
+      {value.voice && speechAvailable() && (
+        <div className="settings-panel__group">
+          <span className="settings-panel__label">Stimme</span>
+          <VoicePicker />
+        </div>
+      )}
       <Toggle
         label="Seherin"
         description="Sieht jede Nacht, ob eine Person ein Werwolf ist."
@@ -59,6 +66,7 @@ export const dorf: GameDefinition<DorfSettings> = {
     'Alle sehen geheim ihre Rolle: Werwolf, Seherin, Beschützer oder Dorfbewohner.',
     'Nachts liegt das Handy in der Mitte. Alle schliessen die Augen; die Erzählstimme weckt nacheinander die Rollen, die aufs Handy tippen.',
     'Tagsüber diskutiert das Dorf und verbannt eine verdächtige Person.',
+    'Wer stirbt oder verbannt wird, scheidet aus – die Rolle bleibt aber bis zum Spielende geheim. Bluffen ist erlaubt!',
     'Das Dorf gewinnt, wenn alle Werwölfe weg sind – die Werwölfe, sobald sie gleich viele sind wie der Rest.',
   ],
   defaultSettings: DEFAULT_SETTINGS,
