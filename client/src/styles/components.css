@@ -344,6 +344,13 @@
   animation: sheet-down 0.26s ease-in both;
 }
 
+.sheet__grip {
+  margin: -10px -22px 0;
+  padding: 10px 70px 0 22px;
+  touch-action: none;
+  cursor: grab;
+}
+
 .sheet__handle {
   width: 46px;
   height: 6px;
@@ -351,6 +358,27 @@
   border-radius: 999px;
   background: var(--ink);
   opacity: 0.25;
+  transform: translateX(24px);
+}
+
+.sheet__close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 2px 0 var(--ink);
+}
+
+.sheet__close:active {
+  transform: translateY(2px);
+  box-shadow: none;
 }
 
 .sheet__title {
