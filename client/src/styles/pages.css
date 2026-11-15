@@ -1324,3 +1324,41 @@
   height: 2px;
   background: var(--line);
 }
+
+/* ------------------------------------------------------------ trust note */
+
+.trust-note {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  color: var(--faint);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.trust-note__line {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.trust-note__flag {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  border-radius: 3px;
+  box-shadow: 0 0 0 1.5px rgba(27, 16, 51, 0.25);
+}
+
+.welcome__trust {
+  padding: 18px 24px 0;
+  animation: fade-in 0.8s 1.4s var(--ease-out) backwards;
+}
+
+.auth__trust {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 2px dashed var(--line);
+}

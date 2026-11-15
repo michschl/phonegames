@@ -1,6 +1,7 @@
 import { useEffect, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { Mascot, type Mood } from '../components/Brand.tsx';
+import { TrustNote } from '../components/TrustNote.tsx';
 import { Button, TextField } from '../components/ui.tsx';
 import { GAMES } from '../games/registry.ts';
 import { ApiError, errorMessage } from '../lib/api.ts';
@@ -85,6 +86,7 @@ export function WelcomePage() {
           <span>Ich habe schon ein Konto</span>
         </Link>
       </div>
+      <TrustNote className="welcome__trust" />
     </main>
   );
 }
@@ -221,6 +223,7 @@ export function RegisterPage() {
       <p className="auth__switch">
         Schon dabei? <Link to="/anmelden">Anmelden</Link>
       </p>
+      <TrustNote className="auth__trust" />
     </AuthShell>
   );
 }
