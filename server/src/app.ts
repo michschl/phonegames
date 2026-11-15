@@ -12,6 +12,7 @@ import { authRoutes } from './routes/auth.ts';
 import { accountRoutes } from './routes/account.ts';
 import { syncRoutes } from './routes/sync.ts';
 import { passkeyRoutes, type WebAuthnConfig } from './routes/passkeys.ts';
+import { TTS_VOICES, ttsRoutes, type TtsConfig } from './routes/tts.ts';
 
 export interface AppOptions {
   db: Database;
@@ -27,6 +28,8 @@ export interface AppOptions {
   inviteCodes?: readonly string[];
   /** Passkey (WebAuthn) settings; null or missing = passkeys switched off. */
   webauthn?: WebAuthnConfig | null;
+  /** Server narrator voice (Piper); null or missing = device voices only. */
+  tts?: TtsConfig | null;
 }
 
 declare module 'fastify' {
@@ -122,7 +125,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     reply.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), interest-cohort=()');
     reply.header('Cross-Origin-Opener-Policy', 'same-origin');
     reply.header('Content-Security-Policy', CSP);
-    if (request.url.startsWith('/api/')) reply.header('Cache-Control', 'no-store');
+    if (request.url.startsWith('/api/') && !reply.hasHeader('Cache-Control')) reply.header('Cache-Control', 'no-store');
     return payload;
   });
 
@@ -153,7 +156,9 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     rateLimit: options.rateLimit ?? true,
     inviteCodes: options.inviteCodes ?? [],
     passkeys: options.webauthn ? { rpID: options.webauthn.rpID } : null,
+    tts: options.tts ? { voices: TTS_VOICES.map(({ id, name }) => ({ id, name })) } : null,
   });
+  await app.register(ttsRoutes, { prefix: '/api/tts', rateLimit: options.rateLimit ?? true, tts: options.tts ?? null });
   await app.register(passkeyRoutes, {
     prefix: '/api/passkeys',
     rateLimit: options.rateLimit ?? true,

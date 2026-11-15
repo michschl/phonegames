@@ -37,6 +37,8 @@ export const config = {
    * Passkeys are bound to this domain; without it they are switched off in production.
    */
   appOrigins: list(env.APP_ORIGIN ?? (isProd ? '' : 'http://localhost:5173,http://localhost:3000')),
+  /** Piper TTS service for the narrator voice, e.g. http://tts:5000 (empty = device voices only). */
+  ttsUrl: env.TTS_URL ?? '',
 } as const;
 
 export type AppConfig = typeof config;

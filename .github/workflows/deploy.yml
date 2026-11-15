@@ -63,6 +63,20 @@ jobs:
       - name: Pushen
         run: docker push --all-tags "${{ steps.meta.outputs.image }}"
 
+      # The narrator voice (Piper + voice models) rarely changes: its tag is a
+      # checksum of tts/, so it is only rebuilt when that folder changes.
+      - name: TTS-Image bauen & pushen (nur bei Änderungen)
+        run: |
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}-tts:$(cat tts/* | sha256sum | cut -c1-16)"
+          if docker manifest inspect "$IMAGE" >/dev/null 2>&1; then
+            echo "$IMAGE ist schon vorhanden"
+          else
+            docker build \
+              --label "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
+              --tag "$IMAGE" tts
+            docker push "$IMAGE"
+          fi
+
   deploy:
     name: Auf den VPS ausrollen
     needs: image
@@ -133,9 +147,11 @@ jobs:
           INVITE_CODES: ${{ secrets.INVITE_CODES }}
         run: |
           IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}"
+          TTS_TAG="$(cat tts/* | sha256sum | cut -c1-16)"
           umask 077
           {
             echo "APP_IMAGE=${IMAGE}:${IMAGE_TAG}"
+            echo "TTS_IMAGE=${IMAGE}-tts:${TTS_TAG}"
             echo "APP_VERSION=${IMAGE_TAG::7}"
             echo "APP_DOMAIN=${APP_DOMAIN}"
             echo "INVITE_CODES=${INVITE_CODES// /}"

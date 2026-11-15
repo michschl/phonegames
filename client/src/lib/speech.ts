@@ -1,14 +1,22 @@
 /**
- * German text-to-speech via the Web Speech API.
+ * German narrator voice.
  *
- * Quality depends almost entirely on the voice, so we rank the device's German
- * voices: neural/natural, premium and enhanced voices first, novelty voices
- * (iOS "Eddy", "Grandma" …) never, dated desktop voices last. Text is spoken
- * sentence by sentence with short pauses, which sounds more like a narrator and
- * avoids Chrome cutting off long utterances. Online voices fall back to an
- * on-device voice when they fail (e.g. offline).
+ * Two sources:
+ * 1. Phonegames voices – natural neural voices (Piper) rendered on our server
+ *    and played via Web Audio. They sound the same on every device, also on
+ *    iPhones (where web pages may only use Apple's built-in voices). Every
+ *    sentence is kept in the Cache Storage, so known lines also play offline.
+ * 2. Device voices via the Web Speech API. We rank them: neural/natural,
+ *    premium and enhanced voices first, novelty voices (iOS "Eddy",
+ *    "Grandma" …) never, dated desktop voices last.
+ *
+ * Text is spoken sentence by sentence with short pauses. Whenever a sentence
+ * cannot be played with a Phonegames voice (offline and not cached, server
+ * down), the best device voice reads it instead.
  */
 import { useSettings } from '../store/settings.ts';
+import { sound } from './audio.ts';
+import { loadAuthOptions } from './authOptions.ts';
 
 export type VoiceQuality = 'natural' | 'enhanced' | 'standard';
 
@@ -19,7 +27,10 @@ export interface VoiceInfo {
   quality: VoiceQuality;
   online: boolean;
   score: number;
-  voice: SpeechSynthesisVoice;
+  /** Rendered on the Phonegames server (true) or by the device's speech engine. */
+  server: boolean;
+  /** Device voices only. */
+  voice?: SpeechSynthesisVoice;
 }
 
 export interface SpeakOptions {
@@ -37,6 +48,9 @@ const DATED = /espeak|pico|\bmicrosoft (hedda|katja|stefan)\b(?!.*online)/i;
 const GOOD_NAMES = /\b(anna|helena|petra|markus|martin|viktor|yannick|katja|conrad|amala|leni|jan|ingrid|jonas|seraphina|florian)\b/i;
 
 const REGIONS: Record<string, string> = { ch: 'Schweiz', de: 'Deutschland', at: 'Österreich', li: 'Liechtenstein', lu: 'Luxemburg' };
+
+const SERVER_PREFIX = 'phonegames:';
+const AUDIO_CACHE = 'phonegames-voice-v1';
 
 export function speechAvailable(): boolean {
   return typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
@@ -78,16 +92,12 @@ function describe(voice: SpeechSynthesisVoice): VoiceInfo {
     quality,
     online: !voice.localService,
     score,
+    server: false,
     voice,
   };
 }
 
-/* ------------------------------------------------------------- voice list */
-
-let voices: VoiceInfo[] = [];
-const listeners = new Set<() => void>();
-
-/** German voices without novelty voices, best first. */
+/** German device voices without novelty voices, best first. */
 export function rankGermanVoices(list: readonly SpeechSynthesisVoice[]): VoiceInfo[] {
   return list
     .filter((v) => v.lang.toLowerCase().startsWith('de') && !NOVELTY.test(`${v.name} ${v.voiceURI}`))
@@ -95,20 +105,62 @@ export function rankGermanVoices(list: readonly SpeechSynthesisVoice[]): VoiceIn
     .sort((a, b) => b.score - a.score);
 }
 
-function refreshVoices(): void {
-  if (!speechAvailable()) return;
-  voices = rankGermanVoices(window.speechSynthesis.getVoices());
+/* ------------------------------------------------------------- voice list */
+
+let deviceVoices: VoiceInfo[] = [];
+let serverVoices: VoiceInfo[] = [];
+let allVoices: VoiceInfo[] = [];
+const listeners = new Set<() => void>();
+
+function publish(): void {
+  allVoices = [...serverVoices, ...deviceVoices];
   listeners.forEach((listener) => listener());
 }
 
-if (speechAvailable()) {
-  refreshVoices();
-  window.speechSynthesis.addEventListener?.('voiceschanged', refreshVoices);
+/** Re-reads the device voices (e.g. after the user installed a new one) and the server voices. */
+export function refreshVoices(): void {
+  if (speechAvailable()) {
+    const next = rankGermanVoices(window.speechSynthesis.getVoices());
+    const changed = next.length !== deviceVoices.length || next.some((v, i) => v.id !== deviceVoices[i]?.id);
+    deviceVoices = next;
+    if (changed) publish();
+  }
+  if (!serverVoices.length) {
+    loadAuthOptions()
+      .then((options) => {
+        const next = (options.tts?.voices ?? []).map(
+          (v, i): VoiceInfo => ({
+            id: `${SERVER_PREFIX}${v.id}`,
+            name: v.name,
+            region: 'Phonegames',
+            quality: 'natural',
+            online: true,
+            score: 1000 - i,
+            server: true,
+          }),
+        );
+        if (next.length && !serverVoices.length) {
+          serverVoices = next;
+          publish();
+        }
+      })
+      .catch(() => undefined);
+  }
 }
 
-/** German voices of this device, best first. */
+if (typeof window !== 'undefined') {
+  refreshVoices();
+  if (speechAvailable()) window.speechSynthesis.addEventListener?.('voiceschanged', refreshVoices);
+  // Not every browser fires "voiceschanged" when a voice is installed while the app is in the background.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') refreshVoices();
+  });
+  window.addEventListener('online', refreshVoices);
+}
+
+/** All voices to choose from: Phonegames voices first, then the device's German voices. */
 export function germanVoices(): VoiceInfo[] {
-  return voices;
+  return allVoices;
 }
 
 export function onVoicesChanged(listener: () => void): () => void {
@@ -116,17 +168,107 @@ export function onVoicesChanged(listener: () => void): () => void {
   return () => listeners.delete(listener);
 }
 
-function bestLocal(): VoiceInfo | undefined {
-  return voices.find((v) => !v.online);
+function bestDeviceVoice(): VoiceInfo | undefined {
+  const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+  return (offline && deviceVoices.find((v) => !v.online)) || deviceVoices[0];
 }
 
 /** The chosen voice, or the best one available right now. */
 export function currentVoice(voiceId?: string | null): VoiceInfo | undefined {
-  if (!voices.length) refreshVoices();
+  if (!deviceVoices.length) refreshVoices();
   const wanted = voiceId === undefined ? useSettings.getState().voiceId : voiceId;
-  const chosen = (wanted && voices.find((v) => v.id === wanted)) || voices[0];
-  if (chosen?.online && typeof navigator !== 'undefined' && navigator.onLine === false) return bestLocal() ?? chosen;
+  const chosen = (wanted && allVoices.find((v) => v.id === wanted)) || allVoices[0];
+  if (chosen && !chosen.server && chosen.online && typeof navigator !== 'undefined' && navigator.onLine === false) {
+    return bestDeviceVoice() ?? chosen;
+  }
   return chosen;
+}
+
+/* ------------------------------------------------- Phonegames voice audio */
+
+const decoded = new Map<string, Promise<AudioBuffer | null>>();
+let playing: AudioBufferSourceNode | null = null;
+
+const ttsUrl = (voice: VoiceInfo, text: string) =>
+  `/api/tts?voice=${encodeURIComponent(voice.id.slice(SERVER_PREFIX.length))}&text=${encodeURIComponent(text)}`;
+
+/** WAV of one sentence: from the Cache Storage, else from the server (and then cached). */
+async function fetchAudio(url: string): Promise<ArrayBuffer | null> {
+  try {
+    const cache = 'caches' in window ? await caches.open(AUDIO_CACHE) : null;
+    const hit = await cache?.match(url);
+    if (hit) return await hit.arrayBuffer();
+    if (!navigator.onLine) return null;
+    const response = await fetch(url, { credentials: 'same-origin' });
+    if (!response.ok) return null;
+    if (cache) await cache.put(url, response.clone()).catch(() => undefined);
+    return await response.arrayBuffer();
+  } catch {
+    return null;
+  }
+}
+
+/** Decoded audio of a sentence, shared between preloading and playback. */
+function sentenceAudio(voice: VoiceInfo, text: string): Promise<AudioBuffer | null> {
+  const url = ttsUrl(voice, text);
+  let entry = decoded.get(url);
+  if (!entry) {
+    entry = fetchAudio(url).then(async (data) => {
+      const ctx = sound.context ?? sound.unlock();
+      if (!data || !ctx) return null;
+      try {
+        return await ctx.decodeAudioData(data);
+      } catch {
+        return null;
+      }
+    });
+    // Failed attempts may succeed later (back online), so they are not remembered.
+    entry.then((buffer) => buffer ?? decoded.delete(url)).catch(() => decoded.delete(url));
+    decoded.set(url, entry);
+    if (decoded.size > 300) decoded.delete(decoded.keys().next().value!);
+  }
+  return entry;
+}
+
+function playBuffer(buffer: AudioBuffer): Promise<void> {
+  const ctx = sound.context ?? sound.unlock();
+  if (!ctx) return Promise.resolve();
+  if (ctx.state !== 'running') void ctx.resume().catch(() => undefined);
+  return new Promise((resolve) => {
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    // Straight to the speakers: muting the sound effects must not silence the narrator.
+    source.connect(ctx.destination);
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      window.clearTimeout(fallback);
+      if (playing === source) playing = null;
+      resolve();
+    };
+    const fallback = window.setTimeout(finish, buffer.duration * 1000 + 1500);
+    source.onended = finish;
+    playing = source;
+    source.start();
+  });
+}
+
+/**
+ * Loads sentences in the background (two at a time), so they play without delay
+ * and are available offline later. Only does something for Phonegames voices.
+ */
+export async function preloadSpeech(texts: string[]): Promise<void> {
+  const voice = currentVoice();
+  if (!voice?.server) return;
+  const queue = [...new Set(texts.flatMap((text) => splitSentences(text).map((part) => part.text)))];
+  const worker = async () => {
+    for (let text = queue.shift(); text !== undefined; text = queue.shift()) {
+      if (!navigator.onLine) return;
+      await sentenceAudio(voice, text);
+    }
+  };
+  await Promise.all([worker(), worker()]);
 }
 
 /* ---------------------------------------------------------------- speaking */
@@ -151,12 +293,13 @@ let primed = false;
 
 const wait = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
 
-/** Speaks one sentence. Resolves `false` when an online voice failed and a retry makes sense. */
+/** Speaks one sentence with a device voice. Resolves `false` when an online voice failed and a retry makes sense. */
 function utter(text: string, voice: VoiceInfo | undefined, rate: number, pitch: number): Promise<boolean> {
+  if (!speechAvailable()) return Promise.resolve(true);
   return new Promise((resolve) => {
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = voice?.voice.lang ?? 'de-DE';
-    if (voice) utterance.voice = voice.voice;
+    utterance.lang = voice?.voice?.lang ?? 'de-DE';
+    if (voice?.voice) utterance.voice = voice.voice;
     utterance.rate = rate;
     utterance.pitch = pitch;
     let settled = false;
@@ -180,13 +323,23 @@ async function run(text: string, options: SpeakOptions, token: number): Promise<
   const pitch = options.pitch ?? 1;
   let voice = currentVoice(options.voiceId);
   const parts = splitSentences(text);
+  // Phonegames voice: request all sentences at once, then play them in order.
+  const audio = voice?.server ? parts.map((part) => sentenceAudio(voice!, part.text)) : [];
+
   for (const [index, part] of parts.entries()) {
     if (token !== generation) return;
-    const ok = await utter(part.text, voice, rate, pitch);
-    if (!ok && token === generation) {
-      // Online voice failed (offline, network hiccup): continue with an on-device voice.
-      voice = bestLocal();
-      await utter(part.text, voice, rate, pitch);
+    if (voice?.server) {
+      const buffer = await audio[index];
+      if (token !== generation) return;
+      if (buffer) await playBuffer(buffer);
+      else await utter(part.text, bestDeviceVoice(), rate, pitch); // not cached and offline, or server down
+    } else {
+      const ok = await utter(part.text, voice, rate, pitch);
+      if (!ok && token === generation) {
+        // Online device voice failed (offline, network hiccup): continue with an on-device voice.
+        voice = deviceVoices.find((v) => !v.online);
+        await utter(part.text, voice, rate, pitch);
+      }
     }
     if (index < parts.length - 1 && token === generation) await wait(part.pause);
   }
@@ -197,7 +350,7 @@ async function run(text: string, options: SpeakOptions, token: number): Promise<
  * read one after the other. Resolves when this text has been spoken.
  */
 export function speak(text: string, options: SpeakOptions = {}): Promise<void> {
-  if (!speechAvailable() || !text.trim()) return Promise.resolve();
+  if ((!speechAvailable() && !serverVoices.length) || !text.trim()) return Promise.resolve();
   const token = generation;
   const next = queue.then(() => (token === generation ? run(text, options, token) : undefined));
   queue = next.catch(() => undefined);
@@ -206,17 +359,23 @@ export function speak(text: string, options: SpeakOptions = {}): Promise<void> {
 
 /** Stops the current sentence and drops everything still queued. */
 export function stopSpeaking(): void {
-  if (!speechAvailable()) return;
   generation += 1;
   queue = Promise.resolve();
-  window.speechSynthesis.cancel();
+  try {
+    playing?.stop();
+  } catch {
+    /* already stopped */
+  }
+  playing = null;
+  if (speechAvailable()) window.speechSynthesis.cancel();
 }
 
 /**
- * iOS only lets a page speak after it spoke once inside a user gesture.
- * Call this synchronously from a tap that leads to narration.
+ * iOS only lets a page speak (and play audio) after a user gesture.
+ * Call this synchronously from the tap that leads to narration.
  */
 export function primeSpeech(): void {
+  sound.unlock();
   if (primed || !speechAvailable()) return;
   primed = true;
   const silent = new SpeechSynthesisUtterance(' ');
@@ -226,6 +385,7 @@ export function primeSpeech(): void {
 
 export function previewVoice(voiceId: string | null): Promise<void> {
   stopSpeaking();
+  sound.unlock();
   primed = true;
   return speak('Willkommen im Dorf. Wenn die Nacht hereinbricht, schliessen alle die Augen …', { voiceId });
 }

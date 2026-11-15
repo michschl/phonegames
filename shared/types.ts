@@ -69,6 +69,8 @@ export interface AuthOptions {
   inviteRequired: boolean;
   /** Passkey settings, or null when the server has no app origin configured. */
   passkeys: { rpID: string } | null;
+  /** Narrator voices rendered on the server, or null when no TTS service is configured. */
+  tts: { voices: { id: string; name: string }[] } | null;
 }
 
 export interface ApiErrorBody {
