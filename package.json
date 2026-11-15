@@ -1,0 +1,46 @@
+{
+  "name": "plausch",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Plausch – Partyspiele fürs Handy. Offline-fähige PWA mit Konten, Spielgruppen und dem Spiel «Bombe».",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:client": "vite",
+    "dev:server": "node --watch --disable-warning=ExperimentalWarning server/src/index.ts",
+    "build": "vite build",
+    "start": "node --disable-warning=ExperimentalWarning server/src/index.ts",
+    "preview": "npm run build && NODE_ENV=production npm start",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "icons": "node scripts/generate-icons.mjs"
+  },
+  "dependencies": {
+    "@fastify/cookie": "11.1.5",
+    "@fastify/rate-limit": "11.2.1",
+    "@fastify/static": "10.1.11",
+    "fastify": "5.12.7",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@fontsource-variable/outfit": "5.3.0",
+    "@fontsource-variable/unbounded": "5.3.0",
+    "@types/node": "24.19.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-router": "7.18.5",
+    "typescript": "7.0.2",
+    "vite": "8.3.5",
+    "vite-plugin-pwa": "2.0.0",
+    "vitest": "5.0.5",
+    "workbox-window": "7.4.1",
+    "zustand": "5.0.16"
+  }
+}

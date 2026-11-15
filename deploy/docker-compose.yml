@@ -1,0 +1,48 @@
+# Production stack on the VPS: the app container behind Caddy (automatic HTTPS).
+# Values come from the .env file next to this file, written by the deploy workflow.
+name: plausch
+
+services:
+  app:
+    image: ${APP_IMAGE:?APP_IMAGE fehlt}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      APP_VERSION: ${APP_VERSION:-}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    volumes:
+      - app-data:/data
+    expose:
+      - '3000'
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?APP_DOMAIN fehlt}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
+volumes:
+  app-data:
+  caddy-data:
+  caddy-config:
