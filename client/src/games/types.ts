@@ -13,6 +13,26 @@ export interface GameSettingsProps<S> {
   onChange(next: S): void;
 }
 
+/** Colour family of a name tile that shows a status (e.g. the Kartenkasten in «Spickzettel»). */
+export type StatusTone = 'neutral' | 'orange' | 'blue' | 'green' | 'yellow';
+
+/** Status of one person, shown on their name tile. */
+export interface PlayerStatus {
+  tone: StatusTone;
+  /** Short content of the round badge: a number, ✓ or ⭐. */
+  badge?: string;
+  /** Short text, e.g. «7 fällig» – visible on large tiles, read out everywhere. */
+  label: string;
+}
+
+/** Status of every person in the group, with a legend for the colours. */
+export interface PlayerStatusInfo {
+  /** What the colours are about, e.g. «Kartenkasten «Unité 5»». */
+  caption: string;
+  legend: { tone: StatusTone; label: string }[];
+  players: Record<string, PlayerStatus>;
+}
+
 /**
  * Everything the app needs to know about a game. Add a new game by creating
  * a folder in `src/games/<id>/` and registering its definition in
@@ -53,6 +73,11 @@ export interface GameDefinition<S extends object = any> {
    * Called on every render of the setup screen.
    */
   useBlocker?: (settings: S) => string | null;
+  /**
+   * Hook: a status per person for the name tiles on the setup screen (colour and badge), or null.
+   * Called on every render of the setup screen.
+   */
+  usePlayerStatus?: (settings: S, players: Player[]) => PlayerStatusInfo | null;
   /** The game itself – lazy loaded so the start screen stays fast. */
   Play?: LazyExoticComponent<ComponentType<GameProps<S>>>;
   /** Optional illustration for the cards. Falls back to the emoji. */

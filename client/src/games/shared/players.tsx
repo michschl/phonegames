@@ -4,6 +4,7 @@ import { Avatar } from '../../components/ui.tsx';
 import { sound } from '../../lib/audio.ts';
 import { haptic } from '../../lib/device.ts';
 import { pickRandom, shuffle } from '../../lib/util.ts';
+import type { PlayerStatus } from '../types.ts';
 
 /* ------------------------------------------------------------------ teams */
 
@@ -116,6 +117,7 @@ export function PlayerPicker({
   onSelect,
   disabled,
   badge,
+  status,
   quiet,
 }: {
   players: Player[];
@@ -123,33 +125,50 @@ export function PlayerPicker({
   onSelect: (player: Player) => void;
   disabled?: (player: Player) => boolean;
   badge?: (player: Player) => ReactNode;
+  /** Colours the tile and shows a status line and a round badge (e.g. cards due). */
+  status?: (player: Player) => PlayerStatus | undefined;
   /** No tap sound or vibration, e.g. at night when nobody may hear who is choosing. */
   quiet?: boolean;
 }) {
   const isSelected = (id: string) => (Array.isArray(selected) ? selected.includes(id) : selected === id);
   return (
-    <div className="pick-grid">
-      {players.map((player) => (
-        <button
-          key={player.id}
-          type="button"
-          className={`pick-chip ${isSelected(player.id) ? 'is-selected' : ''}`}
-          style={{ '--c': player.color } as CSSProperties}
-          disabled={disabled?.(player)}
-          aria-pressed={isSelected(player.id)}
-          onClick={() => {
-            if (!quiet) {
-              sound.tap();
-              haptic(10);
-            }
-            onSelect(player);
-          }}
-        >
-          <Avatar name={player.name} color={player.color} size={34} />
-          <span className="pick-chip__name">{player.name}</span>
-          {badge && <span className="pick-chip__badge">{badge(player)}</span>}
-        </button>
-      ))}
+    <div className={`pick-grid ${status ? 'pick-grid--status' : ''}`}>
+      {players.map((player) => {
+        const info = status?.(player);
+        return (
+          <button
+            key={player.id}
+            type="button"
+            className={`pick-chip ${info ? `has-status tone-${info.tone}` : ''} ${isSelected(player.id) ? 'is-selected' : ''}`}
+            style={{ '--c': player.color } as CSSProperties}
+            disabled={disabled?.(player)}
+            aria-pressed={isSelected(player.id)}
+            onClick={() => {
+              if (!quiet) {
+                sound.tap();
+                haptic(10);
+              }
+              onSelect(player);
+            }}
+          >
+            <Avatar name={player.name} color={player.color} size={34} />
+            {info ? (
+              <span className="pick-chip__text">
+                <span className="pick-chip__name">{player.name}</span>
+                <span className="pick-chip__status">{info.label}</span>
+              </span>
+            ) : (
+              <span className="pick-chip__name">{player.name}</span>
+            )}
+            {info?.badge && (
+              <span className="status-badge status-badge--corner" aria-hidden="true">
+                {info.badge}
+              </span>
+            )}
+            {badge && <span className="pick-chip__badge">{badge(player)}</span>}
+          </button>
+        );
+      })}
     </div>
   );
 }

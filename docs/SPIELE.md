@@ -103,7 +103,7 @@ Die meisten Spiele bestehen nur aus Inhalten, ein bisschen Logik und diesen Baus
 | `PassPrompt`, `SecretReveal`, `PassTurns` | `shared/PassTurns.tsx` | «Gib das Handy an …» und Geheimnisse, die nur sichtbar sind, solange der Finger auf der Karte liegt. `PassTurns` reicht das Handy der Reihe nach an alle weiter |
 | `useCountdown`, `TimerRing`, `useStartCountdown`, `CountdownOverlay` | `shared/Timer.tsx` | Zeitlimit mit Ring, Piepsen in den letzten Sekunden, Buzzer am Ende, «3 – 2 – 1»-Start |
 | `TeamTurnGame` | `shared/TeamTurnGame.tsx` | Komplette Engine für Teamspiele (Teams, Weitergeben, Zug mit Zeitlimit, Auswertung mit Korrektur, Sieger) – Pantomime, Verbotene Wörter und Summ-Raten sind damit je ~50 Zeilen |
-| `makeTeams`, `TeamCards`, `ScoreList`, `PlayerPicker`, `fillPerson` | `shared/players.tsx` | Teams einteilen, Ranglisten mit Medaillen, Personen antippen (Abstimmungen), `{person}` in Karten ersetzen |
+| `makeTeams`, `TeamCards`, `ScoreList`, `PlayerPicker`, `fillPerson` | `shared/players.tsx` | Teams einteilen, Ranglisten mit Medaillen, Personen antippen (Abstimmungen; mit `status` farbige Tafeln mit Badge), `{person}` in Karten ersetzen |
 | `drawFresh` | `shared/deck.ts` | Zufällige Karte ziehen, ohne kürzlich gezeigte Karten zu wiederholen (merkt sich das pro Gerät) |
 | `OptionRow`, `ChipSelect`, `SettingsPanel` | `shared/settings.tsx` | Bausteine für die Einstellungen auf dem Startbildschirm |
 | `PackSettingsPanel`, `filterPacks` | `shared/packs.tsx` | Kartenpakete «Familie / Freunde / Party» |
@@ -129,6 +129,7 @@ Spielform. Dafür gibt es in der Definition:
 | `prepareKeys` | Einstellungen aus `Prepare` – sie setzen das Etikett der Einstellungen nicht auf «Angepasst» |
 | `playersNeeded(settings)` | Mindestzahl Personen je nach Einstellung (sonst `minPlayers`), z. B. 1 für den Kartenkasten, 4 für die Blitzrunde |
 | `useBlocker(settings)` | Hook: Grund, warum noch nicht gestartet werden kann – erscheint auf dem Start-Knopf, z. B. «Wähle zuerst einen Lernstapel» |
+| `usePlayerStatus(settings, players)` | Hook: Stand pro Person für die Namenstafeln der Spielgruppe – Farbe (`tone`), runder Badge und Text, dazu eine Legende; `null` für normale Tafeln. Beispiel: Kartenkasten in «Spickzettel» |
 
 ### Ein Teamspiel in wenigen Zeilen
 

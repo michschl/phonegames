@@ -4,12 +4,13 @@ import { Button } from '../../components/ui.tsx';
 import { sound } from '../../lib/audio.ts';
 import { confetti } from '../../lib/confetti.ts';
 import { haptic } from '../../lib/device.ts';
-import { BOXES, boxCounts, canPlayChoice, checkTypedAnswer, choicesFor, dueCards, type TypedVerdict } from '../../lib/learn.ts';
+import { BOXES, boxCounts, canPlayChoice, checkTypedAnswer, choicesFor, dueCards, dueDayLabel, kastenStatus, type TypedVerdict } from '../../lib/learn.ts';
 import { normalize, shuffle } from '../../lib/util.ts';
 import { useData, useProgress } from '../../store/data.ts';
 import { Actions, GameShell, Headline, Stage } from '../shared/GameShell.tsx';
 import { PlayerPicker } from '../shared/players.tsx';
 import type { SpickzettelSettings } from './index.tsx';
+import { useKastenTiles } from './status.ts';
 
 type Phase = 'who' | 'overview' | 'card' | 'done';
 
@@ -64,6 +65,7 @@ export function Kartenkasten({
   const [phase, setPhase] = useState<Phase>(learner ? 'overview' : 'who');
   const progress = useProgress(stack.id, learner?.name);
   const recordAnswer = useData((s) => s.recordAnswer);
+  const tiles = useKastenTiles(stack.id, players);
 
   const [queue, setQueue] = useState<LearnCard[]>([]);
   const [index, setIndex] = useState(0);
@@ -81,6 +83,7 @@ export function Kartenkasten({
   const counts = boxCounts(stack, progress);
   const due = dueCards(stack, progress, settings.sessionSize);
   const dueTotal = dueCards(stack, progress, stack.cards.length).length;
+  const status = kastenStatus(stack, progress);
   const card = queue[index];
   const choice = settings.check === 'choice' && canPlayChoice(stack);
   const typing = settings.check === 'type';
@@ -192,6 +195,7 @@ export function Kartenkasten({
           <p className="gs-text">Jede Person hat ihren eigenen Kartenkasten.</p>
           <PlayerPicker
             players={players}
+            status={(player) => tiles?.[player.id]}
             selected={learner?.id ?? null}
             onSelect={(player) => {
               setLearner(player);
@@ -208,11 +212,24 @@ export function Kartenkasten({
           <BoxRow counts={counts} />
           {due.length > 0 ? (
             <p className="gs-text">
-              Heute fällig: <strong>{dueTotal}</strong> {dueTotal === 1 ? 'Karte' : 'Karten'}
+              {status.due > 0 && (
+                <>
+                  Heute fällig: <strong>{status.due}</strong> {status.due === 1 ? 'Karte' : 'Karten'}
+                  {status.fresh > 0 && ', dazu '}
+                </>
+              )}
+              {status.fresh > 0 && (
+                <>
+                  <strong>{status.fresh}</strong> {status.due > 0 ? 'neue' : status.fresh === 1 ? 'neue Karte' : 'neue Karten'}
+                </>
+              )}
               {dueTotal > due.length && ` – ${due.length} pro Runde`}
             </p>
           ) : (
-            <p className="gs-text">Alles gelernt für heute 🎉 Die nächsten Karten sind morgen oder später wieder dran.</p>
+            <p className="gs-text">
+              {status.state === 'mastered' ? 'Alle Karten sind in Fach 5 ⭐' : 'Alles gelernt für heute 🎉'} Die nächsten Karten sind{' '}
+              {status.nextDue ? dueDayLabel(status.nextDue) : 'bald'} wieder dran.
+            </p>
           )}
           <Actions>
             {due.length > 0 ? (

@@ -13,7 +13,7 @@ import { parseTextCards, preparePhoto, subjectEmoji } from '../lib/learn.ts';
 import { sound } from '../lib/audio.ts';
 import { createId } from '../lib/util.ts';
 import { useAuth } from '../store/auth.ts';
-import { useData, useStack, useStacks } from '../store/data.ts';
+import { useData, useDueByStack, useStack, useStacks } from '../store/data.ts';
 import { fromDraft, fromStack, useLearnDraft, type EditorValue } from '../store/learnDraft.ts';
 import { toast, useUi } from '../store/ui.ts';
 
@@ -34,6 +34,7 @@ function dayLabel(isoDay: string): string {
 
 export function StacksPage() {
   const stacks = useStacks();
+  const dueByStack = useDueByStack();
   return (
     <Page
       title="Lernstapel"
@@ -73,6 +74,7 @@ export function StacksPage() {
                   {cardCount(stack.cards.length)}
                   {stack.subject && ` · ${stack.subject}`}
                 </span>
+                {(dueByStack[stack.id] ?? 0) > 0 && <span className="due-pill">{dueByStack[stack.id]} fällig</span>}
               </span>
               <Icon name="next" />
             </Link>

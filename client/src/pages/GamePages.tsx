@@ -71,6 +71,7 @@ function GameSetup({ game }: { game: GameDefinition }) {
   const missing = game.noGroup ? 0 : Math.max(0, needed - playerCount);
   // The component is keyed by game, so the hook order never changes.
   const blocker = game.useBlocker?.(settings) ?? null;
+  const playerStatus = game.usePlayerStatus?.(settings, group?.players ?? []) ?? null;
   const canStart = !blocker && (game.noGroup || (!!group && missing === 0));
 
   const start = () => {
@@ -130,7 +131,7 @@ function GameSetup({ game }: { game: GameDefinition }) {
         {selectedId ? (
           <>
             <GroupPicker selectedId={selectedId} onSelect={select} />
-            {group && <PlayerEditor group={group} />}
+            {group && <PlayerEditor group={group} status={playerStatus} />}
           </>
         ) : (
           <div className="setup-nogroup">

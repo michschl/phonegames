@@ -1,5 +1,6 @@
 import { useState, type CSSProperties, type FormEvent } from 'react';
 import { LIMITS, type PlayerGroup } from '../../../shared/types.ts';
+import type { PlayerStatusInfo } from '../games/types.ts';
 import { sound } from '../lib/audio.ts';
 import { haptic } from '../lib/device.ts';
 import { normalize } from '../lib/util.ts';
@@ -7,8 +8,11 @@ import { useData } from '../store/data.ts';
 import { Icon } from './Icon.tsx';
 import { Avatar } from './ui.tsx';
 
-/** Add / remove players of a group. Changes are saved immediately. */
-export function PlayerEditor({ group, autoFocus }: { group: PlayerGroup; autoFocus?: boolean }) {
+/**
+ * Add / remove players of a group. Changes are saved immediately.
+ * With `status`, the name tiles are coloured and show a badge (e.g. cards due in «Spickzettel»).
+ */
+export function PlayerEditor({ group, autoFocus, status }: { group: PlayerGroup; autoFocus?: boolean; status?: PlayerStatusInfo | null }) {
   const addPlayer = useData((s) => s.addPlayer);
   const removePlayer = useData((s) => s.removePlayer);
   const [name, setName] = useState('');
@@ -73,29 +77,58 @@ export function PlayerEditor({ group, autoFocus }: { group: PlayerGroup; autoFoc
         <p className="player-editor__empty">Noch niemand dabei – füge die Mitspielenden hinzu.</p>
       ) : (
         <ul className="player-list">
-          {group.players.map((player) => (
-            <li
-              key={player.id}
-              className={`player-chip ${leaving.includes(player.id) ? 'is-leaving' : ''}`}
-              style={{ '--c': player.color } as CSSProperties}
-            >
-              <Avatar name={player.name} color={player.color} size={32} />
-              <span className="player-chip__name">{player.name}</span>
-              <button
-                type="button"
-                className="player-chip__remove"
-                aria-label={`${player.name} entfernen`}
-                onClick={() => remove(player.id)}
+          {group.players.map((player) => {
+            const info = status?.players[player.id];
+            return (
+              <li
+                key={player.id}
+                className={`player-chip ${info ? `has-status tone-${info.tone}` : ''} ${leaving.includes(player.id) ? 'is-leaving' : ''}`}
+                style={{ '--c': player.color } as CSSProperties}
               >
-                <Icon name="x" size={16} strokeWidth={2.6} />
-              </button>
-            </li>
-          ))}
+                <Avatar name={player.name} color={player.color} size={32} />
+                <span className="player-chip__name">{player.name}</span>
+                {info?.badge && (
+                  <span className="status-badge" aria-hidden="true">
+                    {info.badge}
+                  </span>
+                )}
+                {info && <span className="sr-only">: {info.label}</span>}
+                <button
+                  type="button"
+                  className="player-chip__remove"
+                  aria-label={`${player.name} entfernen`}
+                  onClick={() => remove(player.id)}
+                >
+                  <Icon name="x" size={16} strokeWidth={2.6} />
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
       <p className="player-editor__count">
         {group.players.length} {group.players.length === 1 ? 'Person' : 'Personen'}
       </p>
+      {status && group.players.length > 0 && <StatusLegend status={status} />}
+    </div>
+  );
+}
+
+/** Explains the colours of the name tiles – only the ones that occur. */
+export function StatusLegend({ status }: { status: PlayerStatusInfo }) {
+  const tones = new Set(Object.values(status.players).map((p) => p.tone));
+  const shown = status.legend.filter((entry) => tones.has(entry.tone));
+  return (
+    <div className="status-legend">
+      <p className="status-legend__caption">{status.caption}</p>
+      <ul>
+        {shown.map((entry) => (
+          <li key={entry.tone}>
+            <span className={`status-dot tone-${entry.tone}`} aria-hidden="true" />
+            {entry.label}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

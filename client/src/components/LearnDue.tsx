@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router';
 import type { LearnStack } from '../../../shared/types.ts';
-import { subjectEmoji } from '../lib/learn.ts';
+import { kastenStatus, subjectEmoji } from '../lib/learn.ts';
 import { useData } from '../store/data.ts';
 import { Icon } from './Icon.tsx';
 
@@ -22,10 +22,7 @@ function useDueReminders(): DueEntry[] {
       const stack = stacks[entry.stackId];
       if (entry.deleted || !stack || stack.deleted) continue;
       // New cards are not counted – only cards someone already learned and should repeat now.
-      const due = stack.cards.filter((card) => {
-        const p = entry.cards[card.id];
-        return p && p.due <= now;
-      }).length;
+      const { due } = kastenStatus(stack, entry, now);
       if (due > 0) list.push({ stack, player: entry.player, due });
     }
     return list.sort((a, b) => b.due - a.due);

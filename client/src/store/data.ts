@@ -12,7 +12,7 @@ import {
   type PlayerGroup,
   type SyncPayload,
 } from '../../../shared/types.ts';
-import { nextProgress, progressId } from '../lib/learn.ts';
+import { kastenStatus, nextProgress, progressId } from '../lib/learn.ts';
 import { createId, nextColor, pickRandom, GROUP_EMOJIS } from '../lib/util.ts';
 
 /** A stack as edited by the user – ids are added when saving. */
@@ -319,6 +319,22 @@ export function useProgress(stackId: string | null | undefined, player: string |
     const entry = s.progress[progressId(stackId, player)];
     return entry && !entry.deleted ? entry : undefined;
   });
+}
+
+/** Cards due again per stack, summed over everyone learning it – new cards do not count. */
+export function useDueByStack(): Record<string, number> {
+  const stacks = useData((s) => s.stacks);
+  const progress = useData((s) => s.progress);
+  return useMemo(() => {
+    const now = Date.now();
+    const due: Record<string, number> = {};
+    for (const entry of Object.values(progress)) {
+      const stack = stacks[entry.stackId];
+      if (entry.deleted || !stack || stack.deleted) continue;
+      due[stack.id] = (due[stack.id] ?? 0) + kastenStatus(stack, entry, now).due;
+    }
+    return due;
+  }, [stacks, progress]);
 }
 
 export const useHasPendingChanges = (): boolean => useData((s) => s.revision !== s.syncedRevision);
