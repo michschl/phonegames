@@ -48,6 +48,45 @@ export function boxCounts(stack: LearnStack, progress: LearnProgress | undefined
   return counts;
 }
 
+export interface KastenStatus {
+  /**
+   * start = noch nicht begonnen, due = Karten zum Wiederholen fällig, new = nur neue Karten offen,
+   * done = für heute erledigt, mastered = alle Karten in Fach 5 und nichts fällig.
+   */
+  state: 'start' | 'due' | 'new' | 'done' | 'mastered';
+  /** Cards learned before that are due again now. */
+  due: number;
+  /** Cards never asked yet. */
+  fresh: number;
+  /** When the next card is due – only when nothing is due now. */
+  nextDue: number | null;
+}
+
+/** Where a person stands with a stack – for badges and the colour of the name tiles. */
+export function kastenStatus(stack: LearnStack, progress: LearnProgress | undefined, now = Date.now()): KastenStatus {
+  const known = progress?.cards ?? {};
+  let due = 0;
+  let fresh = 0;
+  let mastered = 0;
+  let next = Infinity;
+  for (const card of stack.cards) {
+    const entry = known[card.id];
+    if (!entry) fresh += 1;
+    else if (entry.due <= now) due += 1;
+    else next = Math.min(next, entry.due);
+    if (entry?.box === BOXES) mastered += 1;
+  }
+  const state: KastenStatus['state'] =
+    fresh === stack.cards.length ? 'start' : due > 0 ? 'due' : fresh > 0 ? 'new' : mastered === stack.cards.length ? 'mastered' : 'done';
+  return { state, due, fresh, nextDue: due === 0 && Number.isFinite(next) ? next : null };
+}
+
+/** «morgen», «übermorgen», «in 5 Tagen» – when cards are due again. */
+export function dueDayLabel(due: number, now = Date.now()): string {
+  const days = Math.round((startOfDay(due) - startOfDay(now)) / DAY);
+  return days <= 0 ? 'heute' : days === 1 ? 'morgen' : days === 2 ? 'übermorgen' : `in ${days} Tagen`;
+}
+
 /** Progress record id – the same for a stack and a person on every device. */
 export function progressId(stackId: string, player: string): string {
   // FNV-1a over the normalised name keeps the id short and URL safe.

@@ -573,6 +573,11 @@
   width: min(100%, 520px);
 }
 
+/* Tiles with a status line need more room: one column when two do not fit. */
+.pick-grid--status {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 9.5em), 1fr));
+}
+
 .pick-chip {
   --c: var(--accent);
   position: relative;
@@ -621,6 +626,23 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.pick-chip__text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.pick-chip__text .pick-chip__name {
+  flex: none;
+}
+
+.pick-chip__status {
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: rgba(27, 16, 51, 0.75);
 }
 
 .pick-chip__badge {

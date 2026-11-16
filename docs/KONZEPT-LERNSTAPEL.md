@@ -177,6 +177,19 @@ interface Karte {
 - **«Heute fällig» auf der Startseite:** Sobald jemand Karten gelernt hat und welche wieder fällig sind, zeigt die
   Startseite «Heute fällig: 7 Karten · Lea · «Unité 5»». Ein Tipp öffnet den Stapel direkt im Kartenkasten. Neue,
   noch nie gelernte Karten zählen nicht – die Erinnerung soll ans Repetieren erinnern, nicht drängen.
+- **Stand pro Person auf einen Blick:** Die Namenstafeln zeigen, wo jede Person im Kartenkasten des gewählten
+  Stapels steht – bei «Wer lernt?» mit Text («3 fällig · 2 neu»), auf dem Startbildschirm des Spiels in der
+  Spielgruppe mit Legende (nur in der Spielform Kartenkasten):
+
+  | Farbe | Stand | Badge |
+  |---|---|---|
+  | Orange | Karten zum Wiederholen fällig | Anzahl fälliger Karten |
+  | Blau | Nichts fällig, aber noch neue Karten | – |
+  | Grün | Heute erledigt | ✓ |
+  | Gelb | Alle Karten in Fach 5 | ⭐ |
+  | Weiss | Noch nicht begonnen | – |
+
+  Die Stapel-Listen (Spiel und «Lernstapel») zeigen zusätzlich «3 fällig» – summiert über alle Personen.
 
 ## Offene Punkte
 

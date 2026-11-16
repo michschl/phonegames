@@ -1,10 +1,12 @@
 import { lazy } from 'react';
-import type { GameDefinition, GameSettingsProps } from '../types.ts';
+import type { Player } from '../../../../shared/types.ts';
+import type { GameDefinition, GameSettingsProps, PlayerStatusInfo } from '../types.ts';
 import { OptionRow, SettingsPanel } from '../shared/settings.tsx';
 import { TurnSettingsRows } from '../shared/turnSettings.tsx';
 import { canPlayChoice } from '../../lib/learn.ts';
 import { useStack } from '../../store/data.ts';
 import { Prepare } from './Prepare.tsx';
+import { KASTEN_LEGEND, useKastenTiles } from './status.ts';
 
 export interface SpickzettelSettings {
   stackId: string | null;
@@ -82,6 +84,14 @@ function useBlocker(settings: SpickzettelSettings): string | null {
   return null;
 }
 
+/** Setup screen: the name tiles of the group show where everyone stands in the Kartenkasten. */
+function usePlayerStatus(settings: SpickzettelSettings, players: Player[]): PlayerStatusInfo | null {
+  const stack = useStack(settings.stackId);
+  const tiles = useKastenTiles(settings.stackId, players);
+  if (settings.mode !== 'kasten' || !stack || !tiles) return null;
+  return { caption: `Kartenkasten «${stack.title}»`, legend: KASTEN_LEGEND, players: tiles };
+}
+
 export const spickzettel: GameDefinition<SpickzettelSettings> = {
   id: 'spickzettel',
   name: 'Spickzettel',
@@ -109,5 +119,6 @@ export const spickzettel: GameDefinition<SpickzettelSettings> = {
   Settings,
   playersNeeded: (settings) => (settings.mode === 'blitz' ? 4 : settings.mode === 'duell' ? 2 : 1),
   useBlocker,
+  usePlayerStatus,
   Play: lazy(() => import('./SpickzettelGame.tsx')),
 };

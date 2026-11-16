@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { LearnCard, LearnProgress, LearnStack } from '../../../shared/types.ts';
-import { boxCounts, checkTypedAnswer, choicesFor, dueCards, nextProgress, parseTextCards, progressId } from './learn.ts';
+import { boxCounts, checkTypedAnswer, choicesFor, dueCards, dueDayLabel, kastenStatus, nextProgress, parseTextCards, progressId } from './learn.ts';
 
 const DAY = 24 * 60 * 60 * 1000;
 const NOW = new Date(2026, 10, 16, 15, 30).getTime();
@@ -52,6 +52,29 @@ describe('Kartenkasten', () => {
     expect(dueCards(s, progress, 10, NOW).map((c) => c.id)).toEqual(['b', 'a', 'd']);
     expect(dueCards(s, progress, 2, NOW).map((c) => c.id)).toEqual(['b', 'a']);
     expect(boxCounts(s, progress)).toEqual([1, 1, 0, 1, 1, 0]);
+  });
+
+  it('tells where a person stands with a stack', () => {
+    const s = stack([card('a', '1'), card('b', '2'), card('c', '3')]);
+    const at = (cards: LearnProgress['cards']): LearnProgress => ({ id: 'p', stackId: s.id, player: 'Lea', cards, updatedAt: 0, deleted: false });
+    expect(kastenStatus(s, undefined, NOW)).toEqual({ state: 'start', due: 0, fresh: 3, nextDue: null });
+    expect(kastenStatus(s, at({ a: { box: 2, due: NOW - 1 }, b: { box: 3, due: NOW + DAY } }), NOW)).toEqual({
+      state: 'due',
+      due: 1,
+      fresh: 1,
+      nextDue: null,
+    });
+    expect(kastenStatus(s, at({ a: { box: 2, due: NOW + DAY } }), NOW).state).toBe('new');
+    const done = at({ a: { box: 2, due: MIDNIGHT + DAY }, b: { box: 5, due: MIDNIGHT + 3 * DAY }, c: { box: 5, due: MIDNIGHT + 30 * DAY } });
+    expect(kastenStatus(s, done, NOW)).toEqual({ state: 'done', due: 0, fresh: 0, nextDue: MIDNIGHT + DAY });
+    const mastered = at({ a: { box: 5, due: MIDNIGHT + 30 * DAY }, b: { box: 5, due: MIDNIGHT + 14 * DAY }, c: { box: 5, due: MIDNIGHT + 30 * DAY } });
+    expect(kastenStatus(s, mastered, NOW).state).toBe('mastered');
+  });
+
+  it('names the day cards are due again', () => {
+    expect(dueDayLabel(MIDNIGHT + DAY, NOW)).toBe('morgen');
+    expect(dueDayLabel(MIDNIGHT + 2 * DAY, NOW)).toBe('übermorgen');
+    expect(dueDayLabel(MIDNIGHT + 7 * DAY, NOW)).toBe('in 7 Tagen');
   });
 
   it('gives a stack and a person the same progress id on every device', () => {

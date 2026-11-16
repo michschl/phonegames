@@ -5,7 +5,7 @@ import { Section } from '../../components/Layout.tsx';
 import { Segmented } from '../../components/ui.tsx';
 import { haptic } from '../../lib/device.ts';
 import { subjectEmoji } from '../../lib/learn.ts';
-import { useStacks } from '../../store/data.ts';
+import { useDueByStack, useStacks } from '../../store/data.ts';
 import type { GameSettingsProps } from '../types.ts';
 import type { SpickzettelSettings } from './index.tsx';
 import './spickzettel.css';
@@ -16,6 +16,7 @@ const SHOWN = 5;
 /** Setup screen: which stack and which kind of game. Shown open, the game cannot start without it. */
 export function Prepare({ value, onChange }: GameSettingsProps<SpickzettelSettings>) {
   const stacks = useStacks();
+  const dueByStack = useDueByStack();
   const [params, setParams] = useSearchParams();
   const wanted = params.get('stapel');
   const wantedMode = params.get('modus');
@@ -85,6 +86,7 @@ export function Prepare({ value, onChange }: GameSettingsProps<SpickzettelSettin
                       {stack.cards.length} {stack.cards.length === 1 ? 'Karte' : 'Karten'}
                       {stack.subject && ` · ${stack.subject}`}
                     </span>
+                    {(dueByStack[stack.id] ?? 0) > 0 && <span className="due-pill">{dueByStack[stack.id]} fällig</span>}
                   </span>
                   <span className="stack-option__radio" aria-hidden="true">
                     {stack.id === value.stackId && <Icon name="check" size={16} strokeWidth={3} />}
