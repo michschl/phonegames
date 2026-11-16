@@ -47,6 +47,7 @@ export function Backdrop() {
 
 const TABS: { to: string; label: string; icon: IconName; color: string }[] = [
   { to: '/', label: 'Spiele', icon: 'games', color: '#ff4fa3' },
+  { to: '/lernen', label: 'Lernen', icon: 'cards', color: '#ff8a3d' },
   { to: '/entdecken', label: 'Entdecken', icon: 'compass', color: '#ffd23f' },
   { to: '/gruppen', label: 'Gruppen', icon: 'users', color: '#2ec5ff' },
   { to: '/konto', label: 'Konto', icon: 'user', color: '#9be15d' },
@@ -62,7 +63,7 @@ export function TabBar() {
     <nav
       className="tabbar"
       aria-label="Hauptnavigation"
-      style={{ '--index': active, '--tab-color': TABS[active]!.color } as CSSProperties}
+      style={{ '--index': active, '--tabs': TABS.length, '--tab-color': TABS[active]!.color } as CSSProperties}
     >
       <span className="tabbar__pill" aria-hidden="true" />
       {TABS.map((tab) => (

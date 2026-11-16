@@ -191,9 +191,18 @@ interface Karte {
 ## Ergänzungen nach den Etappen
 
 - **Antworten eintippen** als dritte Antwortprüfung im Kartenkasten (siehe Etappe 2).
+- **Allein lernen ohne Spielgruppe:** Kartenkasten und Lückentext brauchen keine Gruppe mehr. Der Kartenkasten
+  gehört einem Namen; «Wer lernt?» bietet an, wer den Stapel schon gelernt hat, die Personen der zuletzt für
+  Spickzettel gewählten Gruppe, die angemeldete Person und hier hinzugefügte Namen (`collectLearners`). Vorausgewählt
+  ist, wer den Stapel zuletzt auf diesem Gerät gelernt hat. Der Start führt direkt zur ersten Karte.
+- **«Speichern & lernen»** nach dem Prüfen: Ist klar, wer lernt (wer den Stapel schon gelernt hat oder die einzige
+  Person, die überhaupt lernt), startet gleich die erste Runde; sonst fragt «Wer lernt?».
+- **Spielformen nach Situation:** «Allein» (Kartenkasten, Lückentext), «Zu zweit» (Duell), «Mit mehreren»
+  (Blitzrunde, Schätzrunde). Was der Stapel nicht hergibt (`modeFits`), wird nicht angeboten.
 - **«Heute fällig» auf der Startseite:** Sobald jemand Karten gelernt hat und welche wieder fällig sind, zeigt die
-  Startseite «Heute fällig: 7 Karten · Lea · «Unité 5»». Ein Tipp öffnet den Stapel direkt im Kartenkasten. Neue,
-  noch nie gelernte Karten zählen nicht – die Erinnerung soll ans Repetieren erinnern, nicht drängen.
+  Startseite eine Zeile pro Person und Stapel («Lea · 7 Karten · «Unité 5»», höchstens drei). Ein Tipp startet
+  direkt die erste fällige Karte (`/lernen/<stapel>/kasten?person=Lea`). Neue, noch nie gelernte Karten zählen
+  nicht – die Erinnerung soll ans Repetieren erinnern, nicht drängen.
 - **Stand pro Person auf einen Blick:**
   - «Wer lernt?» (Kartenkasten, Lückentext): Die Namenstafeln sind nach Stand eingefärbt und nennen ihn:
 
@@ -205,20 +214,57 @@ interface Karte {
     | Gelb | Alle Karten in Fach 5 | ★ |
     | Weiss | Noch nicht begonnen | – |
 
-  - Startbildschirm (Spielform Kartenkasten): Die Namen der Spielgruppe behalten ihre Farben und tragen die rote
-    Zahl der fälligen Karten (bzw. ✓/★), mit kurzer Legende. Die Gruppen-Chips zeigen die Summe der fälligen Karten
-    aller Personen der Gruppe.
-  - Die Stapel-Listen (Spiel und «Lernstapel») zeigen «3 fällig» – summiert über alle Personen.
-- **Stapelwahl im Spiel:** Der Startbildschirm schlägt 3 Stapel vor – zuerst die mit fälligen Karten, dann die
-  zuletzt gelernten oder bearbeiteten (`recommendStacks`); der gewählte ist immer dabei. «Anderer Stapel» öffnet
-  alle Stapel alphabetisch, ab 7 Stapeln mit Suche nach Titel oder Fach. «Verwalten» führt zur Stapel-Liste.
-- **Schätzrunde und Lückentext** (siehe Spielformen). Die Spielform-Auswahl zeigt alle fünf Formen; was der Stapel
-  nicht hergibt («keine Zahlen», «keine Lücken»), ist ausgegraut, passende Formen tragen einen Stern.
+  - «Wer lernt?» steht auf der Stapelseite – mit denselben Farben, der roten Zahl der fälligen Karten (bzw. ✓/★)
+    und einer kurzen Legende.
+  - Die Stapel-Liste im Tab «Lernen» zeigt «3 fällig» – summiert über alle Personen.
+- **Stapelwahl zum Zusammenspielen:** Der Startbildschirm des Spiels schlägt 3 Stapel vor – zuerst die mit fälligen
+  Karten, dann die zuletzt gelernten oder bearbeiteten (`recommendStacks`); der gewählte ist immer dabei. «Anderer
+  Stapel» öffnet alle Stapel alphabetisch, ab 7 Stapeln mit Suche nach Titel oder Fach.
+- **Schätzrunde und Lückentext** (siehe Spielformen). Angeboten wird nur, was der Stapel hergibt (`modeFits`);
+  passende Formen tragen einen Stern.
 - **Erfassen von Lückentexten:** Beim Abtippen steht das fehlende Wort in eckigen Klammern («Die Aare fliesst durch
   [Bern].», mehrere Klammern → eine Karte pro Lücke). In der Prüfansicht wird ein Satz mit `___` oder `[Wort]`
   automatisch zur Lückentext-Karte. Die KI macht aus Lückentexten (mit Lösungen) und Merktexten Lückentext-Karten
   und aus Zahlen Zahlenkarten; Test mit einem Arbeitsblatt «Die Schweiz»: 5 Lücken und 4 Zahlenkarten richtig
   erkannt, Name weggelassen, Schätzrunde und Lückentext vorgeschlagen.
+
+## Einfachere Bedienung
+
+Ausgangslage: Spickzettel steckte zwischen den Partyspielen, wer allein lernte, brauchte eine Spielgruppe, und die
+Vorbereitungsseite fragte alles auf einmal (Stapel, fünf Spielformen, Gruppe, Einstellungen). Vom fotografierten
+Blatt bis zur ersten Karte waren es 10 Tipps plus ein Name, für die fälligen Karten des Tages 3 Tipps.
+
+**Etappe 1 – allein ohne Gruppe, ein Tipp bis zur Karte** (siehe Ergänzungen): «Wer lernt?» statt Spielgruppe,
+direkte Route `/lernen/<stapel>/<kasten|luecke>?person=…`, «Heute fällig» mit einer Zeile pro Person und Stapel,
+«Speichern & lernen», Spielformen nach Situation.
+
+**Etappe 2 – eigener Tab «Lernen»:**
+
+| Seite | Inhalt |
+|---|---|
+| `/lernen` (Tab) | «Heute dran»: eine Zeile pro Person und Stapel, ein Tipp startet die erste fällige Karte · «Alles erledigt» mit dem nächsten Termin · alle Stapel mit «fällig»-Zahl und Menü (Lernen, Bearbeiten, Löschen) · beim ersten Mal eine Einführung in drei Schritten mit «Foto aufnehmen» und «Karten abtippen» |
+| `/lernen/<stapel>` | «Wer lernt?» · Kartenkasten der gewählten Person mit Fächern, Stand und Antwortart (Aufdecken, Auswahl, Tippen – pro Person gemerkt) · «Weitere Spielformen» mit je einem Satz: Lückentext (allein, direkt), Duell, Blitzrunde, Schätzrunde (führen zum Startbildschirm mit Gruppe) · Karten pro Runde und Lückentext-Eingabe unter «Weitere Einstellungen» · unten der grosse Knopf «12 Karten lernen · Lina» |
+| `/spiel/spickzettel` | Nur noch zum Zusammenspielen: Stapel, Spielform (zu zweit, mit mehreren), Spielgruppe, Einstellungen; vier kurze Regeln statt sieben |
+
+Die Spickzettel-Karten in «Spiele» und «Entdecken» führen zu `/lernen` (`GameDefinition.href`), `/stapel` leitet
+dorthin um, Bearbeiten (`/stapel/<id>`) kehrt zur Stapelseite zurück. Nach dem Speichern eines neuen Stapels geht es
+direkt in die erste Runde, wenn klar ist, wer lernt – sonst auf die Stapelseite.
+
+**Etappe 3 – motivieren:**
+
+- **Ende einer Runde:** Ist nichts mehr fällig, steht «Alles erledigt für heute 🎉» und wann es weitergeht («Die
+  nächsten 4 Karten sind morgen dran», `nextRepetition`). Darunter «Fertig», ein Vorschlag zum Zusammenspielen –
+  «Duell gegen Ben», wenn noch jemand den Stapel lernt; sind beide in einer Gruppe, ist sie vorausgewählt
+  (`?gruppe=`) – und «Weiter üben». Ist noch etwas fällig, geht es wie bisher mit «Weiter».
+- **Lernserie:** Jede Antwort markiert den Tag (lokales Datum) im Lernstand der Person (`LearnProgress.days`,
+  höchstens 60 pro Stapel, synchronisiert). Über alle Stapel zählt `learnStreak` die Tage in Folge; wer gestern
+  gelernt hat und heute noch nicht, behält die Serie bis zum Abend. Ab zwei Tagen zeigt «🔥3» sie auf der
+  Namenstafel und in «Heute dran», nach der Runde «🔥 3 Tage in Folge gelernt – weiter so!».
+
+| Ablauf | Vorher | Jetzt |
+|---|---|---|
+| Neues Blatt → erste Karte | 10 Tipps + Name eintippen | 6 Tipps; ein neuer Name nur einmal |
+| Fällige Karten lernen | 3 Tipps | 1 Tipp («Heute fällig» auf der Startseite oder «Heute dran») |
 
 ## Offene Punkte
 

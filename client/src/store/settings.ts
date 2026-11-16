@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { normalize } from '../lib/util.ts';
 
 /** Device-local preferences (not synchronised). */
 interface SettingsState {
@@ -15,6 +16,13 @@ interface SettingsState {
   voiceId: string | null;
   /** Hints that were dismissed on this device, e.g. `passkey:<userId>`. */
   dismissedHints: string[];
+  /** Spickzettel: who learned a stack last on this device (stack id → name), and who learned last at all. */
+  lastLearnerByStack: Record<string, string>;
+  lastLearner: string | null;
+  /** Spickzettel: names added as learners on this device that are in no group yet. */
+  learnerNames: string[];
+  /** Spickzettel: how each person answers in the Kartenkasten (normalised name → mode). */
+  learnCheck: Record<string, 'self' | 'choice' | 'type'>;
   setSound(on: boolean): void;
   setHaptics(on: boolean): void;
   setGameSettings(gameId: string, value: unknown): void;
@@ -22,6 +30,9 @@ interface SettingsState {
   setLastPlayed(gameId: string, groupId?: string): void;
   setVoiceId(voiceId: string | null): void;
   dismissHint(key: string): void;
+  setLastLearner(stackId: string, name: string): void;
+  addLearnerName(name: string): void;
+  setLearnCheck(name: string, check: 'self' | 'choice' | 'type'): void;
 }
 
 export const useSettings = create<SettingsState>()(
@@ -34,6 +45,10 @@ export const useSettings = create<SettingsState>()(
       lastPlayed: null,
       voiceId: null,
       dismissedHints: [],
+      lastLearnerByStack: {},
+      lastLearner: null,
+      learnerNames: [],
+      learnCheck: {},
       setSound: (sound) => set({ sound }),
       setHaptics: (haptics) => set({ haptics }),
       setGameSettings: (gameId, value) => set((s) => ({ gameSettings: { ...s.gameSettings, [gameId]: value } })),
@@ -41,6 +56,11 @@ export const useSettings = create<SettingsState>()(
       setLastPlayed: (gameId, groupId) => set({ lastPlayed: { gameId, groupId, at: Date.now() } }),
       setVoiceId: (voiceId) => set({ voiceId }),
       dismissHint: (key) => set((s) => ({ dismissedHints: s.dismissedHints.includes(key) ? s.dismissedHints : [...s.dismissedHints, key] })),
+      setLastLearner: (stackId, name) =>
+        set((s) => ({ lastLearnerByStack: { ...s.lastLearnerByStack, [stackId]: name }, lastLearner: name })),
+      setLearnCheck: (name, check) => set((s) => ({ learnCheck: { ...s.learnCheck, [normalize(name)]: check } })),
+      addLearnerName: (name) =>
+        set((s) => ({ learnerNames: s.learnerNames.includes(name) ? s.learnerNames : [...s.learnerNames, name].slice(-30) })),
     }),
     { name: 'phonegames-settings', version: 1 },
   ),

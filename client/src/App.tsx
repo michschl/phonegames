@@ -10,8 +10,9 @@ import { AccountPage } from './pages/AccountPage.tsx';
 import { LoginPage, RegisterPage, WelcomePage } from './pages/AuthPages.tsx';
 import { DiscoverPage } from './pages/DiscoverPage.tsx';
 import { GamePlayPage, GameSetupPage } from './pages/GamePages.tsx';
+import { LearnHubPage, LearnPlayPage, StackLearnPage } from './pages/LearnPages.tsx';
 import { GroupEditPage, GroupsPage } from './pages/GroupsPage.tsx';
-import { NewStackPage, StackEditPage, StacksPage } from './pages/StackPages.tsx';
+import { NewStackPage, StackEditPage } from './pages/StackPages.tsx';
 import { SharePage } from './pages/SharePage.tsx';
 import { HomePage } from './pages/HomePage.tsx';
 import { useAuth } from './store/auth.ts';
@@ -120,17 +121,21 @@ const router = createBrowserRouter([
             element: <TabsLayout />,
             children: [
               { path: '/', element: <HomePage /> },
+              { path: '/lernen', element: <LearnHubPage /> },
               { path: '/entdecken', element: <DiscoverPage /> },
               { path: '/gruppen', element: <GroupsPage /> },
               { path: '/konto', element: <AccountPage /> },
             ],
           },
           { path: '/gruppen/:groupId', element: <GroupEditPage /> },
-          { path: '/stapel', element: <StacksPage /> },
+          // The stack list moved into the «Lernen» tab.
+          { path: '/stapel', element: <Navigate to="/lernen" replace /> },
           { path: '/stapel/neu', element: <NewStackPage /> },
           { path: '/stapel/:stackId', element: <StackEditPage /> },
           { path: '/spiel/:gameId', element: <GameSetupPage /> },
           { path: '/spiel/:gameId/los', element: <GamePlayPage /> },
+          { path: '/lernen/:stackId', element: <StackLearnPage /> },
+          { path: '/lernen/:stackId/:mode', element: <LearnPlayPage /> },
         ],
       },
       // Shared learning stacks: for signed-in visitors and as an invitation for new ones.

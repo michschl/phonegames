@@ -857,7 +857,7 @@
   width: var(--w);
   height: var(--tabbar-h);
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(var(--tabs, 4), minmax(0, 1fr));
   padding: 6px;
   border-radius: 26px;
   background: var(--paper);
@@ -870,7 +870,7 @@
   top: 6px;
   bottom: 6px;
   left: 6px;
-  width: calc((100% - 12px) / 4);
+  width: calc((100% - 12px) / var(--tabs, 4));
   border-radius: 18px;
   background: var(--tab-color, var(--pink));
   border: 2.5px solid var(--ink);
@@ -887,8 +887,10 @@
   align-content: center;
   gap: 2px;
   color: var(--ink-2);
-  font-size: 11.5px;
+  /* Five labels side by side: «Entdecken» still fits on a 280 px phone. */
+  font-size: clamp(9.5px, 3.1vw, 11.5px);
   font-weight: 800;
+  letter-spacing: -0.01em;
   text-decoration: none;
   transition: color 0.2s;
 }
@@ -2107,3 +2109,109 @@ button.list__item:active {
   color: var(--orange);
   -webkit-text-stroke: 1px var(--ink);
 }
+
+/* «Wer lernt?»: one tile per person, coloured by their Kartenkasten, the chosen one lifted with a check. */
+.learner-picker {
+  display: grid;
+  gap: 10px;
+}
+
+.learner-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 9.5em), 1fr));
+  gap: 12px 10px;
+  /* Room for the corner badges. */
+  padding: 8px 6px 0 0;
+}
+
+.learner-tile {
+  --c: var(--accent);
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 58px;
+  padding: 6px 10px 6px 7px;
+  border-radius: 18px;
+  border: 2.5px solid var(--ink);
+  background: var(--tone-bg, var(--paper));
+  color: var(--ink);
+  box-shadow: 0 3px 0 var(--ink);
+  font: inherit;
+  text-align: left;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.learner-tile:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+
+.learner-tile.is-selected {
+  box-shadow:
+    0 0 0 3px var(--paper),
+    0 0 0 6px var(--ink);
+}
+
+.learner-tile .avatar {
+  box-shadow: none;
+  border-width: 2px;
+}
+
+.learner-tile__text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.learner-tile__name {
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.learner-tile__status {
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: rgba(27, 16, 51, 0.75);
+}
+
+.learner-tile__check {
+  position: absolute;
+  left: -7px;
+  bottom: -8px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2.5px solid var(--paper);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.learner-grid .due-badge--corner,
+.learner-grid .status-badge--corner {
+  right: -6px;
+}
+
+.learner-tile--add {
+  justify-content: center;
+  border-style: dashed;
+  background: transparent;
+  box-shadow: none;
+  font-weight: 800;
+}
+
+/* «🔥 3»: days in a row someone learned. */
+.streak {
+  margin-left: 6px;
+  font-size: 0.85em;
+  font-weight: 800;
+  white-space: nowrap;
+}
+

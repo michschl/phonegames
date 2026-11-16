@@ -94,6 +94,56 @@ export function kastenStatus(stack: LearnStack, progress: LearnProgress | undefi
   return { state, due, fresh, nextDue: due === 0 && Number.isFinite(next) ? next : null };
 }
 
+/** The next repetition after today: when, and how many cards are due by the end of that day. */
+export function nextRepetition(
+  stack: LearnStack,
+  progress: LearnProgress | undefined,
+  now = Date.now(),
+): { at: number; count: number } | null {
+  const known = progress?.cards ?? {};
+  const upcoming = stack.cards.map((card) => known[card.id]?.due).filter((due): due is number => due !== undefined && due > now);
+  if (upcoming.length === 0) return null;
+  const at = Math.min(...upcoming);
+  const endOfDay = startOfDay(at) + DAY;
+  return { at, count: upcoming.filter((due) => due < endOfDay).length };
+}
+
+/* ------------------------------------------------------------- streak */
+
+/** Local calendar day as YYYY-MM-DD – a learning day is the day on the person's phone. */
+export function localDay(time = Date.now()): string {
+  const date = new Date(time);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+/** Adds a day to the learning days of a stack – sorted, without duplicates, the newest `LIMITS.learnDays`. */
+export function addLearningDay(days: string[] | undefined, day: string): string[] {
+  const list = days ?? [];
+  if (list.includes(day)) return list;
+  return [...list, day].sort().slice(-LIMITS.learnDays);
+}
+
+/**
+ * Days in a row a person learned (any stack). Learning yesterday but not yet today keeps the
+ * streak – it only breaks after a whole day without learning.
+ */
+export function learnStreak(progress: LearnProgress[], player: string, now = Date.now()): { days: number; today: boolean } {
+  const days = new Set<string>();
+  for (const entry of progress) {
+    if (entry.deleted || normalize(entry.player) !== normalize(player)) continue;
+    for (const day of entry.days ?? []) days.add(day);
+  }
+  const today = days.has(localDay(now));
+  // Step back day by day at noon, so a change to or from summer time does not skip a day.
+  let cursor = startOfDay(now) + DAY / 2 - (today ? 0 : DAY);
+  let count = 0;
+  while (days.has(localDay(cursor))) {
+    count += 1;
+    cursor -= DAY;
+  }
+  return { days: count, today };
+}
+
 /** «morgen», «übermorgen», «in 5 Tagen» – when cards are due again. */
 export function dueDayLabel(due: number, now = Date.now()): string {
   const days = Math.round((startOfDay(due) - startOfDay(now)) / DAY);
@@ -412,6 +462,25 @@ export function scoreEstimates(answer: CardNumber, guesses: Record<string, numbe
 
 /** Cards a mode needs – fewer and the mode cannot start. */
 export const MODE_MIN_CARDS = { schaetzen: 3, luecke: 3 } as const;
+
+/** Cards needed for a Blitzrunde – otherwise the same cards come round all the time. */
+export const BLITZ_MIN_CARDS = 4;
+
+/** Whether a mode can be played with the stack at all – modes that do not fit are not offered. */
+export function modeFits(mode: LearnMode, stack: LearnStack): boolean {
+  switch (mode) {
+    case 'kasten':
+      return stack.cards.length > 0;
+    case 'luecke':
+      return clozeCards(stack).length >= MODE_MIN_CARDS.luecke;
+    case 'duell':
+      return canPlayChoice(stack);
+    case 'blitz':
+      return stack.cards.length >= BLITZ_MIN_CARDS;
+    case 'schaetzen':
+      return estimateCards(stack).length >= MODE_MIN_CARDS.schaetzen;
+  }
+}
 
 /** Modes that fit a stack: what the AI suggested plus what the cards allow. */
 export function suggestedModes(stack: LearnStack): Set<LearnMode> {

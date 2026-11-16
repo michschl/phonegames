@@ -16,14 +16,26 @@ export async function register(page: Page, name = 'Lea'): Promise<string> {
   return email;
 }
 
-/** Types cards into «Karten abtippen», saves the stack and lands on the Spickzettel setup screen. */
+/** Types cards into «Karten abtippen», saves the stack and lands on its page in «Lernen». */
 export async function createStack(page: Page, title: string, lines: string[]): Promise<void> {
   await page.goto('/stapel/neu?text=1');
   await page.getByLabel('Karten, eine pro Zeile').fill(lines.join('\n'));
   await page.getByRole('button', { name: 'Karten erstellen' }).click();
   await page.getByLabel('Titel').fill(title);
-  await page.getByRole('button', { name: 'Stapel speichern' }).click();
-  await expect(page).toHaveURL(/\/spiel\/spickzettel/);
+  await page.getByRole('button', { name: 'Speichern & lernen' }).click();
+  await expect(page).toHaveURL(/\/lernen\/[^/]+$/);
+  await expect(page.locator('h1')).toHaveText(title);
+}
+
+/** On a stack page: the Kartenkasten starts with the big button at the bottom. */
+export async function startLearning(page: Page): Promise<void> {
+  await page.locator('.start-bar a').click();
+  await expect(page).toHaveURL(/\/lernen\/[^/]+\/(kasten|luecke)\?person=/);
+}
+
+/** On a stack page: a mode in «Weitere Spielformen» (Lückentext alone, the others on the setup screen). */
+export async function openMode(page: Page, label: RegExp): Promise<void> {
+  await page.locator('.mode-row', { hasText: label }).click();
 }
 
 /** On a game setup screen: creates the first group with these people. */
@@ -46,13 +58,21 @@ export async function startGame(page: Page): Promise<void> {
   await expect(page).toHaveURL(/\/los$/);
 }
 
+/** «Wer lernt?» on a stack page: adds a person who is in no group and chooses them. */
+export async function addLearner(page: Page, name: string): Promise<void> {
+  await page.getByRole('button', { name: 'Person hinzufügen' }).click();
+  await page.getByLabel('Wer lernt? Name').fill(name);
+  await page.getByLabel('Wer lernt? Name').press('Enter');
+  await expect(page.getByRole('radio', { name: new RegExp(`^${name}`) })).toHaveAttribute('aria-checked', 'true');
+}
+
 /** Ends a running game via «Spiel beenden» (with the confirmation if it asks). */
 export async function endGame(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Spiel beenden' }).click();
   const confirm = page.locator('.sheet').getByRole('button', { name: 'Beenden' });
   // Most games ask first; a game that has not really started leaves right away.
   await confirm.click({ timeout: 2000 }).catch(() => undefined);
-  await expect(page).not.toHaveURL(/\/los$/);
+  await expect(page).not.toHaveURL(/\/los$|\/lernen\/[^/]+\/(kasten|luecke)/);
 }
 
 /** WCAG 2.2 AA via axe-core – no findings allowed. */

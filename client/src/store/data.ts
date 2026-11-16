@@ -12,7 +12,7 @@ import {
   type PlayerGroup,
   type SyncPayload,
 } from '../../../shared/types.ts';
-import { kastenStatus, nextProgress, progressId } from '../lib/learn.ts';
+import { addLearningDay, kastenStatus, localDay, nextProgress, progressId } from '../lib/learn.ts';
 import { createId, nextColor, pickRandom, GROUP_EMOJIS } from '../lib/util.ts';
 
 /** A stack as edited by the user – ids are added when saving. */
@@ -216,6 +216,8 @@ export const useData = create<DataState>()(
           stackId,
           player: player.trim().slice(0, LIMITS.nameMax),
           cards: { ...(current && !current.deleted ? current.cards : {}) },
+          // Every answer marks today as a learning day – that makes the streak.
+          days: addLearningDay(current && !current.deleted ? current.days : [], localDay()),
           updatedAt: stamp(),
           deleted: false,
         };

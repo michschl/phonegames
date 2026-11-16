@@ -1,6 +1,5 @@
 import { useState, type CSSProperties, type FormEvent } from 'react';
-import { LIMITS, type Player, type PlayerGroup } from '../../../shared/types.ts';
-import type { PlayerStatus, PlayerStatusInfo } from '../games/types.ts';
+import { LIMITS, type PlayerGroup } from '../../../shared/types.ts';
 import { sound } from '../lib/audio.ts';
 import { haptic } from '../lib/device.ts';
 import { normalize } from '../lib/util.ts';
@@ -9,11 +8,8 @@ import { removePlayerWithUndo } from '../store/undo.ts';
 import { Icon } from './Icon.tsx';
 import { Avatar } from './ui.tsx';
 
-/**
- * Add / remove players of a group. Changes are saved immediately.
- * With `status`, the name tiles are coloured and show a badge (e.g. cards due in «Spickzettel»).
- */
-export function PlayerEditor({ group, autoFocus, status }: { group: PlayerGroup; autoFocus?: boolean; status?: PlayerStatusInfo | null }) {
+/** Add / remove players of a group. Changes are saved immediately. */
+export function PlayerEditor({ group, autoFocus }: { group: PlayerGroup; autoFocus?: boolean }) {
   const addPlayer = useData((s) => s.addPlayer);
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -81,7 +77,6 @@ export function PlayerEditor({ group, autoFocus, status }: { group: PlayerGroup;
       ) : (
         <ul className="player-list">
           {group.players.map((player) => {
-            const info = status?.status(player);
             return (
               <li
                 key={player.id}
@@ -90,17 +85,6 @@ export function PlayerEditor({ group, autoFocus, status }: { group: PlayerGroup;
               >
                 <Avatar name={player.name} color={player.color} size={32} />
                 <span className="player-chip__name">{player.name}</span>
-                {info && info.due > 0 && (
-                  <span className="due-badge" aria-hidden="true">
-                    {info.due}
-                  </span>
-                )}
-                {info?.badge && (
-                  <span className={`status-badge tone-${info.tone}`} aria-hidden="true">
-                    {info.badge}
-                  </span>
-                )}
-                {info && <span className="sr-only">: {info.label}</span>}
                 <button
                   type="button"
                   className="player-chip__remove"
@@ -117,33 +101,6 @@ export function PlayerEditor({ group, autoFocus, status }: { group: PlayerGroup;
       <p className="player-editor__count">
         {group.players.length} {group.players.length === 1 ? 'Person' : 'Personen'}
       </p>
-      {status && <StatusLegend status={status} players={group.players} />}
-    </div>
-  );
-}
-
-/** Explains the badges on the name chips – only the ones that occur. */
-export function StatusLegend({ status, players }: { status: PlayerStatusInfo; players: Player[] }) {
-  const shown = players.map((p) => status.status(p)).filter((info): info is PlayerStatus => !!info);
-  const entries = status.legend.filter((entry) => shown.some((info) => (entry.key === 'due' ? info.due > 0 : info.badge === entry.key)));
-  if (entries.length === 0) return null;
-  return (
-    <div className="status-legend">
-      <p className="status-legend__caption">{status.caption}</p>
-      <ul>
-        {entries.map((entry) => (
-          <li key={entry.key}>
-            {entry.key === 'due' ? (
-              <span className="due-badge due-badge--small" aria-hidden="true" />
-            ) : (
-              <span className={`status-badge status-badge--small tone-${entry.tone ?? 'neutral'}`} aria-hidden="true">
-                {entry.key}
-              </span>
-            )}
-            {entry.label}
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }

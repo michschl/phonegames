@@ -108,6 +108,11 @@ export interface LearnProgress {
   /** Name of the person learning (from the player group). */
   player: string;
   cards: Record<string, CardProgress>;
+  /**
+   * Days (local date, YYYY-MM-DD) on which the person answered cards of this stack – the newest
+   * LIMITS.learnDays. Over all stacks they make the learning streak. Missing in data of older versions.
+   */
+  days?: string[];
   updatedAt: number;
   deleted: boolean;
 }
@@ -211,6 +216,8 @@ export const LIMITS = {
   passwordMax: 200,
   stacks: 200,
   cardsPerStack: 300,
+  /** Learning days kept per person and stack – enough for a streak of two months. */
+  learnDays: 60,
   cardText: 300,
   stackTitleMax: 80,
   learnPhotos: 6,

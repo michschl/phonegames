@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { createGroup, createStack, expectAccessible, PNG, register, undo } from './helpers.ts';
+import { createStack, expectAccessible, PNG, register, undo } from './helpers.ts';
 
 const photo = { name: 'blatt.png', mimeType: 'image/png', buffer: PNG };
 
@@ -29,9 +29,11 @@ test('Fotos: Kamera und Galerie, genau übernehmen', async ({ page }) => {
   await page.goto('/');
   await page.goto('/stapel/neu');
   await expect(page.locator('.card-row')).toHaveCount(4);
-  await page.getByRole('button', { name: 'Stapel speichern' }).click();
-  await expect(page).toHaveURL(/\/spiel\/spickzettel/);
-  await expect(page.locator('.stack-option.is-active')).toContainText('Unité 5 – Vocabulaire');
+  // Nobody has learned yet – the stack page asks «Wer lernt?» before the first round.
+  await page.getByRole('button', { name: 'Speichern & lernen' }).click();
+  await expect(page).toHaveURL(/\/lernen\/[^/]+$/);
+  await expect(page.locator('h1')).toHaveText('Unité 5 – Vocabulaire');
+  await expect(page.getByRole('radiogroup', { name: 'Wer lernt?' })).toBeVisible();
 });
 
 test('Fotos: neue Aufgaben erfinden, auffällige Karten sind markiert', async ({ page }) => {
@@ -62,7 +64,9 @@ test('Teilen per Link: Vorschau, Konto per Link, Übernahme', async ({ page, bro
   await register(page, 'Lea');
   await createStack(page, 'Unité 5', ['le chien = der Hund', 'la maison = das Haus', 'manger = essen', 'toujours = immer']);
   await page.goto('/stapel');
+  await expect(page).toHaveURL(/\/lernen$/);
   await page.locator('.group-card', { hasText: 'Unité 5' }).click();
+  await page.getByRole('link', { name: 'Karten bearbeiten' }).click();
   await page.getByRole('button', { name: 'Link teilen' }).click();
   const link = await page.locator('.share-card__link').inputValue();
   expect(link).toMatch(/\/s\/[A-Za-z0-9_-]{22}$/);
@@ -79,8 +83,8 @@ test('Teilen per Link: Vorschau, Konto per Link, Übernahme', async ({ page, bro
   await guest.getByLabel('E-Mail').fill(`tim-${Date.now()}@example.ch`);
   await guest.getByLabel('Passwort', { exact: true }).fill('passwort123');
   await guest.getByRole('button', { name: 'Los geht’s' }).click();
-  await expect(guest).toHaveURL(/\/spiel\/spickzettel/);
-  await expect(guest.locator('.stack-option.is-active')).toContainText('Unité 5');
+  await expect(guest).toHaveURL(/\/lernen\/[^/]+$/);
+  await expect(guest.locator('h1')).toHaveText('Unité 5');
 
   // Lea sees who took it over.
   await page.reload();
@@ -93,8 +97,8 @@ test('Löschen ist überall erreichbar und lässt sich rückgängig machen', asy
   await createStack(page, 'Einmaleins', ['7 × 8 = 56', '6 × 7 = 42', '9 × 9 = 81']);
   await createStack(page, 'Unité 5', Array.from({ length: 25 }, (_, i) => `mot ${i + 1} = Wort ${i + 1}`));
 
-  // Stack list: «⋯» → delete → undo.
-  await page.goto('/stapel');
+  // Stack list in «Lernen»: «⋯» → delete → undo.
+  await page.goto('/lernen');
   await page.getByRole('button', { name: 'Aktionen für «Einmaleins»' }).click();
   await expectAccessible(page);
   await page.getByRole('button', { name: 'Stapel löschen' }).click();
@@ -104,16 +108,18 @@ test('Löschen ist überall erreichbar und lässt sich rückgängig machen', asy
 
   // A long stack: the delete button is at the top, no scrolling needed.
   await page.locator('.list-row', { hasText: 'Unité 5' }).locator('.group-card').click();
+  await page.getByRole('link', { name: 'Karten bearbeiten' }).click();
   const trash = page.getByRole('button', { name: 'Stapel löschen' }).first();
   expect((await trash.boundingBox())!.y).toBeLessThan(120);
   await trash.click();
   await page.locator('.sheet').getByRole('button', { name: 'Löschen' }).click();
-  await expect(page).toHaveURL(/\/stapel$/);
+  await expect(page).toHaveURL(/\/lernen$/);
   await undo(page);
   await expect(page.locator('.list-row', { hasText: 'Unité 5' })).toHaveCount(1);
 
   // A card while editing comes back at the same place.
   await page.locator('.list-row', { hasText: 'Einmaleins' }).locator('.group-card').click();
+  await page.getByRole('link', { name: 'Karten bearbeiten' }).click();
   const prompts = () => page.locator('.card-row__prompt').evaluateAll((els) => els.map((e) => (e as HTMLTextAreaElement).value));
   await page.getByRole('button', { name: 'Karte 2 löschen' }).click();
   expect(await prompts()).toEqual(['7 × 8', '9 × 9']);
@@ -121,8 +127,13 @@ test('Löschen ist überall erreichbar und lässt sich rückgängig machen', asy
   expect(await prompts()).toEqual(['7 × 8', '6 × 7', '9 × 9']);
 
   // Groups and people.
-  await page.goto('/spiel/spickzettel');
-  await createGroup(page, ['Lea', 'Ben', 'Mia']);
+  await page.goto('/gruppen');
+  await page.getByRole('button', { name: 'Gruppe erstellen' }).click();
+  for (const name of ['Lea', 'Ben', 'Mia']) {
+    await page.getByLabel('Name des Spielers').fill(name);
+    await page.getByLabel('Name des Spielers').press('Enter');
+    await expect(page.locator('.player-chip', { hasText: name })).toBeVisible();
+  }
   await page.getByRole('button', { name: 'Ben entfernen' }).click();
   await expect(page.locator('.player-chip', { hasText: 'Ben' })).toHaveCount(0);
   await undo(page);

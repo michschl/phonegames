@@ -1,15 +1,29 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { LearnCard, LearnStack, Player } from '../../../../shared/types.ts';
 import { Button } from '../../components/ui.tsx';
 import { sound } from '../../lib/audio.ts';
 import { confetti } from '../../lib/confetti.ts';
 import { haptic } from '../../lib/device.ts';
-import { BOXES, boxCounts, canPlayChoice, checkTypedAnswer, choicesFor, dueCards, dueDayLabel, kastenStatus, type TypedVerdict } from '../../lib/learn.ts';
+import { Link } from 'react-router';
+import {
+  boxCounts,
+  canPlayChoice,
+  checkTypedAnswer,
+  choicesFor,
+  dueCards,
+  dueDayLabel,
+  kastenStatus,
+  nextRepetition,
+  type TypedVerdict,
+} from '../../lib/learn.ts';
+import { sameName } from '../../lib/learners.ts';
 import { normalize, shuffle } from '../../lib/util.ts';
-import { useData, useProgress } from '../../store/data.ts';
+import { useData, useGroups, useProgress } from '../../store/data.ts';
+import { useLearners, useStreak } from '../../store/learners.ts';
 import { Actions, GameShell, Headline, Stage } from '../shared/GameShell.tsx';
 import { PlayerPicker } from '../shared/players.tsx';
 import type { SpickzettelSettings } from './index.tsx';
+import { BoxRow } from './BoxRow.tsx';
 import { CardPrompt } from './cloze.tsx';
 import { useKastenTiles } from './status.ts';
 
@@ -28,30 +42,6 @@ function possessive(name: string): string {
   return /[sxzß]$/i.test(name) ? `${name}’` : `${name}s`;
 }
 
-export function BoxRow({ counts, highlight }: { counts: number[]; highlight?: number }) {
-  const max = Math.max(1, ...counts);
-  return (
-    <div className="box-row" aria-label="Karten pro Fach">
-      {counts.map((count, box) => (
-        <div
-          key={box}
-          className={`box-col ${box === highlight ? 'is-highlight' : ''}`}
-          style={{ '--fill': `${Math.round((count / max) * 100)}%` } as CSSProperties}
-        >
-          <span className="box-col__bar" aria-hidden="true" />
-          {box === BOXES && (
-            <span className="box-col__star" aria-hidden="true">
-              ★
-            </span>
-          )}
-          <strong>{count}</strong>
-          <small>{box === 0 ? 'neu' : `Fach ${box}`}</small>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 /**
  * Kartenkasten (Leitner system): one person answers the cards that are due.
  * Known cards move one box up and come back later, missed ones go back to box 1
@@ -62,17 +52,23 @@ export function Kartenkasten({
   players,
   settings,
   onExit,
+  autoStart = false,
 }: {
   stack: LearnStack;
   players: Player[];
   settings: SpickzettelSettings;
   onExit: () => void;
+  /** Straight to the first due card (one tap from «Heute fällig») instead of the overview – or practice if nothing is due. */
+  autoStart?: boolean;
 }) {
   const [learner, setLearner] = useState<Player | null>(players.length === 1 ? players[0]! : null);
   const [phase, setPhase] = useState<Phase>(learner ? 'overview' : 'who');
   const progress = useProgress(stack.id, learner?.name);
   const recordAnswer = useData((s) => s.recordAnswer);
   const tiles = useKastenTiles(stack.id);
+  const streak = useStreak(learner?.name);
+  const learners = useLearners(stack.id);
+  const groups = useGroups();
 
   const [queue, setQueue] = useState<LearnCard[]>([]);
   const [index, setIndex] = useState(0);
@@ -178,6 +174,11 @@ export function Kartenkasten({
     feedback(verdict.verdict !== 'wrong');
   };
 
+  useLayoutEffect(() => {
+    // Nothing due: a practice round that does not change the boxes («Trotzdem üben»).
+    if (autoStart && learner) begin(due.length === 0);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const finishedRight = results.filter((r) => r.correct).length;
   useEffect(() => {
     if (phase !== 'done' || results.length === 0) return;
@@ -189,6 +190,46 @@ export function Kartenkasten({
       sound.ding();
     }
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** Nothing due any more: when it goes on, and an idea for playing together. */
+  const allDone = () => {
+    const next = nextRepetition(stack, progress);
+    const rival = learners.find((p) => !sameName(p.name, learner?.name));
+    const sharedGroup = rival && groups.find((g) => [learner!.name, rival.name].every((n) => g.players.some((p) => sameName(p.name, n))));
+    return (
+      <>
+        <p className="gs-text all-done">
+          <strong>Alles erledigt für heute 🎉</strong>
+          {next && (
+            <>
+              {' '}
+              {next.count === 1 ? 'Die nächste Karte ist' : `Die nächsten ${next.count} Karten sind`} {dueDayLabel(next.at)} dran.
+            </>
+          )}
+        </p>
+        <Actions>
+          <Button size="lg" block icon="check" onClick={onExit}>
+            Fertig
+          </Button>
+          {canPlayChoice(stack) && (
+            <Link
+              to={`/spiel/spickzettel?stapel=${stack.id}&modus=duell${sharedGroup ? `&gruppe=${sharedGroup.id}` : ''}`}
+              className="btn btn--secondary btn--lg btn--block"
+              // Back from the Duell leads to the stack page, not into this round again.
+              replace
+              viewTransition
+            >
+              <span aria-hidden="true">⚔️</span>
+              <span>{rival ? `Duell gegen ${rival.name}` : 'Duell zu zweit'}</span>
+            </Link>
+          )}
+          <Button variant="ghost" block onClick={() => setPhase('overview')}>
+            Weiter üben
+          </Button>
+        </Actions>
+      </>
+    );
+  };
 
   const label =
     phase === 'card' ? `Karte ${index + 1} von ${queue.length}${practice ? ' · Üben' : ''}` : phase === 'who' ? 'Kartenkasten' : stack.title;
@@ -406,16 +447,25 @@ export function Kartenkasten({
                   ? 'Perfekt! Alle Karten sind ein Fach weiter.'
                   : 'Die vergessenen Karten sind zurück in Fach 1 und kommen bald wieder.'}
               </p>
+              {streak.days >= 2 && (
+                <p className="streak-note" role="status">
+                  <span aria-hidden="true">🔥</span> {streak.days} Tage in Folge gelernt – weiter so!
+                </p>
+              )}
             </>
           )}
-          <Actions>
-            <Button size="lg" block onClick={() => setPhase('overview')}>
-              Weiter
-            </Button>
-            <Button variant="ghost" block onClick={onExit}>
-              Beenden
-            </Button>
-          </Actions>
+          {practice || due.length > 0 ? (
+            <Actions>
+              <Button size="lg" block onClick={() => setPhase('overview')}>
+                Weiter
+              </Button>
+              <Button variant="ghost" block onClick={onExit}>
+                Beenden
+              </Button>
+            </Actions>
+          ) : (
+            allDone()
+          )}
         </Stage>
       )}
     </GameShell>

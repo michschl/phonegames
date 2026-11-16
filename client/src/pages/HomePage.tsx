@@ -74,6 +74,8 @@ export function HomePage() {
           <div className="home-hero">
             <GameHero
               game={continueGame}
+              // With a group it was played together – back to its setup screen (Spickzettel: Duell, …).
+              to={lastGroup ? `/spiel/${continueGame.id}` : undefined}
               eyebrow="Weiterspielen"
               text={
                 lastGroup

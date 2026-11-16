@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useMemo, useState, type CSSProperties } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router';
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router';
 import { Fold } from '../components/Fold.tsx';
 import { Icon } from '../components/Icon.tsx';
 import { Mascot } from '../components/Brand.tsx';
@@ -16,13 +16,14 @@ import { useGameSettings, useSettings } from '../store/settings.ts';
 import { toast } from '../store/ui.ts';
 import { GroupPicker } from './GroupsPage.tsx';
 
-/** Pick the group to preselect: last used for this game, else the first one. */
+/** Pick the group to preselect: one asked for (?gruppe=…), the last used for this game, else the first one. */
 function useSelectedGroup(gameId: string) {
   const groups = useGroups();
+  const [params] = useSearchParams();
   const lastGroupId = useSettings((s) => s.lastGroupByGame[gameId]);
   const setLastGroup = useSettings((s) => s.setLastGroup);
   const fallback = groups.find((g) => g.id === lastGroupId)?.id ?? groups[0]?.id;
-  const [selectedId, setSelectedId] = useState<string | undefined>(fallback);
+  const [selectedId, setSelectedId] = useState<string | undefined>(() => groups.find((g) => g.id === params.get('gruppe'))?.id ?? fallback);
   const valid = groups.some((g) => g.id === selectedId) ? selectedId : fallback;
   return {
     selectedId: valid,
@@ -68,10 +69,9 @@ function GameSetup({ game }: { game: GameDefinition }) {
 
   const playerCount = group?.players.length ?? 0;
   const needed = game.playersNeeded?.(settings) ?? game.minPlayers;
-  const missing = game.noGroup ? 0 : Math.max(0, needed - playerCount);
   // The component is keyed by game, so the hook order never changes.
   const blocker = game.useBlocker?.(settings) ?? null;
-  const playerStatus = game.usePlayerStatus?.(settings) ?? null;
+  const missing = game.noGroup ? 0 : Math.max(0, needed - playerCount);
   const canStart = !blocker && (game.noGroup || (!!group && missing === 0));
 
   const start = () => {
@@ -130,8 +130,8 @@ function GameSetup({ game }: { game: GameDefinition }) {
       <Section title="Spielgruppe">
         {selectedId ? (
           <>
-            <GroupPicker selectedId={selectedId} onSelect={select} status={playerStatus?.status} />
-            {group && <PlayerEditor group={group} status={playerStatus} />}
+            <GroupPicker selectedId={selectedId} onSelect={select} />
+            {group && <PlayerEditor group={group} />}
           </>
         ) : (
           <div className="setup-nogroup">
@@ -176,6 +176,27 @@ function GameSetup({ game }: { game: GameDefinition }) {
   );
 }
 
+/** While a game is open: no tab bar, sound kept awake and released afterwards (no lingering iOS media session). */
+export function usePlayScreen(): void {
+  useEffect(() => {
+    document.documentElement.classList.add('is-playing');
+    sound.hold();
+    return () => {
+      document.documentElement.classList.remove('is-playing');
+      sound.release();
+    };
+  }, []);
+}
+
+export function PlayLoading() {
+  return (
+    <div className="play-loading">
+      <Mascot size={110} mood="wink" />
+      Gleich geht’s los …
+    </div>
+  );
+}
+
 export function GamePlayPage() {
   const { gameId } = useParams();
   const game = getGame(gameId);
@@ -187,15 +208,7 @@ export function GamePlayPage() {
   // Freeze the players for the running game.
   const players = useMemo(() => group?.players ?? [], [group?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    document.documentElement.classList.add('is-playing');
-    // Sound is wanted while the game is open and released afterwards (no lingering iOS media session).
-    sound.hold();
-    return () => {
-      document.documentElement.classList.remove('is-playing');
-      sound.release();
-    };
-  }, []);
+  usePlayScreen();
 
   if (!game?.Play || game.status !== 'available') return <Navigate to="/" replace />;
   const needed = game.playersNeeded?.(settings) ?? game.minPlayers;
@@ -204,14 +217,7 @@ export function GamePlayPage() {
   const Play = game.Play;
   return (
     <div className="play-screen">
-      <Suspense
-        fallback={
-          <div className="play-loading">
-            <Mascot size={110} mood="wink" />
-            Gleich geht’s los …
-          </div>
-        }
-      >
+      <Suspense fallback={<PlayLoading />}>
         <Play
           players={players}
           settings={settings}

@@ -4,6 +4,11 @@ import type { GameDefinition } from '../games/types.ts';
 import { Icon } from './Icon.tsx';
 import { breakableName } from '../lib/util.ts';
 
+/** Where a game card leads: its setup screen, or its own page (Spickzettel → «Lernen»). */
+export function gameHref(game: GameDefinition): string {
+  return game.href ?? `/spiel/${game.id}`;
+}
+
 export function GameArt({ game, size }: { game: GameDefinition; size: number }) {
   if (game.Art) return <game.Art size={size} />;
   return (
@@ -23,7 +28,7 @@ function players(game: GameDefinition) {
 export function GameTile({ game, index = 0 }: { game: GameDefinition; index?: number }) {
   return (
     <Link
-      to={`/spiel/${game.id}`}
+      to={gameHref(game)}
       className="game-tile"
       style={{ ...gameColors(game), animationDelay: `${index * 60}ms` }}
       viewTransition
@@ -54,7 +59,7 @@ export function GameHero({
   to?: string;
 }) {
   return (
-    <Link to={to ?? `/spiel/${game.id}`} className="hero-card" style={gameColors(game)} viewTransition>
+    <Link to={to ?? gameHref(game)} className="hero-card" style={gameColors(game)} viewTransition>
       <span className="hero-card__art">
         <GameArt game={game} size={72} />
       </span>
@@ -82,7 +87,7 @@ export function GameMini({
 }) {
   return (
     <div className="mini-card" style={{ ...gameColors(game), animationDelay: `${index * 60}ms` }}>
-      <Link to={`/spiel/${game.id}`} className="mini-card__link" viewTransition>
+      <Link to={gameHref(game)} className="mini-card__link" viewTransition>
         <span className="mini-card__art">
           <GameArt game={game} size={52} />
         </span>
@@ -143,7 +148,7 @@ export function GameRow({
       {soon ? (
         <div className="game-row__link">{body}</div>
       ) : (
-        <Link to={`/spiel/${game.id}`} className="game-row__link" viewTransition>
+        <Link to={gameHref(game)} className="game-row__link" viewTransition>
           {body}
         </Link>
       )}

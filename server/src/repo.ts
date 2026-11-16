@@ -331,7 +331,7 @@ interface ProgressRow {
 }
 
 type StackData = Pick<LearnStack, 'title' | 'subject' | 'languages' | 'cards' | 'suggestedModes' | 'source'>;
-type ProgressData = Pick<LearnProgress, 'player' | 'cards'>;
+type ProgressData = Pick<LearnProgress, 'player' | 'cards' | 'days'>;
 
 export function getStacks(db: Database, userId: string): LearnStack[] {
   const rows = db
@@ -353,6 +353,7 @@ export function getProgress(db: Database, userId: string): LearnProgress[] {
   return rows.map((row) => ({
     id: row.id,
     stackId: row.stack_id,
+    days: [],
     ...(JSON.parse(row.data) as ProgressData),
     updatedAt: row.updated_at,
     deleted: row.deleted === 1,
@@ -520,7 +521,7 @@ export function syncUserData(db: Database, userId: string, incoming: SyncPayload
     for (const raw of incoming.progress) {
       const entry = { ...raw, updatedAt: clamp(raw.updatedAt) };
       if (!shouldReplace(progress.get(entry.id), entry)) continue;
-      const data: ProgressData = { player: entry.player, cards: entry.deleted ? {} : entry.cards };
+      const data: ProgressData = { player: entry.player, cards: entry.deleted ? {} : entry.cards, days: entry.deleted ? [] : (entry.days ?? []) };
       upsertProgress.run(userId, entry.id, entry.stackId, JSON.stringify(data), entry.updatedAt, entry.deleted ? 1 : 0);
     }
 
