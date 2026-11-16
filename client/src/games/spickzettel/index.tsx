@@ -1,12 +1,13 @@
 import { lazy } from 'react';
 import type { LearnMode } from '../../../../shared/types.ts';
-import type { GameDefinition, GameSettingsProps, PlayerStatusInfo } from '../types.ts';
+import type { GameDefinition, GameSettingsProps, SoloStart } from '../types.ts';
 import { OptionRow, SettingsPanel } from '../shared/settings.tsx';
 import { TurnSettingsRows } from '../shared/turnSettings.tsx';
-import { canPlayChoice, clozeCards, estimateCards, MODE_MIN_CARDS } from '../../lib/learn.ts';
+import { BLITZ_MIN_CARDS, canPlayChoice, clozeCards, estimateCards, MODE_MIN_CARDS } from '../../lib/learn.ts';
 import { useStack } from '../../store/data.ts';
+import { useDefaultLearner, useLearners } from '../../store/learners.ts';
+import { isSoloMode, soloLearnPath } from './modes.ts';
 import { Prepare } from './Prepare.tsx';
-import { KASTEN_LEGEND, useKastenTiles } from './status.ts';
 
 export interface SpickzettelSettings {
   stackId: string | null;
@@ -28,9 +29,6 @@ export interface SpickzettelSettings {
   /** Lückentext: tap words from the word bank or type them. */
   clozeInput: 'bank' | 'type';
 }
-
-/** Cards needed for a Blitzrunde – otherwise the same cards come round all the time. */
-export const BLITZ_MIN_CARDS = 4;
 
 function Settings({ value, onChange }: GameSettingsProps<SpickzettelSettings>) {
   if (value.mode === 'schaetzen') {
@@ -130,12 +128,13 @@ function useBlocker(settings: SpickzettelSettings): string | null {
   return null;
 }
 
-/** Setup screen: cards due per person and per group in the Kartenkasten of the chosen stack. */
-function usePlayerStatus(settings: SpickzettelSettings): PlayerStatusInfo | null {
-  const stack = useStack(settings.stackId);
-  const tiles = useKastenTiles(settings.stackId);
-  if (settings.mode !== 'kasten' || !stack || !tiles) return null;
-  return { caption: `Kartenkasten «${stack.title}»`, legend: KASTEN_LEGEND, status: tiles };
+/** Kartenkasten and Lückentext: one person learns, no group – «Wer lernt?» is asked in Prepare. */
+function useSoloStart(settings: SpickzettelSettings): SoloStart | null {
+  const learners = useLearners(settings.stackId);
+  const learner = useDefaultLearner(settings.stackId, learners);
+  if (!isSoloMode(settings.mode)) return null;
+  if (!settings.stackId || !learner) return { path: null, label: 'Wer lernt? Name eingeben' };
+  return { path: soloLearnPath(settings.stackId, settings.mode, learner), label: `Lernen · ${learner}` };
 }
 
 export const spickzettel: GameDefinition<SpickzettelSettings> = {
@@ -177,6 +176,6 @@ export const spickzettel: GameDefinition<SpickzettelSettings> = {
   Settings,
   playersNeeded: (settings) => (settings.mode === 'blitz' ? 4 : settings.mode === 'duell' ? 2 : 1),
   useBlocker,
-  usePlayerStatus,
+  useSoloStart,
   Play: lazy(() => import('./SpickzettelGame.tsx')),
 };

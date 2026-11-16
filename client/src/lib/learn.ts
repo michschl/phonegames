@@ -413,6 +413,25 @@ export function scoreEstimates(answer: CardNumber, guesses: Record<string, numbe
 /** Cards a mode needs – fewer and the mode cannot start. */
 export const MODE_MIN_CARDS = { schaetzen: 3, luecke: 3 } as const;
 
+/** Cards needed for a Blitzrunde – otherwise the same cards come round all the time. */
+export const BLITZ_MIN_CARDS = 4;
+
+/** Whether a mode can be played with the stack at all – modes that do not fit are not offered. */
+export function modeFits(mode: LearnMode, stack: LearnStack): boolean {
+  switch (mode) {
+    case 'kasten':
+      return stack.cards.length > 0;
+    case 'luecke':
+      return clozeCards(stack).length >= MODE_MIN_CARDS.luecke;
+    case 'duell':
+      return canPlayChoice(stack);
+    case 'blitz':
+      return stack.cards.length >= BLITZ_MIN_CARDS;
+    case 'schaetzen':
+      return estimateCards(stack).length >= MODE_MIN_CARDS.schaetzen;
+  }
+}
+
 /** Modes that fit a stack: what the AI suggested plus what the cards allow. */
 export function suggestedModes(stack: LearnStack): Set<LearnMode> {
   const modes = new Set<LearnMode>(stack.suggestedModes);

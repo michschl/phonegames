@@ -1875,15 +1875,88 @@
   margin-bottom: 16px;
 }
 
+/* «Heute fällig» on the start page: one row per person and stack, one tap starts learning. */
 .learn-due {
+  margin-top: 18px;
+  padding: 12px 12px 10px;
+  border-radius: var(--radius-lg);
+  border: var(--border);
   background: var(--yellow-soft);
+  box-shadow: var(--shadow);
+}
+
+.learn-due__title {
+  margin: 0 0 8px 4px;
+  font-family: var(--font-display);
+  font-size: 18px;
+}
+
+.learn-due__list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.learn-due__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 6px 8px 6px 6px;
+  border-radius: 16px;
+  border: 2.5px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
   text-decoration: none;
+  box-shadow: 0 3px 0 var(--ink);
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.learn-due__row:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+
+.learn-due__text {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+}
+
+.learn-due__text strong {
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.learn-due__text small {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.learn-due__go {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 2.5px solid var(--ink);
+  background: var(--pink);
   color: var(--ink);
 }
 
-.learn-due__icon {
-  background: var(--yellow);
-  font-size: 22px;
+.learn-due__more {
+  display: inline-block;
+  margin: 8px 0 0 4px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink);
 }
 
 /* Photo analysis: take over exactly or invent new cards. */

@@ -140,7 +140,7 @@ Spielform. Dafür gibt es in der Definition:
 | `prepareKeys` | Einstellungen aus `Prepare` – sie setzen das Etikett der Einstellungen nicht auf «Angepasst» |
 | `playersNeeded(settings)` | Mindestzahl Personen je nach Einstellung (sonst `minPlayers`), z. B. 1 für den Kartenkasten, 4 für die Blitzrunde |
 | `useBlocker(settings)` | Hook: Grund, warum noch nicht gestartet werden kann – erscheint auf dem Start-Knopf, z. B. «Wähle zuerst einen Lernstapel» |
-| `usePlayerStatus(settings)` | Hook: Stand pro Person (`status(player)` mit `due`, Symbol-Badge, Text) – die Namen der Spielgruppe tragen dann einen roten Badge mit der Zahl fälliger Karten, die Gruppen-Chips die Summe, dazu eine Legende; `null` ohne Badges. Beispiel: Kartenkasten in «Spickzettel» |
+| `useSoloStart(settings)` | Hook: Mit diesen Einstellungen spielt eine Person allein, ohne Spielgruppe – der Startbildschirm blendet die Gruppe aus, `Prepare` fragt, wer spielt, und der Start-Knopf führt zu `path` (Text `label`). `null` für Spiele mit Gruppe. Beispiel: Kartenkasten und Lückentext in «Spickzettel» |
 
 ### Ein Teamspiel in wenigen Zeilen
 

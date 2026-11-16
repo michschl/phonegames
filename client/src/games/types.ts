@@ -27,13 +27,19 @@ export interface PlayerStatus {
   label: string;
 }
 
-/** Status per person for the setup screen: badges on the name chips and the group chips. */
+/** Status per person with an explanation of the badges («Wer lernt?» in «Spickzettel»). */
 export interface PlayerStatusInfo {
   /** What the badges are about, e.g. «Kartenkasten «Unité 5»». */
   caption: string;
   /** Explanation of the badges: `due` for the red number, otherwise the symbol (✓, ★). */
   legend: { key: string; label: string; tone?: StatusTone }[];
   status: (player: Player) => PlayerStatus | undefined;
+}
+
+export interface SoloStart {
+  path: string | null;
+  /** Start button text, e.g. «Lina lernt». */
+  label: string;
 }
 
 /**
@@ -77,10 +83,11 @@ export interface GameDefinition<S extends object = any> {
    */
   useBlocker?: (settings: S) => string | null;
   /**
-   * Hook: a status per person for the setup screen – badges on the name chips of the group and
-   * the sum of due cards on the group chips – or null. Called on every render of the setup screen.
+   * Hook: these settings are played by one person without a group (Spickzettel: Kartenkasten,
+   * Lückentext). The setup screen then hides the group, `Prepare` asks who plays, and the start
+   * button goes to `path` (null = nobody chosen yet). Null for games with a group.
    */
-  usePlayerStatus?: (settings: S) => PlayerStatusInfo | null;
+  useSoloStart?: (settings: S) => SoloStart | null;
   /** The game itself – lazy loaded so the start screen stays fast. */
   Play?: LazyExoticComponent<ComponentType<GameProps<S>>>;
   /** Optional illustration for the cards. Falls back to the emoji. */

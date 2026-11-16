@@ -1,52 +1,46 @@
-import { useMemo } from 'react';
 import { Link } from 'react-router';
-import type { LearnStack } from '../../../shared/types.ts';
-import { kastenStatus, subjectEmoji } from '../lib/learn.ts';
-import { useData } from '../store/data.ts';
+import { soloLearnPath } from '../games/spickzettel/modes.ts';
+import { useDueList } from '../store/learners.ts';
 import { Icon } from './Icon.tsx';
+import { Avatar } from './ui.tsx';
 
-interface DueEntry {
-  stack: LearnStack;
-  player: string;
-  due: number;
-}
+/** Rows shown on the start page – the rest is one tap away. */
+const SHOWN = 3;
 
-/** Cards that people have started learning and that are due again – the heart of repeating. */
-function useDueReminders(): DueEntry[] {
-  const stacks = useData((s) => s.stacks);
-  const progress = useData((s) => s.progress);
-  return useMemo(() => {
-    const now = Date.now();
-    const list: DueEntry[] = [];
-    for (const entry of Object.values(progress)) {
-      const stack = stacks[entry.stackId];
-      if (entry.deleted || !stack || stack.deleted) continue;
-      // New cards are not counted – only cards someone already learned and should repeat now.
-      const { due } = kastenStatus(stack, entry, now);
-      if (due > 0) list.push({ stack, player: entry.player, due });
-    }
-    return list.sort((a, b) => b.due - a.due);
-  }, [stacks, progress]);
-}
-
-/** «Heute fällig» on the start page. */
-export function LearnDue() {
-  const due = useDueReminders();
-  const first = due[0];
-  if (!first) return null;
-  const more = due.length - 1;
+/** «Heute fällig» on the start page: one row per person and stack, one tap starts the first card. */
+export function LearnDue({ moreTo = '/spiel/spickzettel' }: { moreTo?: string }) {
+  const due = useDueList();
+  if (due.length === 0) return null;
+  const more = due.length - SHOWN;
   return (
-    <Link to={`/spiel/spickzettel?stapel=${first.stack.id}&modus=kasten`} className="install-banner learn-due" viewTransition>
-      <span className="install-banner__icon learn-due__icon" aria-hidden="true">
-        {subjectEmoji(first.stack.subject)}
-      </span>
-      <span>
-        <strong>Heute fällig: {first.due} {first.due === 1 ? 'Karte' : 'Karten'}</strong>
-        <small>
-          {first.player} · «{first.stack.title}»{more > 0 && ` · und ${more} weitere${more === 1 ? 'r' : ''} Kartenkasten`}
-        </small>
-      </span>
-      <Icon name="next" />
-    </Link>
+    <section className="learn-due" aria-labelledby="learn-due-title">
+      <h2 className="learn-due__title" id="learn-due-title">
+        <span aria-hidden="true">📚</span> Heute fällig
+      </h2>
+      <ul className="learn-due__list">
+        {due.slice(0, SHOWN).map(({ stack, learner, due: count }) => (
+          <li key={`${stack.id}-${learner.id}`}>
+            <Link to={soloLearnPath(stack.id, 'kasten', learner.name)} className="learn-due__row" viewTransition>
+              <Avatar name={learner.name} color={learner.color} size={36} />
+              <span className="learn-due__text">
+                <strong>{learner.name}</strong>
+                <small>
+                  {count} {count === 1 ? 'Karte' : 'Karten'} · «{stack.title}»
+                </small>
+              </span>
+              <span className="learn-due__go" aria-hidden="true">
+                <Icon name="play" size={18} />
+              </span>
+              <span className="sr-only">lernen</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+      {more > 0 && (
+        <Link to={moreTo} className="learn-due__more" viewTransition>
+          und {more} {more === 1 ? 'weiterer Kartenkasten' : 'weitere Kartenkästen'}
+        </Link>
+      )}
+    </section>
   );
 }

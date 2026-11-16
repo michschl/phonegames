@@ -1,7 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
-import { LIMITS, type Player, type PlayerGroup } from '../../../shared/types.ts';
-import type { PlayerStatus } from '../games/types.ts';
+import { LIMITS, type PlayerGroup } from '../../../shared/types.ts';
 import { Icon } from '../components/Icon.tsx';
 import { Page, Section } from '../components/Layout.tsx';
 import { PlayerEditor } from '../components/PlayerEditor.tsx';
@@ -186,25 +185,12 @@ export function GroupEditPage() {
 }
 
 /** Horizontal group picker used on the game setup screen. */
-export function GroupPicker({
-  selectedId,
-  onSelect,
-  status,
-}: {
-  selectedId: string | undefined;
-  onSelect: (id: string) => void;
-  /** With a status (e.g. cards due in «Spickzettel»), each group shows the sum of its people. */
-  status?: (player: Player) => PlayerStatus | undefined;
-}) {
+export function GroupPicker({ selectedId, onSelect }: { selectedId: string | undefined; onSelect: (id: string) => void }) {
   const groups = useGroups();
   const createGroup = useData((s) => s.createGroup);
-  const dueOf = (group: PlayerGroup) => (status ? group.players.reduce((sum, p) => sum + (status(p)?.due ?? 0), 0) : 0);
-  const anyDue = groups.some((group) => dueOf(group) > 0);
   return (
-    <div className={`group-picker ${anyDue ? 'has-badges' : ''}`} role="radiogroup" aria-label="Spielgruppe wählen">
-      {groups.map((group) => {
-        const due = dueOf(group);
-        return (
+    <div className="group-picker" role="radiogroup" aria-label="Spielgruppe wählen">
+      {groups.map((group) => (
         <button
           key={group.id}
           type="button"
@@ -220,17 +206,8 @@ export function GroupPicker({
           <span aria-hidden="true">{group.emoji}</span>
           <span className="group-pill__name">{group.name}</span>
           <span className="group-pill__count">{group.players.length}</span>
-          {due > 0 && (
-            <>
-              <span className="due-badge due-badge--corner" aria-hidden="true">
-                {due}
-              </span>
-              <span className="sr-only">, {due} {due === 1 ? 'Karte' : 'Karten'} fällig</span>
-            </>
-          )}
         </button>
-        );
-      })}
+      ))}
       <button
         type="button"
         className="group-pill group-pill--new"

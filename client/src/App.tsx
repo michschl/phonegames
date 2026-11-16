@@ -10,6 +10,7 @@ import { AccountPage } from './pages/AccountPage.tsx';
 import { LoginPage, RegisterPage, WelcomePage } from './pages/AuthPages.tsx';
 import { DiscoverPage } from './pages/DiscoverPage.tsx';
 import { GamePlayPage, GameSetupPage } from './pages/GamePages.tsx';
+import { LearnPlayPage } from './pages/LearnPages.tsx';
 import { GroupEditPage, GroupsPage } from './pages/GroupsPage.tsx';
 import { NewStackPage, StackEditPage, StacksPage } from './pages/StackPages.tsx';
 import { SharePage } from './pages/SharePage.tsx';
@@ -131,6 +132,7 @@ const router = createBrowserRouter([
           { path: '/stapel/:stackId', element: <StackEditPage /> },
           { path: '/spiel/:gameId', element: <GameSetupPage /> },
           { path: '/spiel/:gameId/los', element: <GamePlayPage /> },
+          { path: '/lernen/:stackId/:mode', element: <LearnPlayPage /> },
         ],
       },
       // Shared learning stacks: for signed-in visitors and as an invitation for new ones.

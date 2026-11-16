@@ -68,16 +68,22 @@ function GameSetup({ game }: { game: GameDefinition }) {
 
   const playerCount = group?.players.length ?? 0;
   const needed = game.playersNeeded?.(settings) ?? game.minPlayers;
-  const missing = game.noGroup ? 0 : Math.max(0, needed - playerCount);
   // The component is keyed by game, so the hook order never changes.
   const blocker = game.useBlocker?.(settings) ?? null;
-  const playerStatus = game.usePlayerStatus?.(settings) ?? null;
-  const canStart = !blocker && (game.noGroup || (!!group && missing === 0));
+  const solo = game.useSoloStart?.(settings) ?? null;
+  const withGroup = !game.noGroup && !solo;
+  const missing = withGroup ? Math.max(0, needed - playerCount) : 0;
+  const canStart = !blocker && (solo ? !!solo.path : game.noGroup || (!!group && missing === 0));
 
   const start = () => {
     if (!canStart) return;
     sound.unlock(); // must happen inside the tap for iOS
     haptic(20);
+    if (solo?.path) {
+      setLastPlayed(game.id);
+      navigate(solo.path, { viewTransition: true });
+      return;
+    }
     if (group) setLastGroup(game.id, group.id);
     setLastPlayed(game.id, game.noGroup ? undefined : group?.id);
     navigate(`/spiel/${game.id}/los`, { viewTransition: true });
@@ -126,12 +132,12 @@ function GameSetup({ game }: { game: GameDefinition }) {
 
       {game.Prepare && <game.Prepare value={settings} onChange={setSettings} />}
 
-      {!game.noGroup && (
+      {withGroup && (
       <Section title="Spielgruppe">
         {selectedId ? (
           <>
-            <GroupPicker selectedId={selectedId} onSelect={select} status={playerStatus?.status} />
-            {group && <PlayerEditor group={group} status={playerStatus} />}
+            <GroupPicker selectedId={selectedId} onSelect={select} />
+            {group && <PlayerEditor group={group} />}
           </>
         ) : (
           <div className="setup-nogroup">
@@ -165,6 +171,8 @@ function GameSetup({ game }: { game: GameDefinition }) {
         <Button size="lg" block icon="play" onClick={start} disabled={!canStart}>
           {blocker
             ? blocker
+            : solo
+            ? solo.label
             : game.noGroup
             ? 'Spiel starten'
             : missing > 0
@@ -173,6 +181,27 @@ function GameSetup({ game }: { game: GameDefinition }) {
         </Button>
       </BottomBar>
     </Page>
+  );
+}
+
+/** While a game is open: no tab bar, sound kept awake and released afterwards (no lingering iOS media session). */
+export function usePlayScreen(): void {
+  useEffect(() => {
+    document.documentElement.classList.add('is-playing');
+    sound.hold();
+    return () => {
+      document.documentElement.classList.remove('is-playing');
+      sound.release();
+    };
+  }, []);
+}
+
+export function PlayLoading() {
+  return (
+    <div className="play-loading">
+      <Mascot size={110} mood="wink" />
+      Gleich geht’s los …
+    </div>
   );
 }
 
@@ -187,15 +216,7 @@ export function GamePlayPage() {
   // Freeze the players for the running game.
   const players = useMemo(() => group?.players ?? [], [group?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    document.documentElement.classList.add('is-playing');
-    // Sound is wanted while the game is open and released afterwards (no lingering iOS media session).
-    sound.hold();
-    return () => {
-      document.documentElement.classList.remove('is-playing');
-      sound.release();
-    };
-  }, []);
+  usePlayScreen();
 
   if (!game?.Play || game.status !== 'available') return <Navigate to="/" replace />;
   const needed = game.playersNeeded?.(settings) ?? game.minPlayers;
@@ -204,14 +225,7 @@ export function GamePlayPage() {
   const Play = game.Play;
   return (
     <div className="play-screen">
-      <Suspense
-        fallback={
-          <div className="play-loading">
-            <Mascot size={110} mood="wink" />
-            Gleich geht’s los …
-          </div>
-        }
-      >
+      <Suspense fallback={<PlayLoading />}>
         <Play
           players={players}
           settings={settings}

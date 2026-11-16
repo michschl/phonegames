@@ -1,5 +1,5 @@
 import { expect, test, type Locator } from '@playwright/test';
-import { createGroup, createStack, endGame, expectAccessible, openSettings, register, startGame } from './helpers.ts';
+import { createGroup, createStack, endGame, expectAccessible, openSettings, register, startGame, startLearning } from './helpers.ts';
 
 const WORDS: Record<string, string> = { 'le chien': 'der Hund', 'la maison': 'das Haus', manger: 'essen', toujours: 'immer' };
 
@@ -65,9 +65,10 @@ test('Schätzrunde: Volltreffer punkten, weit daneben landet im Kartenkasten', a
   };
   await register(page);
   await createStack(page, 'Schweizer Geschichte', [...Object.entries(answers).map(([q, a]) => `${q} = ${a}`), 'le chien = der Hund']);
-  await createGroup(page, ['Lea', 'Ben']);
-  await expect(page.getByRole('radio', { name: /Lückentext/ })).toHaveAttribute('aria-disabled', 'true');
+  // Only what fits the stack is offered: numbers, but no gaps.
+  await expect(page.getByRole('radio', { name: /Lückentext/ })).toHaveCount(0);
   await page.getByRole('radio', { name: /Schätzrunde/ }).click();
+  await createGroup(page, ['Lea', 'Ben']);
   // A small phone: the reveal does not fit and scrolls.
   await page.setViewportSize({ width: 360, height: 520 });
   await startGame(page);
@@ -105,7 +106,7 @@ test('Schätzrunde: Volltreffer punkten, weit daneben landet im Kartenkasten', a
 
   // Ben's far-off guesses are now due in his Kartenkasten.
   await page.getByRole('radio', { name: /Kartenkasten/ }).click();
-  await expect(page.locator('.player-chip', { hasText: 'Ben' }).locator('.due-badge')).toHaveText('4');
+  await expect(page.getByRole('radio', { name: /^Ben/ }).locator('.due-badge')).toHaveText('4');
 });
 
 test('Lückentext: Wortbank, Korrektur und Eintippen', async ({ page }) => {
@@ -127,9 +128,9 @@ test('Lückentext: Wortbank, Korrektur und Eintippen', async ({ page }) => {
     'Der grösste See ganz in der Schweiz ist der [Neuenburgersee].',
     'Im Tessin spricht man [Italienisch].',
   ]);
-  await createGroup(page, ['Mia']);
+  // Alone, without a group: straight to the first page.
   await page.getByRole('radio', { name: /Lückentext/ }).click();
-  await startGame(page);
+  await startLearning(page);
 
   // Page 1: everything right; a filled gap gives its word back when tapped.
   const sentences = async () => {
@@ -161,7 +162,7 @@ test('Lückentext: Wortbank, Korrektur und Eintippen', async ({ page }) => {
   // Typing: lower case is right, a swapped letter almost right, a wrong word wrong.
   await openSettings(page);
   await page.getByRole('radio', { name: /Eintippen/ }).click();
-  await startGame(page);
+  await startLearning(page);
   list = await sentences();
   const plan = [answerFor(list[0]!).toLowerCase(), 'Zürich', answerFor(list[2]!).replace('ei', 'ie')];
   for (const [i, text] of plan.entries()) {

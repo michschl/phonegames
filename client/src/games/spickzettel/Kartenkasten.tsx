@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type { LearnCard, LearnStack, Player } from '../../../../shared/types.ts';
 import { Button } from '../../components/ui.tsx';
 import { sound } from '../../lib/audio.ts';
@@ -62,11 +62,14 @@ export function Kartenkasten({
   players,
   settings,
   onExit,
+  autoStart = false,
 }: {
   stack: LearnStack;
   players: Player[];
   settings: SpickzettelSettings;
   onExit: () => void;
+  /** Straight to the first due card (one tap from «Heute fällig») instead of the overview. */
+  autoStart?: boolean;
 }) {
   const [learner, setLearner] = useState<Player | null>(players.length === 1 ? players[0]! : null);
   const [phase, setPhase] = useState<Phase>(learner ? 'overview' : 'who');
@@ -177,6 +180,10 @@ export function Kartenkasten({
     setRevealed(true);
     feedback(verdict.verdict !== 'wrong');
   };
+
+  useLayoutEffect(() => {
+    if (autoStart && learner && due.length > 0) begin(false);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const finishedRight = results.filter((r) => r.correct).length;
   useEffect(() => {

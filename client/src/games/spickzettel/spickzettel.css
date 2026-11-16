@@ -862,3 +862,18 @@
   box-shadow: none;
   border-style: dashed;
 }
+
+/* Setup screen: modes grouped by who plays. */
+.mode-group + .mode-group {
+  margin-top: 12px;
+}
+
+.mode-group__title {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+

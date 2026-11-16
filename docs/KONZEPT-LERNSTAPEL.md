@@ -191,9 +191,18 @@ interface Karte {
 ## Ergänzungen nach den Etappen
 
 - **Antworten eintippen** als dritte Antwortprüfung im Kartenkasten (siehe Etappe 2).
+- **Allein lernen ohne Spielgruppe:** Kartenkasten und Lückentext brauchen keine Gruppe mehr. Der Kartenkasten
+  gehört einem Namen; «Wer lernt?» bietet an, wer den Stapel schon gelernt hat, die Personen der zuletzt für
+  Spickzettel gewählten Gruppe, die angemeldete Person und hier hinzugefügte Namen (`collectLearners`). Vorausgewählt
+  ist, wer den Stapel zuletzt auf diesem Gerät gelernt hat. Der Start führt direkt zur ersten Karte.
+- **«Speichern & lernen»** nach dem Prüfen: Ist klar, wer lernt (wer den Stapel schon gelernt hat oder die einzige
+  Person, die überhaupt lernt), startet gleich die erste Runde; sonst fragt «Wer lernt?».
+- **Spielformen nach Situation:** «Allein» (Kartenkasten, Lückentext), «Zu zweit» (Duell), «Mit mehreren»
+  (Blitzrunde, Schätzrunde). Was der Stapel nicht hergibt (`modeFits`), wird nicht angeboten.
 - **«Heute fällig» auf der Startseite:** Sobald jemand Karten gelernt hat und welche wieder fällig sind, zeigt die
-  Startseite «Heute fällig: 7 Karten · Lea · «Unité 5»». Ein Tipp öffnet den Stapel direkt im Kartenkasten. Neue,
-  noch nie gelernte Karten zählen nicht – die Erinnerung soll ans Repetieren erinnern, nicht drängen.
+  Startseite eine Zeile pro Person und Stapel («Lea · 7 Karten · «Unité 5»», höchstens drei). Ein Tipp startet
+  direkt die erste fällige Karte (`/lernen/<stapel>/kasten?person=Lea`). Neue, noch nie gelernte Karten zählen
+  nicht – die Erinnerung soll ans Repetieren erinnern, nicht drängen.
 - **Stand pro Person auf einen Blick:**
   - «Wer lernt?» (Kartenkasten, Lückentext): Die Namenstafeln sind nach Stand eingefärbt und nennen ihn:
 
@@ -205,9 +214,8 @@ interface Karte {
     | Gelb | Alle Karten in Fach 5 | ★ |
     | Weiss | Noch nicht begonnen | – |
 
-  - Startbildschirm (Spielform Kartenkasten): Die Namen der Spielgruppe behalten ihre Farben und tragen die rote
-    Zahl der fälligen Karten (bzw. ✓/★), mit kurzer Legende. Die Gruppen-Chips zeigen die Summe der fälligen Karten
-    aller Personen der Gruppe.
+  - «Wer lernt?» steht direkt auf dem Startbildschirm (Kartenkasten, Lückentext) – mit denselben Farben, der roten
+    Zahl der fälligen Karten (bzw. ✓/★) und einer kurzen Legende.
   - Die Stapel-Listen (Spiel und «Lernstapel») zeigen «3 fällig» – summiert über alle Personen.
 - **Stapelwahl im Spiel:** Der Startbildschirm schlägt 3 Stapel vor – zuerst die mit fälligen Karten, dann die
   zuletzt gelernten oder bearbeiteten (`recommendStacks`); der gewählte ist immer dabei. «Anderer Stapel» öffnet

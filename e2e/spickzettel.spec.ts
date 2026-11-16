@@ -1,11 +1,15 @@
 import { expect, test, type Page } from '@playwright/test';
-import { createGroup, createStack, endGame, expectAccessible, openSettings, register, startGame } from './helpers.ts';
+import { addLearner, createStack, endGame, expectAccessible, openSettings, register, startLearning } from './helpers.ts';
 
 const TIMES = ['7 × 8 = 56', '6 × 7 = 42', '9 × 9 = 81', '12 × 12 = 144'];
 
-/** Answers a Kartenkasten round by revealing; prompts in `wrong` are «Nicht gewusst» (also the second time). */
+/**
+ * Answers a Kartenkasten round by revealing; prompts in `wrong` are «Nicht gewusst» (also the second time).
+ * A round started from «Wer lernt?» or «Heute fällig» begins with the first card right away.
+ */
 async function learnRound(page: Page, wrong: string[] = []): Promise<string> {
-  await page.getByRole('button', { name: /Karten? lernen/ }).click();
+  const start = page.getByRole('button', { name: /Karten? lernen/ });
+  if (await start.isVisible()) await start.click();
   for (let i = 0; i < 30; i++) {
     if (await page.getByText(/von \d+ gewusst/).isVisible()) break;
     const prompt = (await page.locator('.learn-card__prompt').innerText()).trim();
@@ -17,29 +21,38 @@ async function learnRound(page: Page, wrong: string[] = []): Promise<string> {
   return result;
 }
 
-test('Kartenkasten: selbst prüfen, Fächer und Erinnerung auf der Startseite', async ({ page }) => {
+test('Kartenkasten: allein ohne Gruppe, Fächer und ein Tipp von der Startseite', async ({ page }) => {
   await register(page, 'Nora');
   await createStack(page, 'Einmaleins', TIMES);
-  await createGroup(page, ['Nora']);
-  await startGame(page);
+  // Alone: no group, «Wer lernt?» knows the account holder.
+  await expect(page.getByText('Spielgruppe')).toHaveCount(0);
+  await expect(page.getByRole('radio', { name: /^Nora/ })).toHaveAttribute('aria-checked', 'true');
+  await startLearning(page);
+  // Straight to the first card – no overview in between.
+  await expect(page.locator('.learn-card')).toBeVisible();
+  // «7 × 8» is missed twice (asked again at the end of the round).
+  expect(await learnRound(page, ['7 × 8'])).toBe('3 von 5 gewusst');
   await expect(page.locator('.box-row')).toBeVisible();
+  await expect(page.getByText('Heute fällig: 1 Karte')).toBeVisible();
   // The numbers of all boxes stand on one line – also on a small phone, where the labels wrap.
   for (const width of [280, 412]) {
     await page.setViewportSize({ width, height: 839 });
     const tops = await page.locator('.box-col strong').evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
     expect(new Set(tops).size, `${width} px`).toBe(1);
   }
-  // «7 × 8» is missed twice (asked again at the end of the round).
-  expect(await learnRound(page, ['7 × 8'])).toBe('3 von 5 gewusst');
-  await expect(page.getByText('Heute fällig: 1 Karte')).toBeVisible();
   await endGame(page);
+  await expect(page).toHaveURL(/\/spiel\/spickzettel/);
 
   await page.goto('/');
-  await expect(page.locator('.learn-due')).toContainText('Heute fällig: 1 Karte');
-  await expect(page.locator('.learn-due')).toContainText('Einmaleins');
-  await page.locator('.learn-due').click();
-  await expect(page.locator('.stack-option.is-active')).toContainText('Einmaleins');
-  await expect(page.getByRole('radio', { name: /Kartenkasten/ })).toHaveAttribute('aria-checked', 'true');
+  const row = page.locator('.learn-due__row');
+  await expect(row).toHaveCount(1);
+  await expect(row).toContainText('Nora');
+  await expect(row).toContainText('1 Karte · «Einmaleins»');
+  await expectAccessible(page);
+  await row.click();
+  await expect(page.locator('.learn-card__prompt')).toHaveText('7 × 8');
+  await endGame(page);
+  await expect(page).toHaveURL('/');
 });
 
 test('Kartenkasten: Antworten eintippen wird grosszügig geprüft', async ({ page }) => {
@@ -52,11 +65,9 @@ test('Kartenkasten: Antworten eintippen wird grosszügig geprüft', async ({ pag
   };
   await register(page);
   await createStack(page, 'Tipp-Test', Object.entries(cards).map(([q, a]) => `${q} = ${a}`));
-  await createGroup(page, ['Mia']);
   await openSettings(page);
   await page.getByRole('radio', { name: /Eintippen/ }).click();
-  await startGame(page);
-  await page.getByRole('button', { name: /Karten lernen/ }).click();
+  await startLearning(page);
   const seen = new Set<string>();
   for (let i = 0; i < 8; i++) {
     if (await page.getByText(/von \d+ gewusst/).isVisible()) break;
@@ -72,38 +83,31 @@ test('Kartenkasten: Antworten eintippen wird grosszügig geprüft', async ({ pag
   await expect(page.locator('.result-banner__title')).toHaveText('4 von 5 gewusst');
 });
 
-test('Namenstafeln und Badges zeigen, wer wie viele Karten fällig hat', async ({ page }) => {
-  await register(page);
+test('Wer lernt? Namenstafeln zeigen, wer wie viele Karten fällig hat', async ({ page }) => {
+  await register(page, 'Lea');
   await createStack(page, 'Einmaleins', TIMES);
-  await createGroup(page, ['Lea', 'Ben', 'Mia']);
-  await startGame(page);
-  await expect(page.getByText('Wer lernt?')).toBeVisible();
-  await page.locator('.pick-chip', { hasText: 'Lea' }).click();
+  await startLearning(page);
   await learnRound(page);
-  await page.getByRole('button', { name: 'Andere Person' }).click();
-  await page.locator('.pick-chip', { hasText: 'Ben' }).click();
+  await endGame(page);
+  await addLearner(page, 'Ben');
+  await startLearning(page);
   await learnRound(page, ['7 × 8', '6 × 7']);
-  await page.getByRole('button', { name: 'Andere Person' }).click();
+  await endGame(page);
+  await addLearner(page, 'Mia');
 
-  const tile = (name: string) => page.locator('.pick-chip', { hasText: name });
+  const tile = (name: string) => page.getByRole('radio', { name: new RegExp(`^${name}`) });
   await expect(tile('Lea')).toHaveClass(/tone-green/);
-  await expect(tile('Lea').locator('.pick-chip__status')).toHaveText('Heute erledigt');
+  await expect(tile('Lea').locator('.learner-tile__status')).toHaveText('Heute erledigt');
+  await expect(tile('Lea').locator('.status-badge')).toHaveText('✓');
   await expect(tile('Ben')).toHaveClass(/tone-orange/);
   await expect(tile('Ben').locator('.due-badge')).toHaveText('2');
-  await expect(tile('Mia').locator('.pick-chip__status')).toHaveText('Noch nicht begonnen');
+  await expect(tile('Mia').locator('.learner-tile__status')).toHaveText('Noch nicht begonnen');
+  await expect(page.locator('.stack-option.is-active .due-pill')).toHaveText('2 fällig');
   await expectAccessible(page);
-  // On a narrow phone the corner badge sticks out of the tile, but not out of the screen area.
+  // On a narrow phone the corner badge sticks out of the tile, but stays on the screen.
   await page.setViewportSize({ width: 360, height: 740 });
   const badge = (await tile('Ben').locator('.due-badge').boundingBox())!;
-  const stage = (await page.locator('.gs-stage').boundingBox())!;
-  expect(badge.x + badge.width).toBeLessThanOrEqual(stage.x + stage.width);
-  await endGame(page);
-
-  // Setup screen: player colours stay, Ben has the red badge, the group shows the sum.
-  await expect(page.locator('.player-chip', { hasText: 'Ben' }).locator('.due-badge')).toHaveText('2');
-  await expect(page.locator('.player-chip', { hasText: 'Lea' }).locator('.status-badge')).toHaveText('✓');
-  await expect(page.locator('.group-pill.is-active .due-badge')).toHaveText('2');
-  await expect(page.locator('.stack-option.is-active .due-pill')).toHaveText('2 fällig');
+  expect(badge.x + badge.width).toBeLessThanOrEqual(360 - 8);
 });
 
 test('Stapelwahl: drei Vorschläge und «Anderer Stapel» mit Suche', async ({ page }) => {

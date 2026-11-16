@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { createGroup, createStack, expectAccessible, PNG, register, undo } from './helpers.ts';
+import { createStack, expectAccessible, PNG, register, undo } from './helpers.ts';
 
 const photo = { name: 'blatt.png', mimeType: 'image/png', buffer: PNG };
 
@@ -29,9 +29,12 @@ test('Fotos: Kamera und Galerie, genau übernehmen', async ({ page }) => {
   await page.goto('/');
   await page.goto('/stapel/neu');
   await expect(page.locator('.card-row')).toHaveCount(4);
-  await page.getByRole('button', { name: 'Stapel speichern' }).click();
+  // Nobody has learned yet – «Wer lernt?» asks before the first round.
+  await page.getByRole('button', { name: 'Speichern & lernen' }).click();
   await expect(page).toHaveURL(/\/spiel\/spickzettel/);
   await expect(page.locator('.stack-option.is-active')).toContainText('Unité 5 – Vocabulaire');
+  await expect(page.getByRole('radio', { name: /Kartenkasten/ })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByRole('radiogroup', { name: 'Wer lernt?' })).toBeVisible();
 });
 
 test('Fotos: neue Aufgaben erfinden, auffällige Karten sind markiert', async ({ page }) => {
@@ -121,8 +124,13 @@ test('Löschen ist überall erreichbar und lässt sich rückgängig machen', asy
   expect(await prompts()).toEqual(['7 × 8', '6 × 7', '9 × 9']);
 
   // Groups and people.
-  await page.goto('/spiel/spickzettel');
-  await createGroup(page, ['Lea', 'Ben', 'Mia']);
+  await page.goto('/gruppen');
+  await page.getByRole('button', { name: 'Gruppe erstellen' }).click();
+  for (const name of ['Lea', 'Ben', 'Mia']) {
+    await page.getByLabel('Name des Spielers').fill(name);
+    await page.getByLabel('Name des Spielers').press('Enter');
+    await expect(page.locator('.player-chip', { hasText: name })).toBeVisible();
+  }
   await page.getByRole('button', { name: 'Ben entfernen' }).click();
   await expect(page.locator('.player-chip', { hasText: 'Ben' })).toHaveCount(0);
   await undo(page);

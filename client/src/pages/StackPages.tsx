@@ -15,7 +15,10 @@ import { createId } from '../lib/util.ts';
 import { useAuth } from '../store/auth.ts';
 import { useData, useDueByStack, useStack, useStacks } from '../store/data.ts';
 import { fromDraft, fromStack, useLearnDraft, type EditorValue } from '../store/learnDraft.ts';
-import { useGameSettings } from '../store/settings.ts';
+import { soloLearnPath } from '../games/spickzettel/modes.ts';
+import { obviousLearner } from '../lib/learners.ts';
+import { useLearners } from '../store/learners.ts';
+import { useGameSettings, useSettings } from '../store/settings.ts';
 import { toast, useUi } from '../store/ui.ts';
 import { deleteStackWithUndo, withUndo } from '../store/undo.ts';
 
@@ -123,6 +126,7 @@ export function NewStackPage() {
   const storedDraft = useLearnDraft((s) => s.draft);
   const setDraft = useLearnDraft((s) => s.setDraft);
   const draft = storedDraft && storedDraft.ownerId === userId ? storedDraft : null;
+  const learners = useLearners();
 
   const [step, setStep] = useState<Step>(() => (draft ? 'review' : params.get('text') ? 'text' : 'pick'));
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -227,7 +231,12 @@ export function NewStackPage() {
     setDraft(null);
     sound.fanfare();
     toast(`«${stack.title}» ist gespeichert 🎉`, { tone: 'success' });
-    navigate(`${GAME}?stapel=${stack.id}`, { replace: true, viewTransition: true });
+    // Straight into the first round when it is clear who learns; otherwise «Wer lernt?» asks.
+    const learner = obviousLearner(learners, stack.id, useSettings.getState().lastLearnerByStack, Object.values(useData.getState().progress));
+    navigate(learner ? soloLearnPath(stack.id, 'kasten', learner) : `${GAME}?stapel=${stack.id}&modus=kasten`, {
+      replace: true,
+      viewTransition: true,
+    });
   };
 
   if (step === 'reading') {
@@ -285,8 +294,8 @@ export function NewStackPage() {
           </Button>
         </div>
         <BottomBar>
-          <Button size="lg" block icon="check" onClick={save}>
-            Stapel speichern
+          <Button size="lg" block icon="play" onClick={save}>
+            Speichern & lernen
           </Button>
         </BottomBar>
         <ConfirmSheet
