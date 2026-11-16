@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
-import { LIMITS, type LearnExtractMode, type LearnUsage } from '../../../shared/types.ts';
+import { LIMITS, type LearnExtractMode, type LearnStack, type LearnUsage } from '../../../shared/types.ts';
 import { Mascot } from '../components/Brand.tsx';
 import { Icon } from '../components/Icon.tsx';
 import { BottomBar, Page, Section } from '../components/Layout.tsx';
 import { ShareStack } from '../components/ShareStack.tsx';
 import { StackEditor, toStackInput } from '../components/StackEditor.tsx';
-import { Button, ConfirmSheet, EmptyState, Segmented } from '../components/ui.tsx';
+import { ActionSheet, Button, ConfirmSheet, EmptyState, IconButton, Segmented } from '../components/ui.tsx';
 import { api, ApiError, errorMessage } from '../lib/api.ts';
 import { haptic } from '../lib/device.ts';
 import { parseTextCards, preparePhoto, subjectEmoji } from '../lib/learn.ts';
@@ -17,6 +17,7 @@ import { useData, useDueByStack, useStack, useStacks } from '../store/data.ts';
 import { fromDraft, fromStack, useLearnDraft, type EditorValue } from '../store/learnDraft.ts';
 import { useGameSettings } from '../store/settings.ts';
 import { toast, useUi } from '../store/ui.ts';
+import { deleteStackWithUndo, withUndo } from '../store/undo.ts';
 
 /** Where the learning game lives – stacks are chosen and played there. */
 const GAME = '/spiel/spickzettel';
@@ -36,6 +37,8 @@ function dayLabel(isoDay: string): string {
 export function StacksPage() {
   const stacks = useStacks();
   const dueByStack = useDueByStack();
+  const navigate = useNavigate();
+  const [menu, setMenu] = useState<LearnStack | null>(null);
   return (
     <Page
       title="Lernstapel"
@@ -65,23 +68,39 @@ export function StacksPage() {
       ) : (
         <div className="group-list">
           {stacks.map((stack, i) => (
-            <Link key={stack.id} to={`/stapel/${stack.id}`} className="group-card" style={{ animationDelay: `${i * 60}ms` }} viewTransition>
-              <span className="group-card__emoji" aria-hidden="true">
-                {subjectEmoji(stack.subject)}
-              </span>
-              <span className="group-card__body">
-                <span className="group-card__name">{stack.title}</span>
-                <span className="group-card__count">
-                  {cardCount(stack.cards.length)}
-                  {stack.subject && ` · ${stack.subject}`}
+            <div key={stack.id} className="list-row" style={{ animationDelay: `${i * 60}ms` }}>
+              <Link to={`/stapel/${stack.id}`} className="group-card" viewTransition>
+                <span className="group-card__emoji" aria-hidden="true">
+                  {subjectEmoji(stack.subject)}
                 </span>
-                {(dueByStack[stack.id] ?? 0) > 0 && <span className="due-pill">{dueByStack[stack.id]} fällig</span>}
-              </span>
-              <Icon name="next" />
-            </Link>
+                <span className="group-card__body">
+                  <span className="group-card__name">{stack.title}</span>
+                  <span className="group-card__count">
+                    {cardCount(stack.cards.length)}
+                    {stack.subject && ` · ${stack.subject}`}
+                  </span>
+                  {(dueByStack[stack.id] ?? 0) > 0 && <span className="due-pill">{dueByStack[stack.id]} fällig</span>}
+                </span>
+              </Link>
+              <IconButton icon="more" label={`Aktionen für «${stack.title}»`} className="list-row__more" onClick={() => setMenu(stack)} />
+            </div>
           ))}
         </div>
       )}
+      <ActionSheet
+        open={menu !== null}
+        onClose={() => setMenu(null)}
+        title={menu?.title ?? ''}
+        actions={
+          menu
+            ? [
+                { label: 'Spielen', icon: 'play', onClick: () => navigate(`${GAME}?stapel=${menu.id}`, { viewTransition: true }) },
+                { label: 'Karten bearbeiten', icon: 'edit', onClick: () => navigate(`/stapel/${menu.id}`, { viewTransition: true }) },
+                { label: 'Stapel löschen', icon: 'trash', danger: true, onClick: () => deleteStackWithUndo(menu) },
+              ]
+            : []
+        }
+      />
     </Page>
   );
 }
@@ -114,7 +133,9 @@ export function NewStackPage() {
   const [textError, setTextError] = useState<string | null>(null);
   const [invalidIndex, setInvalidIndex] = useState<number | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
-  const fileInput = useRef<HTMLInputElement>(null);
+  // Two inputs: Android opens only the gallery for a plain multi-file picker, so the camera gets its own.
+  const cameraInput = useRef<HTMLInputElement>(null);
+  const galleryInput = useRef<HTMLInputElement>(null);
   // Remembered per device: take over exactly what is on the photos, or invent new cards on the topic.
   const [photoMode, setPhotoMode] = useGameSettings<{ mode: LearnExtractMode; count: number }>('stapel-fotos', { mode: 'exact', count: 20 });
   const creative = photoMode.mode === 'creative';
@@ -229,7 +250,12 @@ export function NewStackPage() {
   if (step === 'review' && draft) {
     const unsure = draft.cards.filter((c) => c.uncertain).length;
     return (
-      <Page title="Karten prüfen" back={GAME} className="stack-new">
+      <Page
+        title="Karten prüfen"
+        back={GAME}
+        className="stack-new"
+        actions={<IconButton icon="trash" label="Entwurf verwerfen" onClick={() => setConfirmDiscard(true)} />}
+      >
         <p className="notice notice--info stack-review-note">
           {draft.generated
             ? `Phoni hat ${cardCount(draft.cards.length)} zum Thema deiner Fotos neu erfunden und nochmals kontrolliert. Auch eine KI irrt sich – bitte prüfe jede Karte.`
@@ -271,8 +297,20 @@ export function NewStackPage() {
           confirmLabel="Verwerfen"
           danger
           onConfirm={() => {
+            const discarded = useLearnDraft.getState().draft;
+            setConfirmDiscard(false);
             setDraft(null);
             setStep('pick');
+            if (discarded) {
+              withUndo(
+                'Entwurf verworfen.',
+                () => {
+                  setDraft(discarded);
+                  setStep('review');
+                },
+                'Entwurf ist wieder da.',
+              );
+            }
           }}
         />
       </Page>
@@ -321,7 +359,18 @@ export function NewStackPage() {
   return (
     <Page title="Neuer Stapel" subtitle="Fotografiere dein Wörtliblatt oder deine Heftseite." back={GAME} className="stack-new">
       <input
-        ref={fileInput}
+        ref={cameraInput}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        hidden
+        onChange={(e) => {
+          void addFiles(e.target.files);
+          e.target.value = '';
+        }}
+      />
+      <input
+        ref={galleryInput}
         type="file"
         accept="image/*"
         multiple
@@ -353,10 +402,16 @@ export function NewStackPage() {
             </div>
           ))}
           {photos.length + preparing < LIMITS.learnPhotos && !blocked && (
-            <button type="button" className="photo-tile photo-tile--add" onClick={() => fileInput.current?.click()}>
-              <Icon name="camera" size={28} />
-              <span>{photos.length === 0 ? 'Foto aufnehmen' : 'Weitere Seite'}</span>
-            </button>
+            <>
+              <button type="button" className="photo-tile photo-tile--add" onClick={() => cameraInput.current?.click()}>
+                <Icon name="camera" size={28} />
+                <span>{photos.length === 0 ? 'Foto aufnehmen' : 'Weitere Seite'}</span>
+              </button>
+              <button type="button" className="photo-tile photo-tile--add photo-tile--gallery" onClick={() => galleryInput.current?.click()}>
+                <Icon name="image" size={28} />
+                <span>Aus der Galerie</span>
+              </button>
+            </>
           )}
         </div>
 
@@ -449,7 +504,6 @@ export function StackEditPage() {
   const { stackId } = useParams();
   const stack = useStack(stackId);
   const saveStack = useData((s) => s.saveStack);
-  const deleteStack = useData((s) => s.deleteStack);
   const navigate = useNavigate();
   const [value, setValue] = useState<EditorValue | null>(() => (stack ? fromStack(stack) : null));
   const [invalidIndex, setInvalidIndex] = useState<number | null>(null);
@@ -482,7 +536,12 @@ export function StackEditPage() {
   };
 
   return (
-    <Page title={stack.title} back="/stapel" className="stack-new">
+    <Page
+      title={stack.title}
+      back="/stapel"
+      className="stack-new"
+      actions={<IconButton icon="trash" label="Stapel löschen" onClick={() => setConfirmDelete(true)} />}
+    >
       <StackEditor
         value={value}
         invalidIndex={invalidIndex}
@@ -510,8 +569,8 @@ export function StackEditPage() {
         confirmLabel="Löschen"
         danger
         onConfirm={() => {
-          deleteStack(stack.id);
-          toast(`«${stack.title}» gelöscht.`);
+          setConfirmDelete(false);
+          deleteStackWithUndo(stack);
           navigate('/stapel', { replace: true, viewTransition: true });
         }}
       />

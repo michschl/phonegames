@@ -246,6 +246,38 @@ export function ConfirmSheet({
   );
 }
 
+export interface SheetAction {
+  label: string;
+  icon: IconName;
+  onClick: () => void;
+  danger?: boolean;
+}
+
+/** A short menu of actions for one object (e.g. a stack in a list): open, edit, delete. */
+export function ActionSheet({ open, onClose, title, actions }: { open: boolean; onClose: () => void; title: string; actions: SheetAction[] }) {
+  return (
+    <Sheet open={open} onClose={onClose} title={title}>
+      <div className="action-list">
+        {actions.map((action) => (
+          <button
+            key={action.label}
+            type="button"
+            className={`action-list__item ${action.danger ? 'is-danger' : ''}`}
+            onClick={() => {
+              haptic(8);
+              onClose();
+              action.onClick();
+            }}
+          >
+            <Icon name={action.icon} />
+            <span>{action.label}</span>
+          </button>
+        ))}
+      </div>
+    </Sheet>
+  );
+}
+
 /* ---------------------------------------------------------------- Avatar */
 
 export function Avatar({

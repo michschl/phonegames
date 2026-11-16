@@ -1458,14 +1458,21 @@
   color: var(--ink);
 }
 
-.photo-grid:has(.photo-tile--add:only-child) {
-  grid-template-columns: 1fr;
+.photo-tile--gallery {
+  background: var(--cyan-soft);
 }
 
-.photo-grid:has(.photo-tile--add:only-child) .photo-tile--add {
+/* No photo yet: camera and gallery as two big buttons. */
+.photo-grid:not(:has(.photo-tile:not(.photo-tile--add))) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.photo-grid:not(:has(.photo-tile:not(.photo-tile--add))) .photo-tile--add {
   aspect-ratio: auto;
   min-height: 150px;
+  padding: 10px;
   font-size: 17px;
+  text-align: center;
 }
 
 .photo-tile__remove {
@@ -1870,4 +1877,32 @@
 .photo-mode__title {
   margin: 0;
   font-weight: 800;
+}
+
+/* A list entry that opens on tap and has a «⋯» menu for more (play, edit, delete). */
+.list-row {
+  position: relative;
+  animation: rise-in 0.5s var(--ease-out) both;
+}
+
+.list-row > .group-card {
+  padding-right: 64px;
+  animation: none;
+}
+
+.list-row__more.icon-btn {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  width: 44px;
+  height: 44px;
+  transform: translateY(-50%);
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.list-row__more.icon-btn:active {
+  transform: translateY(-50%);
+  background: rgba(27, 16, 51, 0.08);
 }

@@ -5,6 +5,7 @@ import { sound } from '../lib/audio.ts';
 import { haptic } from '../lib/device.ts';
 import { normalize } from '../lib/util.ts';
 import { useData } from '../store/data.ts';
+import { removePlayerWithUndo } from '../store/undo.ts';
 import { Icon } from './Icon.tsx';
 import { Avatar } from './ui.tsx';
 
@@ -14,7 +15,6 @@ import { Avatar } from './ui.tsx';
  */
 export function PlayerEditor({ group, autoFocus, status }: { group: PlayerGroup; autoFocus?: boolean; status?: PlayerStatusInfo | null }) {
   const addPlayer = useData((s) => s.addPlayer);
-  const removePlayer = useData((s) => s.removePlayer);
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [leaving, setLeaving] = useState<string[]>([]);
@@ -41,10 +41,13 @@ export function PlayerEditor({ group, autoFocus, status }: { group: PlayerGroup;
   };
 
   const remove = (playerId: string) => {
+    const player = group.players.find((p) => p.id === playerId);
+    if (!player) return;
     haptic(10);
     setLeaving((ids) => [...ids, playerId]);
     window.setTimeout(() => {
-      removePlayer(group.id, playerId);
+      // The notice offers «Rückgängig» – one tap on the × is quickly made by mistake.
+      removePlayerWithUndo(group, player);
       setLeaving((ids) => ids.filter((id) => id !== playerId));
     }, 220);
   };

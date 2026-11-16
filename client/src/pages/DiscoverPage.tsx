@@ -65,7 +65,10 @@ export function DiscoverPage() {
     if (library.includes(gameId)) {
       removeGame(gameId);
       haptic(10);
-      toast(`${name} aus deinen Spielen entfernt.`);
+      toast(`${name} aus deinen Spielen entfernt.`, {
+        duration: 6500,
+        action: { label: 'Rückgängig', onClick: () => addGame(gameId) },
+      });
     } else {
       addGame(gameId);
       sound.unlock();

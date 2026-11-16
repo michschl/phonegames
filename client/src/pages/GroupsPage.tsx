@@ -5,16 +5,17 @@ import type { PlayerStatus } from '../games/types.ts';
 import { Icon } from '../components/Icon.tsx';
 import { Page, Section } from '../components/Layout.tsx';
 import { PlayerEditor } from '../components/PlayerEditor.tsx';
-import { AvatarStack, Button, ConfirmSheet, EmptyState } from '../components/ui.tsx';
+import { ActionSheet, AvatarStack, Button, ConfirmSheet, EmptyState, IconButton } from '../components/ui.tsx';
 import { haptic } from '../lib/device.ts';
 import { GROUP_EMOJIS } from '../lib/util.ts';
 import { useData, useGroup, useGroups } from '../store/data.ts';
-import { toast } from '../store/ui.ts';
+import { deleteGroupWithUndo } from '../store/undo.ts';
 
 export function GroupsPage() {
   const groups = useGroups();
   const createGroup = useData((s) => s.createGroup);
   const navigate = useNavigate();
+  const [menu, setMenu] = useState<PlayerGroup | null>(null);
 
   const create = () => {
     haptic(10);
@@ -49,27 +50,37 @@ export function GroupsPage() {
       ) : (
         <div className="group-list">
           {groups.map((group, i) => (
-            <Link
-              key={group.id}
-              to={`/gruppen/${group.id}`}
-              className="group-card"
-              style={{ animationDelay: `${i * 60}ms` }}
-              viewTransition
-            >
-              <span className="group-card__emoji" aria-hidden="true">
-                {group.emoji}
-              </span>
-              <span className="group-card__body">
-                <span className="group-card__name">{group.name}</span>
-                <span className="group-card__count">
-                  {group.players.length} {group.players.length === 1 ? 'Person' : 'Personen'}
+            <div key={group.id} className="list-row" style={{ animationDelay: `${i * 60}ms` }}>
+              <Link to={`/gruppen/${group.id}`} className="group-card" viewTransition>
+                <span className="group-card__emoji" aria-hidden="true">
+                  {group.emoji}
                 </span>
-              </span>
-              <AvatarStack players={group.players} max={4} />
-            </Link>
+                <span className="group-card__body">
+                  <span className="group-card__name">{group.name}</span>
+                  <span className="group-card__count">
+                    {group.players.length} {group.players.length === 1 ? 'Person' : 'Personen'}
+                  </span>
+                </span>
+                <AvatarStack players={group.players} max={3} />
+              </Link>
+              <IconButton icon="more" label={`Aktionen für «${group.name}»`} className="list-row__more" onClick={() => setMenu(group)} />
+            </div>
           ))}
         </div>
       )}
+      <ActionSheet
+        open={menu !== null}
+        onClose={() => setMenu(null)}
+        title={menu?.name ?? ''}
+        actions={
+          menu
+            ? [
+                { label: 'Bearbeiten', icon: 'edit', onClick: () => navigate(`/gruppen/${menu.id}`, { viewTransition: true }) },
+                { label: 'Gruppe löschen', icon: 'trash', danger: true, onClick: () => deleteGroupWithUndo(menu) },
+              ]
+            : []
+        }
+      />
     </Page>
   );
 }
@@ -79,7 +90,6 @@ export function GroupEditPage() {
   const [params] = useSearchParams();
   const group = useGroup(groupId);
   const updateGroup = useData((s) => s.updateGroup);
-  const deleteGroup = useData((s) => s.deleteGroup);
   const navigate = useNavigate();
   const [name, setName] = useState(group?.name ?? '');
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -105,7 +115,12 @@ export function GroupEditPage() {
   };
 
   return (
-    <Page title={group.name || 'Gruppe'} back="/gruppen" className="group-edit">
+    <Page
+      title={group.name || 'Gruppe'}
+      back="/gruppen"
+      className="group-edit"
+      actions={<IconButton icon="trash" label="Gruppe löschen" onClick={() => setConfirmDelete(true)} />}
+    >
       <Section title="Name & Symbol">
         <div className="group-name">
           <input
@@ -161,8 +176,8 @@ export function GroupEditPage() {
         confirmLabel="Löschen"
         danger
         onConfirm={() => {
-          deleteGroup(group.id);
-          toast(`«${group.name}» gelöscht.`);
+          setConfirmDelete(false);
+          deleteGroupWithUndo(group);
           navigate('/gruppen', { replace: true, viewTransition: true });
         }}
       />
