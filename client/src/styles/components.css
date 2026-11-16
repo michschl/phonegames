@@ -423,6 +423,7 @@
 
 .toggle-row__text {
   display: grid;
+  min-width: 0;
 }
 
 .toggle-row__label {
@@ -473,7 +474,8 @@
 .segmented {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(var(--count), 1fr);
+  /* minmax(0, …): a long option wraps instead of pushing the control out of its card. */
+  grid-template-columns: repeat(var(--count), minmax(0, 1fr));
   padding: 4px;
   border-radius: var(--radius);
   background: var(--paper);
@@ -497,8 +499,12 @@
 .segmented button {
   position: relative;
   display: grid;
+  align-content: center;
   gap: 1px;
+  min-width: 0;
   padding: 9px 4px;
+  overflow-wrap: break-word;
+  hyphens: auto;
   border: 0;
   background: none;
   color: var(--muted);
@@ -554,6 +560,18 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+/* In a chip cloud a long label wraps inside its chip instead of running out of the card. */
+.chip-cloud .chip {
+  max-width: 100%;
+  height: auto;
+  min-height: 40px;
+  padding-block: 7px;
+  line-height: 1.2;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: break-word;
 }
 
 .chip-scroll {
