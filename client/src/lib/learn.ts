@@ -1,5 +1,18 @@
-import { LIMITS, type CardProgress, type LearnCard, type LearnCardKind, type LearnDraftCard, type LearnProgress, type LearnStack } from '../../../shared/types.ts';
+import { GAP, hasGap, normalizeGap } from '../../../shared/learn.ts';
+import {
+  LIMITS,
+  type CardProgress,
+  type LearnCard,
+  type LearnCardKind,
+  type LearnDraftCard,
+  type LearnMode,
+  type LearnProgress,
+  type LearnStack,
+} from '../../../shared/types.ts';
+import { formatValue, parseEstimate } from './numbers.ts';
 import { normalize, shuffle } from './util.ts';
+
+export { GAP, hasGap };
 
 /*
  * Learning stacks: the Kartenkasten (Leitner system), text import, multiple
@@ -125,27 +138,58 @@ export function canPlayChoice(stack: LearnStack): boolean {
 /* -------------------------------------------------------------- import */
 
 const SEPARATORS = ['\t', ' = ', ' – ', ' — ', ' -> ', ' → ', ' - ', ': ', ';', '='];
+/** Separators that never appear inside a normal sentence – a line with one of them is not a Lückentext. */
+const STRONG_SEPARATORS = ['\t', ' = ', ' – ', ' — ', ' -> ', ' → '];
+const BRACKET = /\[([^[\]]{1,80})\]/g;
+
+/** «Die [Aare] fliesst durch [Bern].» → one Lückentext card per bracket; the other brackets are filled in. */
+function clozeFromLine(line: string): LearnDraftCard[] {
+  const gaps = [...line.matchAll(BRACKET)];
+  return gaps
+    .map((gap) => {
+      let prompt = '';
+      let last = 0;
+      for (const other of gaps) {
+        prompt += line.slice(last, other.index) + (other === gap ? GAP : other[1]!.trim());
+        last = other.index! + other[0].length;
+      }
+      prompt = (prompt + line.slice(last)).replace(/\s+/g, ' ').trim();
+      return { kind: 'cloze' as const, prompt, answer: gap[1]!.trim(), accepted: [], distractors: [], uncertain: '' };
+    })
+    .filter((card) => card.answer && card.prompt.length <= LIMITS.cardText);
+}
 
 /**
  * Cards from typed or pasted text, one per line: «le chien = der Hund»,
- * «Hauptort von Bern? – Bern». Lines without a separator are skipped.
+ * «Hauptort von Bern? – Bern», or a Lückentext «Die Aare fliesst durch [Bern].».
+ * Lines without a separator or brackets are skipped.
  */
 export function parseTextCards(text: string): LearnDraftCard[] {
   const cards: LearnDraftCard[] = [];
   for (const raw of text.split(/\r?\n/)) {
     const line = raw.replace(/^\s*(\d+[.)]|[-•*])\s+/, '').trim();
     if (!line) continue;
-    const separator = SEPARATORS.find((sep) => line.includes(sep));
-    if (!separator) continue;
-    const index = line.indexOf(separator);
-    const prompt = line.slice(0, index).trim().slice(0, LIMITS.cardText);
-    const answer = line.slice(index + separator.length).trim().slice(0, LIMITS.cardText);
-    if (!prompt || !answer) continue;
-    const kind: LearnCardKind = /^[\d'’.,\s-]+$/.test(answer) ? 'number' : prompt.endsWith('?') ? 'qa' : 'translation';
-    cards.push({ kind, prompt, answer, accepted: [], distractors: [], uncertain: '' });
+    const outside = line.replace(BRACKET, '');
+    if (outside !== line && !STRONG_SEPARATORS.some((sep) => outside.includes(sep))) {
+      cards.push(...clozeFromLine(line));
+    } else {
+      const separator = SEPARATORS.find((sep) => line.includes(sep));
+      if (!separator) continue;
+      const index = line.indexOf(separator);
+      let prompt = line.slice(0, index).trim().slice(0, LIMITS.cardText);
+      const answer = line.slice(index + separator.length).trim().slice(0, LIMITS.cardText);
+      if (!prompt || !answer) continue;
+      let kind: LearnCardKind = cardNumber(answer) ? 'number' : prompt.endsWith('?') ? 'qa' : 'translation';
+      const gapped = /_{2,}|…|\.{3}/.test(prompt) ? normalizeGap(prompt, answer) : null;
+      if (gapped) {
+        prompt = gapped;
+        kind = 'cloze';
+      }
+      cards.push({ kind, prompt, answer, accepted: [], distractors: [], uncertain: '' });
+    }
     if (cards.length >= LIMITS.cardsPerStack) break;
   }
-  return cards;
+  return cards.slice(0, LIMITS.cardsPerStack);
 }
 
 /* --------------------------------------------------------------- photos */
@@ -273,4 +317,106 @@ export function checkTypedAnswer(input: string, card: LearnCard): TypedVerdict {
   });
   if (typo) return { verdict: 'almost', note: 'Kleiner Tippfehler.' };
   return { verdict: 'wrong' };
+}
+
+/* ----------------------------------------------------------- Lückentext */
+
+/** Text before and after the gap of a Lückentext card, or null for other cards. */
+export function splitGap(prompt: string): [string, string] | null {
+  const parts = prompt.split(GAP);
+  return parts.length === 2 ? [parts[0]!, parts[1]!] : null;
+}
+
+/** The Lückentext cards of a stack, in the order of the text. */
+export function clozeCards(stack: LearnStack): LearnCard[] {
+  return stack.cards.filter((card) => card.kind === 'cloze' && hasGap(card.prompt));
+}
+
+/* ----------------------------------------------------------- Schätzrunde */
+
+export interface CardNumber {
+  value: number;
+  /** «m», «Mio.», «Kantone» … or empty. */
+  unit: string;
+  /** A year like 1291 – shown without thousands separator, judged in years. */
+  year: boolean;
+}
+
+const NUMBER_ANSWER = /^(?:ca\.?|rund|etwa|ungefähr)?\s*([-−]?\d[\d'’ .,]*)\s*([^\d]{0,16})$/i;
+
+/** The number in an answer like «1291», «4478 m» or «8,7 Mio.» – null if the answer is not just a number. */
+export function cardNumber(answer: string): CardNumber | null {
+  const match = NUMBER_ANSWER.exec(answer.trim());
+  if (!match) return null;
+  const value = parseEstimate(match[1]!.replace('−', '-').replace(/[.,]$/, ''));
+  if (value === null) return null;
+  const unit = match[2]!.trim().replace(/^\.$/, '');
+  const year = Number.isInteger(value) && value >= 1000 && value <= 2100 && (unit === '' || /^[nv]\.\s*chr\.?$/i.test(unit));
+  return { value, unit, year };
+}
+
+export function formatCardNumber(number: CardNumber): string {
+  return number.year ? `${number.value}${number.unit ? ` ${number.unit}` : ''}` : formatValue(number.value, number.unit);
+}
+
+/** Cards whose answer is a number or year – for the Schätzrunde. */
+export function estimateCards(stack: LearnStack): LearnCard[] {
+  return stack.cards.filter((card) => (card.kind === 'number' || card.kind === 'qa') && cardNumber(card.answer) !== null);
+}
+
+export type EstimateVerdict = 'exact' | 'close' | 'near' | 'off';
+
+export const ESTIMATE_POINTS: Record<EstimateVerdict, number> = { exact: 3, close: 2, near: 1, off: 0 };
+
+/**
+ * How good a guess is. Years: exact, ±5 years, ±25 years. Other numbers: exact (rounding),
+ * within 5 % (at least ±1 for whole numbers), within 20 % (at least ±3).
+ */
+export function estimateVerdict(answer: CardNumber, guess: number): EstimateVerdict {
+  const diff = Math.abs(guess - answer.value);
+  if (answer.year) return diff === 0 ? 'exact' : diff <= 5 ? 'close' : diff <= 25 ? 'near' : 'off';
+  const scale = Math.abs(answer.value);
+  const whole = Number.isInteger(answer.value);
+  if (diff <= scale * 0.001) return 'exact';
+  if (diff <= Math.max(scale * 0.05, whole ? 1 : 0)) return 'close';
+  if (diff <= Math.max(scale * 0.2, whole ? 3 : 0)) return 'near';
+  return 'off';
+}
+
+export interface EstimateResult {
+  playerId: string;
+  guess: number;
+  diff: number;
+  verdict: EstimateVerdict;
+  /** Closest guess of the round (with several people) – one bonus point. */
+  closest: boolean;
+  points: number;
+}
+
+/** All guesses of a round, closest first. */
+export function scoreEstimates(answer: CardNumber, guesses: Record<string, number>): EstimateResult[] {
+  const entries = Object.entries(guesses).map(([playerId, guess]) => {
+    const verdict = estimateVerdict(answer, guess);
+    return { playerId, guess, diff: Math.abs(guess - answer.value), verdict };
+  });
+  const best = Math.min(...entries.map((e) => e.diff));
+  return entries
+    .map((entry) => {
+      const closest = entries.length > 1 && entry.diff === best && entry.verdict !== 'off';
+      return { ...entry, closest, points: ESTIMATE_POINTS[entry.verdict] + (closest ? 1 : 0) };
+    })
+    .sort((a, b) => a.diff - b.diff);
+}
+
+/* ----------------------------------------------------------- game modes */
+
+/** Cards a mode needs – fewer and the mode cannot start. */
+export const MODE_MIN_CARDS = { schaetzen: 3, luecke: 3 } as const;
+
+/** Modes that fit a stack: what the AI suggested plus what the cards allow. */
+export function suggestedModes(stack: LearnStack): Set<LearnMode> {
+  const modes = new Set<LearnMode>(stack.suggestedModes);
+  if (estimateCards(stack).length >= MODE_MIN_CARDS.schaetzen) modes.add('schaetzen');
+  if (clozeCards(stack).length >= MODE_MIN_CARDS.luecke) modes.add('luecke');
+  return modes;
 }

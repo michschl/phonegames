@@ -11,6 +11,7 @@ import {
   type LearnMode,
   type LearnUsage,
 } from '../../../shared/types.ts';
+import { GAP, normalizeGap } from '../../../shared/learn.ts';
 
 /**
  * Photo analysis for the learning stacks: the photos are passed on to an
@@ -77,7 +78,7 @@ const SCHEMA = {
         additionalProperties: false,
         required: ['kind', 'prompt', 'answer', 'accepted', 'distractors', 'uncertain'],
         properties: {
-          kind: { type: 'string', enum: ['translation', 'definition', 'qa', 'number'] },
+          kind: { type: 'string', enum: ['translation', 'definition', 'qa', 'number', 'cloze'] },
           prompt: { type: 'string' },
           answer: { type: 'string' },
           accepted: { type: 'array', items: { type: 'string' } },
@@ -86,7 +87,7 @@ const SCHEMA = {
         },
       },
     },
-    suggested_modes: { type: 'array', items: { type: 'string', enum: ['blitz', 'duell', 'kasten'] } },
+    suggested_modes: { type: 'array', items: { type: 'string', enum: ['blitz', 'duell', 'kasten', 'schaetzen', 'luecke'] } },
     removed_personal_data: { type: 'boolean' },
   },
 } as const;
@@ -98,22 +99,29 @@ Regeln:
 - Schreibe in Schweizer Rechtschreibung (ss statt ß), aber übernimm Fremdsprachen exakt mit allen Akzenten.
 - Lass Namen von Personen, Noten, Unterschriften, Klassen und Daten weg. Setze dann removed_personal_data auf true.
 - Eine Karte pro Lerninhalt. kind: translation = Wort/Ausdruck mit Übersetzung, definition = Begriff mit Erklärung,
-  qa = Frage mit Antwort, number = Antwort ist eine Zahl oder Jahreszahl.
+  qa = Frage mit Antwort, number = Antwort ist eine Zahl oder Jahreszahl, cloze = Lückentext.
+- number: answer enthält nur die Zahl, allenfalls mit Einheit (z. B. «1291», «4478 m», «26»).
+- cloze: prompt ist ein ganzer Satz mit genau einer Lücke, geschrieben als ${GAP}; answer ist das fehlende Wort oder die
+  kurze Wortgruppe. Nutze cloze für Lückentexte auf dem Blatt und für Merktexte (z. B. NMG, Geschichte, Biologie):
+  pro Satz eine Karte, die Lücke ist das wichtigste Fachwort. Behalte die Reihenfolge des Textes. Steht bei einem
+  Lückentext die Lösung nicht auf dem Blatt, setze die wahrscheinlichste Lösung ein und nenne in uncertain den Grund.
 - Bei Wörtli steht im prompt das Wort in der Fremdsprache, in answer die Übersetzung. Mehrere gleichwertige Antworten
   (z. B. «viel, sehr») kommen als einzelne Einträge in accepted; answer enthält die Antwort wie auf dem Blatt.
 - distractors: genau 3 plausible, aber falsche Antworten in derselben Sprache und Form wie answer (für ein Auswahl-Spiel),
-  mit korrektem Artikel. Sie dürfen nicht ebenfalls richtig sein.
+  mit korrektem Artikel. Sie dürfen nicht ebenfalls richtig sein. Bei cloze: Wörter, die grammatikalisch in die Lücke
+  passen, inhaltlich aber falsch sind.
 - uncertain: leer lassen, ausser du konntest etwas nicht sicher lesen – dann kurz den Grund nennen.
 - title: kurz und konkret (höchstens 60 Zeichen).
 - suggested_modes: blitz (Teams, Antwort laut sagen) passt fast immer; duell (Auswahl aus vier) nur wenn gute falsche
-  Antworten möglich sind; kasten (Lernkartei) passt immer.
+  Antworten möglich sind; kasten (Lernkartei) passt immer; schaetzen (Schätzrunde) bei mindestens 3 number-Karten;
+  luecke (Lückentext) bei mindestens 3 cloze-Karten.
 - Wenn auf den Fotos kein Lernstoff zu sehen ist, gib eine leere Kartenliste zurück.
 Antworte ausschliesslich mit JSON nach dem Schema.`;
 
 /* ------------------------------------------------------------ sanitising */
 
-const KINDS: readonly LearnCardKind[] = ['translation', 'definition', 'qa', 'number'];
-const MODES: readonly LearnMode[] = ['blitz', 'duell', 'kasten'];
+const KINDS: readonly LearnCardKind[] = ['translation', 'definition', 'qa', 'number', 'cloze'];
+const MODES: readonly LearnMode[] = ['blitz', 'duell', 'kasten', 'schaetzen', 'luecke'];
 
 const text = (value: unknown, max: number = LIMITS.cardText): string =>
   typeof value === 'string' ? value.replace(/\s+/g, ' ').trim().slice(0, max) : '';
@@ -129,9 +137,20 @@ export function toDraft(raw: unknown): LearnDraft {
   for (const item of Array.isArray(data.cards) ? data.cards : []) {
     if (!item || typeof item !== 'object') continue;
     const card = item as Record<string, unknown>;
-    const prompt = text(card.prompt);
+    let prompt = text(card.prompt);
     const answer = text(card.answer);
     if (!prompt || !answer) continue;
+    let kind: LearnCardKind = KINDS.includes(card.kind as LearnCardKind) ? (card.kind as LearnCardKind) : 'qa';
+    // A Lückentext needs exactly one gap «___»; a sentence with a gap is a Lückentext whatever the model called it.
+    if (kind === 'cloze' || /_{3,}/.test(prompt)) {
+      const gapped = normalizeGap(prompt, answer);
+      if (gapped) {
+        prompt = gapped;
+        kind = 'cloze';
+      } else if (kind === 'cloze') {
+        kind = 'qa';
+      }
+    }
     const key = `${prompt.toLowerCase()}\u0000${answer.toLowerCase()}`;
     if (seen.has(key)) continue;
     seen.add(key);
@@ -141,7 +160,7 @@ export function toDraft(raw: unknown): LearnDraft {
       .filter((v) => !same(v) && !accepted.some((a) => a.toLowerCase() === v.toLowerCase()))
       .slice(0, 3);
     cards.push({
-      kind: KINDS.includes(card.kind as LearnCardKind) ? (card.kind as LearnCardKind) : 'qa',
+      kind,
       prompt,
       answer,
       accepted,
@@ -150,7 +169,7 @@ export function toDraft(raw: unknown): LearnDraft {
     });
     if (cards.length >= LIMITS.cardsPerStack) break;
   }
-  const modes = texts(data.suggested_modes, 3).filter((m): m is LearnMode => MODES.includes(m as LearnMode));
+  const modes = texts(data.suggested_modes, MODES.length).filter((m): m is LearnMode => MODES.includes(m as LearnMode));
   if (!modes.includes('kasten')) modes.push('kasten');
   const languages = texts(data.languages, 2)
     .map((l) => l.toLowerCase())

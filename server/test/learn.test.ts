@@ -205,6 +205,31 @@ describe('draft clean-up', () => {
     expect(draft).toEqual({ title: 'Neuer Stapel', subject: '', languages: [], cards: [], suggestedModes: ['kasten'], removedPersonalData: false });
   });
 
+  it('keeps Lückentext cards only with exactly one gap', () => {
+    const card = (kind: string, prompt: string, answer: string) => ({ kind, prompt, answer, accepted: [], distractors: [], uncertain: '' });
+    const draft = toDraft({
+      title: 'Die Schweiz',
+      cards: [
+        card('cloze', 'Die Schweiz hat _____ Kantone.', '26'),
+        card('cloze', 'Die Hauptstadt der Schweiz ist … .', 'Bern'),
+        card('cloze', 'Die Aare fliesst durch Bern.', 'Aare'),
+        card('qa', 'Der Rhein entspringt im Kanton ___.', 'Graubünden'),
+        card('cloze', 'Zwischen ___ und ___ liegt der Gotthard.', 'Uri, Tessin'),
+        card('cloze', 'Wie hoch ist der Säntis?', '2502 m'),
+      ],
+      suggested_modes: ['luecke', 'schaetzen', 'kasten'],
+    });
+    expect(draft.cards.map((c) => [c.kind, c.prompt])).toEqual([
+      ['cloze', 'Die Schweiz hat ___ Kantone.'],
+      ['cloze', 'Die Hauptstadt der Schweiz ist ___ .'],
+      ['cloze', 'Die ___ fliesst durch Bern.'],
+      ['cloze', 'Der Rhein entspringt im Kanton ___.'],
+      ['qa', 'Zwischen ___ und ___ liegt der Gotthard.'],
+      ['qa', 'Wie hoch ist der Säntis?'],
+    ]);
+    expect(draft.suggestedModes).toEqual(['kasten', 'schaetzen', 'luecke']);
+  });
+
   it('uses the calendar month in Switzerland', () => {
     // 23:30 UTC on 31 October is already November in Zurich.
     expect(currentMonth(new Date('2026-10-31T23:30:00Z'))).toBe('2026-11');

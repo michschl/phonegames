@@ -10,6 +10,7 @@ import { useData, useProgress } from '../../store/data.ts';
 import { Actions, GameShell, Headline, Stage } from '../shared/GameShell.tsx';
 import { PlayerPicker } from '../shared/players.tsx';
 import type { SpickzettelSettings } from './index.tsx';
+import { CardPrompt } from './cloze.tsx';
 import { useKastenTiles } from './status.ts';
 
 type Phase = 'who' | 'overview' | 'card' | 'done';
@@ -19,6 +20,7 @@ const KIND_LABEL: Record<LearnCard['kind'], string> = {
   definition: 'Was bedeutet …?',
   qa: 'Frage',
   number: 'Wie viel? Wann?',
+  cloze: 'Fülle die Lücke',
 };
 
 /** «Leas», «Jonas’» – Swiss German possessive for the headline. */
@@ -65,7 +67,7 @@ export function Kartenkasten({
   const [phase, setPhase] = useState<Phase>(learner ? 'overview' : 'who');
   const progress = useProgress(stack.id, learner?.name);
   const recordAnswer = useData((s) => s.recordAnswer);
-  const tiles = useKastenTiles(stack.id, players);
+  const tiles = useKastenTiles(stack.id);
 
   const [queue, setQueue] = useState<LearnCard[]>([]);
   const [index, setIndex] = useState(0);
@@ -195,7 +197,7 @@ export function Kartenkasten({
           <p className="gs-text">Jede Person hat ihren eigenen Kartenkasten.</p>
           <PlayerPicker
             players={players}
-            status={(player) => tiles?.[player.id]}
+            status={(player) => tiles?.(player)}
             selected={learner?.id ?? null}
             onSelect={(player) => {
               setLearner(player);
@@ -265,7 +267,9 @@ export function Kartenkasten({
           </div>
           <div key={`${card.id}-${index}`} className={`learn-card ${revealed || picked ? 'is-revealed' : ''}`}>
             <span className="learn-card__kind">{KIND_LABEL[card.kind]}</span>
-            <p className="learn-card__prompt">{card.prompt}</p>
+            <p className="learn-card__prompt">
+              <CardPrompt card={card} fill={revealed || !!picked} />
+            </p>
             {!choice && revealed && (
               <div className="learn-card__answer">
                 <span>Antwort</span>

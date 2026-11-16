@@ -1474,9 +1474,62 @@
   --tone-solid: var(--yellow);
 }
 
-.player-chip.has-status,
 .pick-chip.has-status {
   background: var(--tone-bg);
+}
+
+/* Cards due: a red sticker badge, on name chips, tiles and group chips. */
+.due-badge {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 7px;
+  border-radius: 999px;
+  border: 2.5px solid var(--ink);
+  background: var(--due-red);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 3px 0 var(--ink);
+}
+
+.due-badge--corner {
+  pointer-events: none;
+  position: absolute;
+  top: -11px;
+  right: -9px;
+  z-index: 1;
+  transform: rotate(8deg);
+  animation: badge-in 0.45s var(--ease-spring) both;
+}
+
+.due-badge--small {
+  min-width: 16px;
+  height: 16px;
+  padding: 0;
+  border-width: 2px;
+  font-size: 12px;
+  box-shadow: none;
+}
+
+@keyframes badge-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(-20deg);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.15) rotate(10deg);
+  }
+}
+
+.player-chip .due-badge {
+  transform: rotate(6deg);
+  animation: badge-in 0.45s var(--ease-spring) both;
 }
 
 .status-badge {
@@ -1513,6 +1566,15 @@
   animation: pop-in 0.4s var(--ease-spring) both;
 }
 
+.status-badge--small {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  border-width: 2px;
+  font-size: 11.5px;
+  box-shadow: none;
+}
+
 .status-legend {
   display: grid;
   gap: 6px;
@@ -1545,14 +1607,6 @@
   gap: 6px;
 }
 
-.status-dot {
-  flex: none;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  border: 2px solid var(--ink);
-  background: var(--tone-bg);
-}
 
 /* «7 fällig» on stack lists, under the title. */
 .due-pill {
@@ -1563,10 +1617,10 @@
   padding: 3px 9px;
   border-radius: 999px;
   border: 2px solid var(--ink);
-  background: var(--orange);
-  color: var(--ink);
+  background: var(--due-red);
+  color: #fff;
   font-size: 12.5px;
-  font-weight: 800;
+  font-weight: 900;
   line-height: 1.2;
   white-space: nowrap;
 }

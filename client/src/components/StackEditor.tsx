@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState, type TextareaHTMLAttributes } from 'react';
-import { LIMITS } from '../../../shared/types.ts';
+import { GAP, normalizeGap } from '../../../shared/learn.ts';
+import { LIMITS, type LearnCardKind } from '../../../shared/types.ts';
 import { Section } from './Layout.tsx';
 import { Button, IconButton, TextField } from './ui.tsx';
 import { haptic } from '../lib/device.ts';
@@ -18,18 +19,36 @@ function AutoTextarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return <textarea ref={ref} rows={1} {...props} />;
 }
 
+/**
+ * A sentence with a gap is a Lückentext: «Die Aare fliesst durch [Bern].» without an answer,
+ * or a prompt with «___». A Lückentext that lost its gap becomes a normal question.
+ */
+function withGap(prompt: string, answer: string, kind: LearnCardKind): { prompt: string; answer: string; kind: LearnCardKind } {
+  const brackets = prompt.match(/\[([^[\]]{1,80})\]/g);
+  if (!answer && brackets?.length === 1) {
+    answer = brackets[0]!.slice(1, -1).trim();
+    prompt = prompt.replace(brackets[0]!, GAP);
+  }
+  if (!answer) return { prompt, answer, kind };
+  if (kind === 'cloze' || /_{2,}|…|\.{3}/.test(prompt)) {
+    const gapped = normalizeGap(prompt, answer);
+    if (gapped) return { prompt: gapped, answer, kind: 'cloze' };
+    if (kind === 'cloze') return { prompt, answer, kind: 'qa' };
+  }
+  return { prompt, answer, kind };
+}
+
 /** Turns the edited value into what the store saves; returns the index of the first incomplete card instead. */
 export function toStackInput(value: EditorValue): StackInput | { incomplete: number } | { empty: true } {
   const cards: StackInput['cards'] = [];
   for (const [index, card] of value.cards.entries()) {
-    const prompt = card.prompt.trim();
-    const answer = card.answer.trim();
+    const { prompt, answer, kind } = withGap(card.prompt.trim(), card.answer.trim(), card.kind);
     if (!prompt && !answer) continue;
     if (!prompt || !answer) return { incomplete: index };
     const sameAnswer = answer === card.originalAnswer.trim();
     cards.push({
       id: card.id,
-      kind: card.kind,
+      kind,
       prompt,
       answer,
       // Alternatives and wrong answers belong to the original answer.
@@ -118,7 +137,7 @@ export function StackEditor({
                 <AutoTextarea
                   className="card-row__input card-row__prompt"
                   aria-label={`Karte ${index + 1}: Frage`}
-                  placeholder="Frage oder Wort"
+                  placeholder="Frage, Wort oder Satz mit ___"
                   value={card.prompt}
                   maxLength={LIMITS.cardText}
                   autoFocus={focusKey === card.key}

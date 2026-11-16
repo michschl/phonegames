@@ -258,6 +258,14 @@ Das Lernspiel «Spickzettel» arbeitet mit **Lernstapeln** (Konzept: [KONZEPT-LE
   `pointerdown` statt `click`, damit beide gleichzeitig tippen können. Ein falscher Tipp sperrt die Seite kurz und
   setzt die Karte im Kartenkasten dieser Person zurück in Fach 1; richtige Antworten im Duell verschieben nichts,
   weil die Auswahl aus vier leichter ist als freies Antworten.
+- **Schätzrunde:** Karten, deren Antwort eine Zahl ist (`cardNumber`: «1291», «4478 m», «ca. 8,7 Mio.»), werden
+  geheim geschätzt (`PassTurns`). `estimateVerdict` bewertet Jahre absolut, andere Zahlen relativ; weit daneben
+  setzt die Karte bei dieser Person zurück in Fach 1. Eingabe und Hochzählen teilen sich Schätzrunde und
+  Schätzmeister (`shared/estimate.tsx`).
+- **Lückentext:** Karten der Art `cloze` haben genau eine Lücke `___` im Satz (`shared/learn.ts`, `normalizeGap` –
+  auf dem Server für die KI-Antwort, im Client für Abtippen und Prüfansicht). Die Spielform zeigt die Sätze in
+  Textreihenfolge auf Seiten zu höchstens 5 Lücken, mit Wortbank (Antworten plus bis zu zwei falsche Wörter) oder
+  Eingabefeldern (`checkTypedAnswer`). Fehler gehen in Fach 1.
 - **Teilen:** Auf der Stapel-Seite erzeugt «Link teilen» eine Freigabe (`POST /api/shares`) mit zufälliger ID
   (`/s/<id>`) und öffnet das Teilen-Menü des Handys (sonst wird der Link kopiert). Der Server speichert eine Kopie
   der Karten, ohne Lernstand und ohne Namen. Die Vorschau sehen alle mit dem Link (Titel, Fach, Anzahl, drei

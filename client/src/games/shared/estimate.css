@@ -1,3 +1,5 @@
+/* Estimating: number field, count-up and the list of guesses (Schätzmeister, Spickzettel-Schätzrunde). */
+
 .estimate-form {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -109,9 +111,9 @@
   text-align: right;
   font-family: var(--font-display);
   font-weight: 900;
-  color: var(--green);
+  color: #0b7a3e; /* darker green: 5:1 on white and on the lime row */
 }
 
 .guess-list__points.is-exact {
-  color: var(--pink);
+  color: #c2185b;
 }

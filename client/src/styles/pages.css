@@ -912,7 +912,14 @@
   display: none;
 }
 
+/* Room for the badges above the group chips (the row scrolls, so nothing may stick out). */
+.group-picker.has-badges {
+  margin-top: -10px;
+  padding-top: 13px;
+}
+
 .group-pill {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 8px;

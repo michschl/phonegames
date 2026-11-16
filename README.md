@@ -61,7 +61,7 @@ Mit dabei: vom tickenden Klassiker **💣 Bombe** über Bluff-Spiele wie **🕵�
 | 🙋 **Ich hab noch nie …** | 3–30 | Wer schon hat, steht auf – mit Strichliste. 168 Aussagen |
 | ☝️ **Zufallsfinger** | 2–10 | Alle Finger aufs Display: eine Person, zwei Teams oder eine Reihenfolge auslosen |
 | 🍾 **Flaschendrehen** | beliebig | Wischen und drehen lassen – auf Wunsch mit Wahrheit-oder-Pflicht-Karte |
-| 📝 **Spickzettel** | 1–30 | Lernspiel mit eigenen Lernstapeln: **Kartenkasten** (Lernkartei mit 5 Fächern, Lernstand pro Person; selbst prüfen, Auswahl aus vier oder eintippen), **Duell** (zu zweit, geteilter Bildschirm, wer zuerst richtig tippt) und **Blitzrunde** (Teams, eine Person fragt ab) |
+| 📝 **Spickzettel** | 1–30 | Lernspiel mit eigenen Lernstapeln: **Kartenkasten** (Lernkartei mit 5 Fächern, Lernstand pro Person; selbst prüfen, Auswahl aus vier oder eintippen), **Duell** (zu zweit, geteilter Bildschirm, wer zuerst richtig tippt), **Blitzrunde** (Teams, eine Person fragt ab), **Schätzrunde** (Zahlen und Jahreszahlen, alle schätzen geheim) und **Lückentext** (Wortbank oder eintippen) |
 
 Alle Inhalte sind in Schweizer Hochdeutsch geschrieben (ohne «ß») und funktionieren offline.
 

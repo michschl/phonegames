@@ -1,17 +1,20 @@
 import { lazy } from 'react';
-import type { Player } from '../../../../shared/types.ts';
+import type { LearnMode } from '../../../../shared/types.ts';
 import type { GameDefinition, GameSettingsProps, PlayerStatusInfo } from '../types.ts';
 import { OptionRow, SettingsPanel } from '../shared/settings.tsx';
 import { TurnSettingsRows } from '../shared/turnSettings.tsx';
-import { canPlayChoice } from '../../lib/learn.ts';
+import { canPlayChoice, clozeCards, estimateCards, MODE_MIN_CARDS } from '../../lib/learn.ts';
 import { useStack } from '../../store/data.ts';
 import { Prepare } from './Prepare.tsx';
 import { KASTEN_LEGEND, useKastenTiles } from './status.ts';
 
 export interface SpickzettelSettings {
   stackId: string | null;
-  /** kasten = Kartenkasten (allein), duell = Duell (zu zweit), blitz = Blitzrunde (Teams). */
-  mode: 'kasten' | 'duell' | 'blitz';
+  /**
+   * kasten = Kartenkasten (allein), duell = Duell (zu zweit), blitz = Blitzrunde (Teams),
+   * schaetzen = Schätzrunde (Zahlen, alle schätzen), luecke = Lückentext (allein).
+   */
+  mode: LearnMode;
   /** How answers are checked in the Kartenkasten. */
   check: 'self' | 'choice' | 'type';
   /** Cards per Kartenkasten session. */
@@ -20,12 +23,49 @@ export interface SpickzettelSettings {
   target: number;
   /** Questions per Duell. */
   duelQuestions: number;
+  /** Questions per Schätzrunde. */
+  estimateQuestions: number;
+  /** Lückentext: tap words from the word bank or type them. */
+  clozeInput: 'bank' | 'type';
 }
 
 /** Cards needed for a Blitzrunde – otherwise the same cards come round all the time. */
 export const BLITZ_MIN_CARDS = 4;
 
 function Settings({ value, onChange }: GameSettingsProps<SpickzettelSettings>) {
+  if (value.mode === 'schaetzen') {
+    return (
+      <SettingsPanel>
+        <OptionRow
+          label="Fragen pro Runde"
+          value={value.estimateQuestions}
+          options={[5, 10, 15].map((n) => ({ value: n, label: `${n}` }))}
+          onChange={(estimateQuestions) => onChange({ ...value, estimateQuestions })}
+          hint="Hat der Stapel weniger Zahlen, kommt jede einmal."
+        />
+      </SettingsPanel>
+    );
+  }
+  if (value.mode === 'luecke') {
+    return (
+      <SettingsPanel>
+        <OptionRow
+          label="Lücken füllen"
+          value={value.clozeInput}
+          options={[
+            { value: 'bank', label: 'Wortbank', hint: 'antippen' },
+            { value: 'type', label: 'Eintippen', hint: 'genau' },
+          ]}
+          onChange={(clozeInput) => onChange({ ...value, clozeInput })}
+          hint={
+            value.clozeInput === 'bank'
+              ? 'Die fehlenden Wörter stehen unter dem Text – antippen und in die Lücke setzen.'
+              : 'Wörter selbst eintippen. Ein kleiner Tippfehler, ein fehlender Akzent oder Artikel zählt als «fast richtig».'
+          }
+        />
+      </SettingsPanel>
+    );
+  }
   if (value.mode === 'blitz') {
     return (
       <SettingsPanel>
@@ -81,15 +121,21 @@ function useBlocker(settings: SpickzettelSettings): string | null {
   if (stack.cards.length === 0) return 'Der Stapel hat noch keine Karten';
   if (settings.mode === 'blitz' && stack.cards.length < BLITZ_MIN_CARDS) return `Blitzrunde: mindestens ${BLITZ_MIN_CARDS} Karten`;
   if (settings.mode === 'duell' && !canPlayChoice(stack)) return 'Duell: mindestens 4 Karten';
+  if (settings.mode === 'schaetzen' && estimateCards(stack).length < MODE_MIN_CARDS.schaetzen) {
+    return `Schätzrunde: mindestens ${MODE_MIN_CARDS.schaetzen} Karten mit Zahlen`;
+  }
+  if (settings.mode === 'luecke' && clozeCards(stack).length < MODE_MIN_CARDS.luecke) {
+    return `Lückentext: mindestens ${MODE_MIN_CARDS.luecke} Sätze mit Lücke`;
+  }
   return null;
 }
 
-/** Setup screen: the name tiles of the group show where everyone stands in the Kartenkasten. */
-function usePlayerStatus(settings: SpickzettelSettings, players: Player[]): PlayerStatusInfo | null {
+/** Setup screen: cards due per person and per group in the Kartenkasten of the chosen stack. */
+function usePlayerStatus(settings: SpickzettelSettings): PlayerStatusInfo | null {
   const stack = useStack(settings.stackId);
-  const tiles = useKastenTiles(settings.stackId, players);
+  const tiles = useKastenTiles(settings.stackId);
   if (settings.mode !== 'kasten' || !stack || !tiles) return null;
-  return { caption: `Kartenkasten «${stack.title}»`, legend: KASTEN_LEGEND, players: tiles };
+  return { caption: `Kartenkasten «${stack.title}»`, legend: KASTEN_LEGEND, status: tiles };
 }
 
 export const spickzettel: GameDefinition<SpickzettelSettings> = {
@@ -97,7 +143,7 @@ export const spickzettel: GameDefinition<SpickzettelSettings> = {
   name: 'Spickzettel',
   tagline: 'Schulstoff spielend repetieren',
   description:
-    'Fotografiere ein Wörtliblatt oder eine Heftseite – Phoni macht Lernkarten daraus. Lerne allein mit dem Kartenkasten, zu zweit im Duell oder in der Blitzrunde im Team.',
+    'Fotografiere ein Wörtliblatt, einen Lückentext oder eine Heftseite – Phoni macht Lernkarten daraus. Lerne allein mit dem Kartenkasten oder dem Lückentext, zu zweit im Duell, im Team in der Blitzrunde oder schätzt gemeinsam Zahlen und Jahreszahlen.',
   emoji: '📝',
   colors: ['#4d7cff', '#2ec5ff'],
   minPlayers: 1,
@@ -112,8 +158,20 @@ export const spickzettel: GameDefinition<SpickzettelSettings> = {
     'Karten in den hinteren Fächern kommen seltener: nach 1, 3, 7 und 14 Tagen. So bleibt der Stoff im Kopf.',
     'Duell: Das Handy liegt zwischen zwei Personen, jede hat ihre Bildschirmhälfte. Wer zuerst richtig tippt, holt den Punkt – falsch getippt sperrt kurz.',
     'Blitzrunde: Zwei Teams. Eine Person liest die Fragen vor und sieht die Antwort, ihr Team antwortet gegen die Zeit.',
+    'Schätzrunde: Bei Zahlen und Jahreszahlen schätzen alle geheim. Volltreffer 3 Punkte, ganz nah 2, nah dran 1 – wer am nächsten liegt, bekommt einen Bonuspunkt.',
+    'Lückentext: Der Text kommt Seite für Seite. Setze die fehlenden Wörter aus der Wortbank ein oder tippe sie, dann prüfen.',
   ],
-  defaultSettings: { stackId: null, mode: 'kasten', check: 'self', sessionSize: 20, seconds: 60, target: 15, duelQuestions: 10 },
+  defaultSettings: {
+    stackId: null,
+    mode: 'kasten',
+    check: 'self',
+    sessionSize: 20,
+    seconds: 60,
+    target: 15,
+    duelQuestions: 10,
+    estimateQuestions: 10,
+    clozeInput: 'bank',
+  },
   prepareKeys: ['stackId', 'mode'],
   Prepare,
   Settings,

@@ -1,6 +1,6 @@
 import { useState, type CSSProperties, type FormEvent } from 'react';
-import { LIMITS, type PlayerGroup } from '../../../shared/types.ts';
-import type { PlayerStatusInfo } from '../games/types.ts';
+import { LIMITS, type Player, type PlayerGroup } from '../../../shared/types.ts';
+import type { PlayerStatus, PlayerStatusInfo } from '../games/types.ts';
 import { sound } from '../lib/audio.ts';
 import { haptic } from '../lib/device.ts';
 import { normalize } from '../lib/util.ts';
@@ -78,17 +78,22 @@ export function PlayerEditor({ group, autoFocus, status }: { group: PlayerGroup;
       ) : (
         <ul className="player-list">
           {group.players.map((player) => {
-            const info = status?.players[player.id];
+            const info = status?.status(player);
             return (
               <li
                 key={player.id}
-                className={`player-chip ${info ? `has-status tone-${info.tone}` : ''} ${leaving.includes(player.id) ? 'is-leaving' : ''}`}
+                className={`player-chip ${leaving.includes(player.id) ? 'is-leaving' : ''}`}
                 style={{ '--c': player.color } as CSSProperties}
               >
                 <Avatar name={player.name} color={player.color} size={32} />
                 <span className="player-chip__name">{player.name}</span>
+                {info && info.due > 0 && (
+                  <span className="due-badge" aria-hidden="true">
+                    {info.due}
+                  </span>
+                )}
                 {info?.badge && (
-                  <span className="status-badge" aria-hidden="true">
+                  <span className={`status-badge tone-${info.tone}`} aria-hidden="true">
                     {info.badge}
                   </span>
                 )}
@@ -109,22 +114,29 @@ export function PlayerEditor({ group, autoFocus, status }: { group: PlayerGroup;
       <p className="player-editor__count">
         {group.players.length} {group.players.length === 1 ? 'Person' : 'Personen'}
       </p>
-      {status && group.players.length > 0 && <StatusLegend status={status} />}
+      {status && <StatusLegend status={status} players={group.players} />}
     </div>
   );
 }
 
-/** Explains the colours of the name tiles – only the ones that occur. */
-export function StatusLegend({ status }: { status: PlayerStatusInfo }) {
-  const tones = new Set(Object.values(status.players).map((p) => p.tone));
-  const shown = status.legend.filter((entry) => tones.has(entry.tone));
+/** Explains the badges on the name chips – only the ones that occur. */
+export function StatusLegend({ status, players }: { status: PlayerStatusInfo; players: Player[] }) {
+  const shown = players.map((p) => status.status(p)).filter((info): info is PlayerStatus => !!info);
+  const entries = status.legend.filter((entry) => shown.some((info) => (entry.key === 'due' ? info.due > 0 : info.badge === entry.key)));
+  if (entries.length === 0) return null;
   return (
     <div className="status-legend">
       <p className="status-legend__caption">{status.caption}</p>
       <ul>
-        {shown.map((entry) => (
-          <li key={entry.tone}>
-            <span className={`status-dot tone-${entry.tone}`} aria-hidden="true" />
+        {entries.map((entry) => (
+          <li key={entry.key}>
+            {entry.key === 'due' ? (
+              <span className="due-badge due-badge--small" aria-hidden="true" />
+            ) : (
+              <span className={`status-badge status-badge--small tone-${entry.tone ?? 'neutral'}`} aria-hidden="true">
+                {entry.key}
+              </span>
+            )}
             {entry.label}
           </li>
         ))}

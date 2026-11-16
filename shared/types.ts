@@ -56,10 +56,16 @@ export interface PlayerGroup {
 
 /* ------------------------------------------------------------ Lernstapel */
 
-/** translation = Wort/Übersetzung, definition = Begriff/Erklärung, qa = Frage/Antwort, number = Zahl/Jahr. */
-export type LearnCardKind = 'translation' | 'definition' | 'qa' | 'number';
-/** blitz = Blitzrunde (Teams), duell = Auswahl aus vier (zu zweit), kasten = Kartenkasten (allein). */
-export type LearnMode = 'blitz' | 'duell' | 'kasten';
+/**
+ * translation = Wort/Übersetzung, definition = Begriff/Erklärung, qa = Frage/Antwort, number = Zahl/Jahr,
+ * cloze = Lückentext (Satz mit der Lücke «___», Antwort = fehlendes Wort).
+ */
+export type LearnCardKind = 'translation' | 'definition' | 'qa' | 'number' | 'cloze';
+/**
+ * blitz = Blitzrunde (Teams), duell = Auswahl aus vier (zu zweit), kasten = Kartenkasten (allein),
+ * schaetzen = Schätzrunde (Zahlen und Jahreszahlen), luecke = Lückentext.
+ */
+export type LearnMode = 'blitz' | 'duell' | 'kasten' | 'schaetzen' | 'luecke';
 
 export interface LearnCard {
   id: string;

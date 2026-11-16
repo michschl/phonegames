@@ -1,6 +1,24 @@
 import { describe, expect, it } from 'vitest';
 import type { LearnCard, LearnProgress, LearnStack } from '../../../shared/types.ts';
-import { boxCounts, checkTypedAnswer, choicesFor, dueCards, dueDayLabel, kastenStatus, nextProgress, parseTextCards, progressId } from './learn.ts';
+import {
+  boxCounts,
+  cardNumber,
+  checkTypedAnswer,
+  choicesFor,
+  clozeCards,
+  dueCards,
+  dueDayLabel,
+  estimateCards,
+  estimateVerdict,
+  formatCardNumber,
+  kastenStatus,
+  nextProgress,
+  parseTextCards,
+  progressId,
+  scoreEstimates,
+  splitGap,
+  suggestedModes,
+} from './learn.ts';
 
 const DAY = 24 * 60 * 60 * 1000;
 const NOW = new Date(2026, 10, 16, 15, 30).getTime();
@@ -104,13 +122,14 @@ describe('multiple choice', () => {
 describe('text import', () => {
   it('reads one card per line with common separators', () => {
     const cards = parseTextCards(
-      ['le chien = der Hund', '2. la maison – das Haus', 'Hauptort von Bern? - Bern', 'Gründung der Eidgenossenschaft: 1291', '', 'ohne Trenner'].join('\n'),
+      ['le chien = der Hund', '2. la maison – das Haus', 'Hauptort von Bern? - Bern', 'Gründung der Eidgenossenschaft: 1291', '', 'ohne Trenner', 'Matterhorn = 4478 m'].join('\n'),
     );
     expect(cards.map((c) => [c.kind, c.prompt, c.answer])).toEqual([
       ['translation', 'le chien', 'der Hund'],
       ['translation', 'la maison', 'das Haus'],
       ['qa', 'Hauptort von Bern?', 'Bern'],
       ['number', 'Gründung der Eidgenossenschaft', '1291'],
+      ['number', 'Matterhorn', '4478 m'],
     ]);
   });
 });
@@ -138,5 +157,68 @@ describe('typed answers', () => {
     expect(checkTypedAnswer('Haus', card('g', 'Hand')).verdict).toBe('wrong');
     expect(checkTypedAnswer('die Katze', hund).verdict).toBe('wrong');
     expect(checkTypedAnswer('1219', card('h', '1291', { kind: 'number' })).verdict).toBe('wrong');
+  });
+});
+
+describe('Lückentext', () => {
+  it('reads gaps in brackets – one card per bracket', () => {
+    const cards = parseTextCards(['Die Aare fliesst durch [Bern].', 'Der [Rhein] fliesst in die [Nordsee].', 'Die Hauptstadt ist ___ = Bern', 'le chien [m] = der Hund'].join('\n'));
+    expect(cards.map((c) => [c.kind, c.prompt, c.answer])).toEqual([
+      ['cloze', 'Die Aare fliesst durch ___.', 'Bern'],
+      ['cloze', 'Der ___ fliesst in die Nordsee.', 'Rhein'],
+      ['cloze', 'Der Rhein fliesst in die ___.', 'Nordsee'],
+      ['cloze', 'Die Hauptstadt ist ___', 'Bern'],
+      ['translation', 'le chien [m]', 'der Hund'],
+    ]);
+  });
+
+  it('splits a sentence at its gap and keeps the order of the text', () => {
+    expect(splitGap('Die Aare fliesst durch ___.')).toEqual(['Die Aare fliesst durch ', '.']);
+    expect(splitGap('Keine Lücke')).toBeNull();
+    const s = stack([card('a', 'Bern', { kind: 'cloze', prompt: 'Hauptstadt: ___' }), card('b', '1'), card('c', 'Aare', { kind: 'cloze', prompt: 'Fluss: ___' })]);
+    expect(clozeCards(s).map((c) => c.id)).toEqual(['a', 'c']);
+  });
+});
+
+describe('Schätzrunde', () => {
+  it('reads numbers, units and years from answers', () => {
+    expect(cardNumber('1291')).toEqual({ value: 1291, unit: '', year: true });
+    expect(cardNumber("4'478 m")).toEqual({ value: 4478, unit: 'm', year: false });
+    expect(cardNumber('ca. 8,7 Mio.')).toEqual({ value: 8.7, unit: 'Mio.', year: false });
+    expect(cardNumber('26 Kantone')).toEqual({ value: 26, unit: 'Kantone', year: false });
+    expect(cardNumber('1848–1874')).toBeNull();
+    expect(cardNumber('der Hund')).toBeNull();
+    expect(formatCardNumber(cardNumber('1291')!)).toBe('1291');
+    expect(formatCardNumber(cardNumber('4478 m')!)).toMatch(/^4['’]478 m$/);
+  });
+
+  it('only uses number and question cards', () => {
+    const s = stack([card('a', '1291', { kind: 'number' }), card('b', '20', { kind: 'translation' }), card('c', '4478 m', { kind: 'qa' }), card('d', 'Bern', { kind: 'qa' })]);
+    expect(estimateCards(s).map((c) => c.id)).toEqual(['a', 'c']);
+  });
+
+  it('judges guesses in years or relative to the number', () => {
+    const year = cardNumber('1291')!;
+    expect([1291, 1295, 1315, 1350].map((g) => estimateVerdict(year, g))).toEqual(['exact', 'close', 'near', 'off']);
+    const height = cardNumber('4478 m')!;
+    expect([4480, 4300, 3700, 3000].map((g) => estimateVerdict(height, g))).toEqual(['exact', 'close', 'near', 'off']);
+    const small = cardNumber('7')!;
+    expect([7, 8, 10, 11].map((g) => estimateVerdict(small, g))).toEqual(['exact', 'close', 'near', 'off']);
+  });
+
+  it('gives a bonus point to the closest guess', () => {
+    const results = scoreEstimates(cardNumber('1291')!, { lea: 1300, ben: 1291, mia: 1500 });
+    expect(results.map((r) => [r.playerId, r.verdict, r.closest, r.points])).toEqual([
+      ['ben', 'exact', true, 4],
+      ['lea', 'near', false, 1],
+      ['mia', 'off', false, 0],
+    ]);
+    // Alone there is nobody to beat.
+    expect(scoreEstimates(cardNumber('1291')!, { lea: 1291 })[0]).toMatchObject({ closest: false, points: 3 });
+  });
+
+  it('suggests the modes the cards allow', () => {
+    const numbers = stack(['1291', '1315', '1386'].map((a, i) => card(`n${i}`, a, { kind: 'number' })));
+    expect([...suggestedModes(numbers)].sort()).toEqual(['kasten', 'schaetzen']);
   });
 });

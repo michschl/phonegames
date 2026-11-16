@@ -160,6 +160,11 @@ export function PlayerPicker({
             ) : (
               <span className="pick-chip__name">{player.name}</span>
             )}
+            {info && info.due > 0 && (
+              <span className="due-badge due-badge--corner" aria-hidden="true">
+                {info.due}
+              </span>
+            )}
             {info?.badge && (
               <span className="status-badge status-badge--corner" aria-hidden="true">
                 {info.badge}

@@ -4,7 +4,8 @@ Schulstoff spielerisch repetieren – im selben Look wie die Partyspiele. Lernin
 erfasst, eine KI in der Schweiz macht daraus Lernkarten, und derselbe Kartenstapel lässt sich danach in
 verschiedenen Spielformen spielen, allein oder in der Gruppe. Stapel lassen sich per Link teilen.
 
-Stand: Etappen 1–4 umgesetzt (Erfassen per Foto und Text, Prüfen, Kartenkasten, Duell, Blitzrunde, Teilen per Link).
+Stand: Etappen 1–4 umgesetzt (Erfassen per Foto und Text, Prüfen, Kartenkasten, Duell, Blitzrunde, Teilen per Link),
+dazu Schätzrunde und Lückentext.
 
 ## Entscheide
 
@@ -39,12 +40,18 @@ Alle Spielformen arbeiten mit demselben Kartenformat.
 | **Blitzrunde** | Teams, 2–30 | 60 s pro Zug: Frage lesen, Antwort laut sagen, aufdecken, Runde entscheidet «richtig/nochmal». Punkte, Ticken, Fanfare (Team-Spielbausteine) | ≥ 10 Karten |
 | **Duell** | 2 Personen, Handy liegt dazwischen | Geteilter Bildschirm, Frage für beide Seiten lesbar, je 4 Antworten. Wer zuerst richtig tippt, punktet; falscher Tipp sperrt kurz | Falsche Antworten vorhanden oder ≥ 4 Karten derselben Art |
 | **Kartenkasten** | Allein, täglich ein paar Minuten | Lernkartei mit 5 Fächern: gewusst → ein Fach weiter, vergessen → zurück in Fach 1. «Heute fällig: 12 Karten», Serie, Konfetti bei «gemeistert» | – |
+| **Schätzrunde** | 1–30 | Zahlen und Jahreszahlen: alle schätzen geheim (Handy weitergeben), die Antwort zählt hoch, ein Zahlenstrahl zeigt alle Schätzungen. Volltreffer 3, ganz nah 2, nah dran 1 Punkt, am nächsten +1 | ≥ 3 Karten mit Zahl |
+| **Lückentext** | Allein | Der Text Seite für Seite (bis 5 Sätze), Lücken mit der Wortbank füllen (antippen) oder eintippen, dann prüfen | ≥ 3 Sätze mit Lücke |
 
 - **Fehler fliessen zurück:** Karten, die in Blitzrunde oder Duell danebengingen, landen im Kartenkasten der
   betreffenden Person in Fach 1.
 - **Antwort prüfen** in drei Stufen, je nach Spielform vorgewählt: Selbstkontrolle (aufdecken, «gewusst?»),
   Auswahl aus vier, Eintippen (tolerant: Gross-/Kleinschreibung egal, Akzente und Artikel wahlweise egal).
-- Später möglich: Jahreszahlen/Zahlen als Schätzrunde, Lückentexte.
+- **Schätzrunde – wann ist es «nah»?** Jahreszahlen: genau, ±5 Jahre, ±25 Jahre. Andere Zahlen: genau (Rundung),
+  innerhalb 5 % (bei ganzen Zahlen mindestens ±1), innerhalb 20 % (mindestens ±3). Weit daneben → Fach 1.
+- **Lückentext – Karten:** ein Satz mit genau einer Lücke `___`, die Antwort ist das fehlende Wort. Die Karten
+  bleiben in der Reihenfolge des Textes; so ergibt sich beim Spielen wieder der Text. Dieselben Karten funktionieren
+  auch im Kartenkasten, im Duell und in der Blitzrunde (Satz mit Lücke, nach dem Aufdecken ausgefüllt).
 
 ## Kartenformat
 
@@ -55,7 +62,7 @@ interface Stapel {
   subject?: string;            // «Französisch», «Geografie» …
   languages?: [string, string]; // z. B. ['fr', 'de'] bei Wörtli
   cards: Karte[];
-  suggestedModes: ('blitz' | 'duell' | 'kasten')[];
+  suggestedModes: ('blitz' | 'duell' | 'kasten' | 'schaetzen' | 'luecke')[];
   source: 'photo' | 'text' | 'shared';
   createdAt: number;
   updatedAt: number;
@@ -63,8 +70,8 @@ interface Stapel {
 
 interface Karte {
   id: string;
-  kind: 'translation' | 'definition' | 'qa' | 'number';
-  prompt: string;              // Frage / Wort / Begriff
+  kind: 'translation' | 'definition' | 'qa' | 'number' | 'cloze';
+  prompt: string;              // Frage / Wort / Begriff / Satz mit Lücke «___»
   answer: string;
   accepted?: string[];         // weitere richtige Antworten («la voiture», «voiture»)
   distractors?: string[];      // genau 3 plausible falsche Antworten – von der KI ergänzt, gekennzeichnet
@@ -168,7 +175,6 @@ interface Karte {
 4. **Duell:** ✅ geteilter Bildschirm (obere Hälfte gedreht), gleiche Frage, je vier Antworten in eigener
    Reihenfolge, Antippen per Pointer-Events (beide gleichzeitig möglich), falscher Tipp sperrt 1,5 s und setzt die
    Karte im Kartenkasten der Person zurück in Fach 1; beide falsch → Lösung wird gezeigt. 10, 15 oder 20 Fragen.
-   Weitere Spielformen (Schätzrunde für Zahlen, Lückentext) sind offen.
 5. Doku, Tests, Deploy.
 
 ## Ergänzungen nach den Etappen
@@ -177,19 +183,28 @@ interface Karte {
 - **«Heute fällig» auf der Startseite:** Sobald jemand Karten gelernt hat und welche wieder fällig sind, zeigt die
   Startseite «Heute fällig: 7 Karten · Lea · «Unité 5»». Ein Tipp öffnet den Stapel direkt im Kartenkasten. Neue,
   noch nie gelernte Karten zählen nicht – die Erinnerung soll ans Repetieren erinnern, nicht drängen.
-- **Stand pro Person auf einen Blick:** Die Namenstafeln zeigen, wo jede Person im Kartenkasten des gewählten
-  Stapels steht – bei «Wer lernt?» mit Text («3 fällig · 2 neu»), auf dem Startbildschirm des Spiels in der
-  Spielgruppe mit Legende (nur in der Spielform Kartenkasten):
+- **Stand pro Person auf einen Blick:**
+  - «Wer lernt?» (Kartenkasten, Lückentext): Die Namenstafeln sind nach Stand eingefärbt und nennen ihn:
 
-  | Farbe | Stand | Badge |
-  |---|---|---|
-  | Orange | Karten zum Wiederholen fällig | Anzahl fälliger Karten |
-  | Blau | Nichts fällig, aber noch neue Karten | – |
-  | Grün | Heute erledigt | ✓ |
-  | Gelb | Alle Karten in Fach 5 | ⭐ |
-  | Weiss | Noch nicht begonnen | – |
+    | Farbe | Stand | Badge |
+    |---|---|---|
+    | Orange | Karten zum Wiederholen fällig («3 fällig · 2 neu») | rote Zahl |
+    | Blau | Nichts fällig, aber noch neue Karten | – |
+    | Grün | Heute erledigt | ✓ |
+    | Gelb | Alle Karten in Fach 5 | ⭐ |
+    | Weiss | Noch nicht begonnen | – |
 
-  Die Stapel-Listen (Spiel und «Lernstapel») zeigen zusätzlich «3 fällig» – summiert über alle Personen.
+  - Startbildschirm (Spielform Kartenkasten): Die Namen der Spielgruppe behalten ihre Farben und tragen die rote
+    Zahl der fälligen Karten (bzw. ✓/⭐), mit kurzer Legende. Die Gruppen-Chips zeigen die Summe der fälligen Karten
+    aller Personen der Gruppe.
+  - Die Stapel-Listen (Spiel und «Lernstapel») zeigen «3 fällig» – summiert über alle Personen.
+- **Schätzrunde und Lückentext** (siehe Spielformen). Die Spielform-Auswahl zeigt alle fünf Formen; was der Stapel
+  nicht hergibt («keine Zahlen», «keine Lücken»), ist ausgegraut, passende Formen tragen einen Stern.
+- **Erfassen von Lückentexten:** Beim Abtippen steht das fehlende Wort in eckigen Klammern («Die Aare fliesst durch
+  [Bern].», mehrere Klammern → eine Karte pro Lücke). In der Prüfansicht wird ein Satz mit `___` oder `[Wort]`
+  automatisch zur Lückentext-Karte. Die KI macht aus Lückentexten (mit Lösungen) und Merktexten Lückentext-Karten
+  und aus Zahlen Zahlenkarten; Test mit einem Arbeitsblatt «Die Schweiz»: 5 Lücken und 4 Zahlenkarten richtig
+  erkannt, Name weggelassen, Schätzrunde und Lückentext vorgeschlagen.
 
 ## Offene Punkte
 
