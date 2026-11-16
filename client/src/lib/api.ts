@@ -7,6 +7,7 @@ import type {
 import type {
   ApiErrorBody,
   AuthOptions,
+  LearnExtractMode,
   LearnExtractResponse,
   LearnShareInfo,
   LearnSharePreview,
@@ -95,7 +96,8 @@ export const api = {
     request<{ user: PublicUser }>('POST', '/api/passkeys/login/verify', { response }),
   learnUsage: () => request<LearnUsage>('GET', '/api/learn/usage'),
   /** Photos as data URLs (downscaled JPEG). Can take a while – the AI reads every photo. */
-  learnExtract: (images: string[]) => request<LearnExtractResponse>('POST', '/api/learn/extract', { images }),
+  learnExtract: (images: string[], options: { mode: LearnExtractMode; count: number }) =>
+    request<LearnExtractResponse>('POST', '/api/learn/extract', { images, ...options }),
   myShares: () => request<{ shares: LearnShareInfo[] }>('GET', '/api/shares/mine'),
   shareStack: (body: LearnShareStack & { stackId: string }) => request<{ share: LearnShareInfo }>('POST', '/api/shares', body),
   deleteShare: (id: string) => request<void>('DELETE', `/api/shares/${encodeURIComponent(id)}`),

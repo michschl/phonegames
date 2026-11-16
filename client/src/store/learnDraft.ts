@@ -28,6 +28,8 @@ export interface EditorValue {
   suggestedModes: LearnStack['suggestedModes'];
   source: LearnStack['source'];
   removedPersonalData?: boolean;
+  /** The AI invented the cards on the topic of the photos. */
+  generated?: boolean;
 }
 
 export function emptyCard(): EditorCard {
@@ -42,6 +44,7 @@ export function fromDraft(draft: LearnDraft, source: LearnStack['source']): Edit
     suggestedModes: draft.suggestedModes,
     source,
     removedPersonalData: draft.removedPersonalData,
+    generated: draft.generated,
     cards: draft.cards.map((card) => ({ ...card, key: createId(), originalAnswer: card.answer })),
   };
 }

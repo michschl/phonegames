@@ -7,6 +7,7 @@ import {
   type LearnCardKind,
   type LearnDraft,
   type LearnDraftCard,
+  type LearnExtractMode,
   type LearnExtractResponse,
   type LearnMode,
   type LearnUsage,
@@ -40,6 +41,10 @@ const extractSchema = z.object({
     .array(z.string().max(MAX_IMAGE_CHARS, 'Ein Foto ist zu gross.').regex(IMAGE, 'Ungültiges Bild.'))
     .min(1, 'Bitte wähle mindestens ein Foto.')
     .max(LIMITS.learnPhotos, `Höchstens ${LIMITS.learnPhotos} Fotos auf einmal.`),
+  /** exact = only what is on the photos, creative = new cards on the same topic. */
+  mode: z.enum(['exact', 'creative']).default('exact'),
+  /** Cards to invent in mode «creative». */
+  count: z.number().int().min(5).max(30).default(20),
 });
 
 /* ------------------------------------------------------------- calendar */
@@ -92,11 +97,7 @@ const SCHEMA = {
   },
 } as const;
 
-export const SYSTEM_PROMPT = `Du erstellst aus Fotos von Schulunterlagen Lernkarten für ein Lernspiel für Kinder und Jugendliche in der Schweiz.
-
-Regeln:
-- Übernimm nur Lerninhalte, die auf den Fotos stehen. Erfinde keine zusätzlichen Fragen oder Antworten.
-- Schreibe in Schweizer Rechtschreibung (ss statt ß), aber übernimm Fremdsprachen exakt mit allen Akzenten.
+const BASE_RULES = `- Schreibe in Schweizer Rechtschreibung (ss statt ß), aber übernimm Fremdsprachen exakt mit allen Akzenten.
 - Lass Namen von Personen, Noten, Unterschriften, Klassen und Daten weg. Setze dann removed_personal_data auf true.
 - Eine Karte pro Lerninhalt. kind: translation = Wort/Ausdruck mit Übersetzung, definition = Begriff mit Erklärung,
   qa = Frage mit Antwort, number = Antwort ist eine Zahl oder Jahreszahl, cloze = Lückentext.
@@ -118,6 +119,35 @@ Regeln:
 - Wenn auf den Fotos kein Lernstoff zu sehen ist, gib eine leere Kartenliste zurück.
 Antworte ausschliesslich mit JSON nach dem Schema.`;
 
+const INTRO = 'Du erstellst aus Fotos von Schulunterlagen Lernkarten für ein Lernspiel für Kinder und Jugendliche in der Schweiz.';
+
+/** Instructions for the model: take over exactly what is on the photos, or invent new cards on the same topic. */
+export function systemPrompt(mode: LearnExtractMode, count = 20): string {
+  if (mode === 'creative') {
+    return `${INTRO}
+
+Auftrag: NEUE AUFGABEN ERFINDEN.
+- Erkenne auf den Fotos Fach, Thema, Schulstufe und Art der Aufgaben (z. B. Französisch-Wörtli einer Unit,
+  Einmaleins, Lückentext zur Geografie der Schweiz, Jahreszahlen der Schweizer Geschichte).
+- Erstelle genau ${count} neue Lernkarten zum selben Thema: dieselben Kartenarten (kind), dieselbe Sprachrichtung
+  und dieselbe Schwierigkeit – z. B. weitere Wörter aus demselben Wortfeld, weitere Rechnungen derselben Art,
+  weitere Sätze zum selben Stoff.
+- Wiederhole keine Aufgabe von den Fotos – auch nicht umformuliert und nicht mit derselben Antwort. Nimm andere
+  Fakten, Wörter, Zahlen oder Sätze aus demselben Stoff. Die Antwort darf nicht schon in der Frage stehen.
+- Alles muss fachlich korrekt, sprachlich richtig (Artikel!) und für die Stufe passend sein. Bist du bei einer Karte
+  nicht sicher, lass sie weg.
+- title: das Thema mit dem Zusatz «Übung», z. B. «Unité 5 – Übung».
+
+Regeln:
+${BASE_RULES}`;
+  }
+  return `${INTRO}
+
+Regeln:
+- Übernimm nur Lerninhalte, die auf den Fotos stehen. Erfinde keine zusätzlichen Fragen oder Antworten.
+${BASE_RULES}`;
+}
+
 /* ------------------------------------------------------------ sanitising */
 
 const KINDS: readonly LearnCardKind[] = ['translation', 'definition', 'qa', 'number', 'cloze'];
@@ -129,8 +159,16 @@ const text = (value: unknown, max: number = LIMITS.cardText): string =>
 const texts = (value: unknown, max: number): string[] =>
   Array.isArray(value) ? [...new Set(value.map((v) => text(v)).filter(Boolean))].slice(0, max) : [];
 
+/** Cuts a text at a word boundary and marks the cut with «…». */
+export function shorten(value: string, max: number): string {
+  if (value.length <= max) return value;
+  const cut = value.slice(0, max - 1);
+  const space = cut.lastIndexOf(' ');
+  return `${(space > max * 0.6 ? cut.slice(0, space) : cut).replace(/[\s,;:–-]+$/, '')}…`;
+}
+
 /** Turns the model's answer into a clean draft – whatever the model got wrong is dropped, not trusted. */
-export function toDraft(raw: unknown): LearnDraft {
+export function toDraft(raw: unknown, generated = false): LearnDraft {
   const data = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
   const cards: LearnDraftCard[] = [];
   const seen = new Set<string>();
@@ -141,6 +179,8 @@ export function toDraft(raw: unknown): LearnDraft {
     const answer = text(card.answer);
     if (!prompt || !answer) continue;
     let kind: LearnCardKind = KINDS.includes(card.kind as LearnCardKind) ? (card.kind as LearnCardKind) : 'qa';
+    // A number card needs a number in its answer («Alpen» is not one).
+    if (kind === 'number' && !/\d/.test(answer)) kind = 'qa';
     // A Lückentext needs exactly one gap «___»; a sentence with a gap is a Lückentext whatever the model called it.
     if (kind === 'cloze' || /_{3,}/.test(prompt)) {
       const gapped = normalizeGap(prompt, answer);
@@ -181,6 +221,7 @@ export function toDraft(raw: unknown): LearnDraft {
     cards,
     suggestedModes: MODES.filter((m) => modes.includes(m)),
     removedPersonalData: data.removed_personal_data === true,
+    generated,
   };
 }
 
@@ -188,32 +229,15 @@ export function toDraft(raw: unknown): LearnDraft {
 
 class UpstreamError extends Error {}
 
-async function callModel(config: LearnConfig, images: string[], log: FastifyBaseLogger): Promise<unknown> {
+/** One chat completion; returns the parsed JSON answer. Requests are never logged – they may contain photos. */
+async function chat(config: LearnConfig, body: Record<string, unknown>, what: string, log: FastifyBaseLogger): Promise<unknown> {
   const url = `${config.url.replace(/\/$/, '')}/2/ai/${encodeURIComponent(config.productId)}/openai/v1/chat/completions`;
-  const body = {
-    model: config.model,
-    messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
-      {
-        role: 'user',
-        content: [
-          { type: 'text', text: `Hier sind ${images.length} Foto(s). Erstelle die Lernkarten.` },
-          ...images.map((image) => ({ type: 'image_url', image_url: { url: image } })),
-        ],
-      },
-    ],
-    response_format: { type: 'json_schema', json_schema: { name: 'lernstapel', strict: true, schema: SCHEMA } },
-    // Thinking would use up the whole output budget before any card is written.
-    reasoning_effort: 'none',
-    temperature: 0.2,
-    max_tokens: 8000,
-  };
   let response: Response;
   try {
     response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.token}` },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ model: config.model, ...body }),
       signal: AbortSignal.timeout(config.timeoutMs ?? 120_000),
     });
   } catch (error) {
@@ -221,7 +245,6 @@ async function callModel(config: LearnConfig, images: string[], log: FastifyBase
     throw new UpstreamError('unreachable');
   }
   if (!response.ok) {
-    // Never log the request – it contains the photos.
     log.warn({ status: response.status, body: (await response.text()).slice(0, 300) }, 'learn: AI service error');
     throw new UpstreamError(`status ${response.status}`);
   }
@@ -230,12 +253,101 @@ async function callModel(config: LearnConfig, images: string[], log: FastifyBase
     usage?: unknown;
   };
   const choice = json.choices?.[0];
-  log.info({ usage: json.usage, finish: choice?.finish_reason }, 'learn: analysis done');
+  log.info({ usage: json.usage, finish: choice?.finish_reason }, `learn: ${what} done`);
   try {
     return JSON.parse(choice?.message?.content ?? '');
   } catch {
     throw new UpstreamError('invalid json');
   }
+}
+
+async function callModel(
+  config: LearnConfig,
+  images: string[],
+  options: { mode: LearnExtractMode; count: number },
+  log: FastifyBaseLogger,
+): Promise<unknown> {
+  return chat(
+    config,
+    {
+      messages: [
+        { role: 'system', content: systemPrompt(options.mode, options.count) },
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text:
+                options.mode === 'creative'
+                  ? `Hier sind ${images.length} Foto(s). Erfinde ${options.count} neue Lernkarten zum selben Thema.`
+                  : `Hier sind ${images.length} Foto(s). Erstelle die Lernkarten.`,
+            },
+            ...images.map((image) => ({ type: 'image_url', image_url: { url: image } })),
+          ],
+        },
+      ],
+      response_format: { type: 'json_schema', json_schema: { name: 'lernstapel', strict: true, schema: SCHEMA } },
+      // Thinking would use up the whole output budget before any card is written.
+      reasoning_effort: 'none',
+      // Taking over needs precision; inventing a little variety.
+      temperature: options.mode === 'creative' ? 0.7 : 0.2,
+      max_tokens: 8000,
+    },
+    'analysis',
+    log,
+  );
+}
+
+const CHECK_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['checks'],
+  properties: {
+    checks: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['index', 'correct', 'reason'],
+        properties: { index: { type: 'integer' }, correct: { type: 'boolean' }, reason: { type: 'string' } },
+      },
+    },
+  },
+} as const;
+
+export const CHECK_PROMPT = `Du bist eine kritische Lehrperson in der Schweiz und prüfst Lernkarten auf fachliche Richtigkeit.
+Prüfe jede Karte einzeln: Ist die Antwort richtig, und ist die ganze Aussage im Satz (auch Nebenaussagen wie
+«der längste», «verbindet A und B») korrekt und eindeutig? correct = false, sobald etwas daran falsch, irreführend
+oder mehrdeutig ist, wenn die Antwort schon in der Frage steht oder ein Artikel bzw. die Grammatik falsch ist.
+reason nennt dann in einem kurzen Satz den Fehler (bei Sprachfehlern die richtige Form). Antworte nur mit JSON.`;
+
+/**
+ * Invented cards get a second, text-only look by the same model: a fresh check finds
+ * many of its own mistakes (e.g. a wrong «longest river»). Returns the reason per card index.
+ */
+async function checkCards(config: LearnConfig, cards: LearnDraftCard[], log: FastifyBaseLogger): Promise<Map<number, string>> {
+  const raw = (await chat(
+    config,
+    {
+      messages: [
+        { role: 'system', content: CHECK_PROMPT },
+        { role: 'user', content: cards.map((card, i) => `${i}. Frage/Satz: ${card.prompt} | Antwort: ${card.answer}`).join('\n') },
+      ],
+      response_format: { type: 'json_schema', json_schema: { name: 'pruefung', strict: true, schema: CHECK_SCHEMA } },
+      reasoning_effort: 'none',
+      temperature: 0,
+      max_tokens: 4000,
+    },
+    'check',
+    log,
+  )) as { checks?: unknown };
+  const issues = new Map<number, string>();
+  for (const item of Array.isArray(raw?.checks) ? raw.checks : []) {
+    const check = item as { index?: unknown; correct?: unknown; reason?: unknown };
+    if (check.correct !== false || typeof check.index !== 'number' || !cards[check.index]) continue;
+    issues.set(check.index, shorten(text(check.reason, 400), 150) || 'Bitte die Fakten prüfen.');
+  }
+  return issues;
 }
 
 /** Checks the first bytes, so only real images are passed on. */
@@ -283,7 +395,7 @@ export const learnRoutes: FastifyPluginAsync<{ rateLimit: boolean; learn: LearnC
         throw new HttpError(503, 'learn_unavailable', 'Die Foto-Auswertung ist auf diesem Server nicht eingerichtet.');
       }
       const userId = request.user!.id;
-      const { images } = extractSchema.parse(request.body);
+      const { images, mode, count } = extractSchema.parse(request.body);
       if (!images.every(looksLikeImage)) throw new HttpError(400, 'invalid_image', 'Mindestens ein Foto ist kein gültiges Bild.');
 
       const usage = usageFor(userId);
@@ -305,7 +417,7 @@ export const learnRoutes: FastifyPluginAsync<{ rateLimit: boolean; learn: LearnC
         // One retry when the service fails or answers with broken JSON.
         for (let attempt = 0; attempt < 2 && !draft; attempt++) {
           try {
-            draft = toDraft(await callModel(learn, images, request.log));
+            draft = toDraft(await callModel(learn, images, { mode, count }, request.log), mode === 'creative');
           } catch (error) {
             if (!(error instanceof UpstreamError)) throw error;
             if (attempt === 1) {
@@ -315,6 +427,16 @@ export const learnRoutes: FastifyPluginAsync<{ rateLimit: boolean; learn: LearnC
         }
         if (!draft || draft.cards.length === 0) {
           throw new HttpError(422, 'learn_empty', 'Auf den Fotos habe ich keinen Lernstoff gefunden. Versuch es mit schärferen Fotos.');
+        }
+        if (mode === 'creative') {
+          // Invented facts are checked once more; doubtful cards are marked for the review, not dropped.
+          try {
+            const issues = await checkCards(learn, draft.cards, request.log);
+            for (const [index, reason] of issues) draft.cards[index]!.uncertain = `Möglicherweise falsch – ${reason}`.slice(0, 200);
+          } catch (error) {
+            if (!(error instanceof UpstreamError)) throw error;
+            // Without the check the cards stay as they are – the review asks to check them anyway.
+          }
         }
         // Only successful analyses count towards the limit.
         countLearnUsage(app.db, userId, currentMonth());

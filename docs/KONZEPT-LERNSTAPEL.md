@@ -95,8 +95,18 @@ interface Karte {
   Test alle 6000 Ausgabe-Tokens fürs Nachdenken und lieferte keine Karten.
 - **Ausgabe:** festes JSON-Schema über `response_format: { type: 'json_schema' }`; der Server prüft das Ergebnis
   zusätzlich mit zod und wiederholt bei ungültigem JSON einmal.
+- **Zwei Arten der Auswertung** (Wahl auf der Foto-Seite, pro Gerät gemerkt):
+  - **Genau übernehmen** (Standard): nur was auf den Fotos steht.
+  - **Neue Aufgaben erfinden:** Die KI erkennt Fach, Thema, Stufe und Art der Aufgaben und erfindet 10, 20 oder 30
+    neue, ähnliche Karten (dieselben Kartenarten, keine Wiederholung vom Blatt, Titel «… – Übung»). Danach prüft
+    dieselbe KI die erfundenen Karten in einem zweiten, reinen Textaufruf als «kritische Lehrperson» (fachlich
+    falsch, mehrdeutig, Antwort schon in der Frage, falscher Artikel). Auffällige Karten sind in der Prüfansicht gelb
+    markiert, mit Grund («Möglicherweise falsch – Der längste Fluss ist der Rhein …»); sie werden nicht still
+    gelöscht. Im Test fand die Kontrolle beide echten Fehler eines Durchgangs (Inn als längster Fluss, Gotthard
+    zwischen «Nord- und Südtessin»), meldet aber auch einzelne Fehlalarme. Deshalb bittet die Prüfansicht bei
+    erfundenen Karten ausdrücklich, jede Karte zu prüfen.
 - **Regeln im Prompt:**
-  - nur übernehmen, was auf den Fotos steht – nichts dazuerfinden (Ausnahme: falsche Antworten für die Auswahl)
+  - beim Übernehmen nur, was auf den Fotos steht – nichts dazuerfinden (Ausnahme: falsche Antworten für die Auswahl)
   - Namen, Noten, Unterschriften und andere Personendaten weglassen
   - unsichere Stellen mit Grund markieren
   - Sprache und Art der Karten erkennen, passende Spielformen vorschlagen
@@ -121,6 +131,7 @@ interface Karte {
   | 1 Foto (8 Karten) | 2 367 / 780 | 4.6 s | ca. CHF 0.003 |
   | 2 Fotos (20 Karten) | 4 369 / 1 569 | 6.7 s | ca. CHF 0.007 |
   | 6 Fotos (geschätzt) | ~12 400 / ~4 500 | – | ca. CHF 0.02 |
+  | 1 Foto, 12 Karten erfinden + Kontrolle | ~2 900 / ~1 900 | 8 s | ca. CHF 0.007 |
 
   Selbst grosszügige Limiten bleiben günstig: 30 Auswertungen pro Monat mit je 6 Fotos kosten pro Person höchstens
   rund 60 Rappen. Die konkreten Werte legt der Betreiber fest.
