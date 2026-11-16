@@ -6,6 +6,7 @@ import { GameShell, Stage } from '../shared/GameShell.tsx';
 import { TeamTurnGame } from '../shared/TeamTurnGame.tsx';
 import type { GameProps } from '../types.ts';
 import type { SpickzettelSettings } from './index.tsx';
+import { Duell } from './Duell.tsx';
 import { Kartenkasten } from './Kartenkasten.tsx';
 import './spickzettel.css';
 
@@ -27,6 +28,9 @@ export default function SpickzettelGame({ players, settings, onExit }: GameProps
 
   if (settings.mode === 'kasten') {
     return <Kartenkasten stack={stack} players={players} settings={settings} onExit={onExit} />;
+  }
+  if (settings.mode === 'duell') {
+    return <Duell stack={stack} players={players} settings={settings} onExit={onExit} />;
   }
 
   return (

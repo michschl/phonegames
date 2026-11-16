@@ -4,7 +4,7 @@ Schulstoff spielerisch repetieren – im selben Look wie die Partyspiele. Lernin
 erfasst, eine KI in der Schweiz macht daraus Lernkarten, und derselbe Kartenstapel lässt sich danach in
 verschiedenen Spielformen spielen, allein oder in der Gruppe. Stapel lassen sich per Link teilen.
 
-Stand: Etappen 2 und 3 umgesetzt (Erfassen per Foto und Text, Prüfen, Kartenkasten, Blitzrunde, Teilen per Link). Das Duell folgt.
+Stand: Etappen 1–4 umgesetzt (Erfassen per Foto und Text, Prüfen, Kartenkasten, Duell, Blitzrunde, Teilen per Link).
 
 ## Entscheide
 
@@ -163,7 +163,10 @@ interface Karte {
    Kartenkasten übernehmen (in der Blitzrunde antwortet das Team, nicht eine Person).
 3. **Teilen:** ✅ Freigaben, Link als Einladung (höchstens 50 neue Konten pro Link), Übernahme, geteilte Version
    aktualisieren, Freigabe beenden.
-4. **Duell** und weitere Spielformen.
+4. **Duell:** ✅ geteilter Bildschirm (obere Hälfte gedreht), gleiche Frage, je vier Antworten in eigener
+   Reihenfolge, Antippen per Pointer-Events (beide gleichzeitig möglich), falscher Tipp sperrt 1,5 s und setzt die
+   Karte im Kartenkasten der Person zurück in Fach 1; beide falsch → Lösung wird gezeigt. 10, 15 oder 20 Fragen.
+   Weitere Spielformen (Schätzrunde für Zahlen, Lückentext) sind offen.
 5. Doku, Tests, Deploy.
 
 ## Offene Punkte
