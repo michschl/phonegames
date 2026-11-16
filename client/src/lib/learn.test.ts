@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { LearnCard, LearnProgress, LearnStack } from '../../../shared/types.ts';
-import { boxCounts, choicesFor, dueCards, nextProgress, parseTextCards, progressId } from './learn.ts';
+import { boxCounts, checkTypedAnswer, choicesFor, dueCards, nextProgress, parseTextCards, progressId } from './learn.ts';
 
 const DAY = 24 * 60 * 60 * 1000;
 const NOW = new Date(2026, 10, 16, 15, 30).getTime();
@@ -89,5 +89,31 @@ describe('text import', () => {
       ['qa', 'Hauptort von Bern?', 'Bern'],
       ['number', 'Gründung der Eidgenossenschaft', '1291'],
     ]);
+  });
+});
+
+describe('typed answers', () => {
+  const hund = card('a', 'der Hund');
+  it('ignores case, spaces and punctuation', () => {
+    expect(checkTypedAnswer('  Der hund. ', hund).verdict).toBe('right');
+    expect(checkTypedAnswer('', hund).verdict).toBe('wrong');
+  });
+
+  it('counts a missing article, accent or a small typo as almost right', () => {
+    expect(checkTypedAnswer('Hund', hund)).toEqual({ verdict: 'almost', note: 'Achte auf den Artikel.' });
+    expect(checkTypedAnswer('gluecklich', card('b', 'glücklich')).verdict).toBe('almost');
+    expect(checkTypedAnswer("l'ecole", card('c', 'l’école')).verdict).toBe('almost');
+    expect(checkTypedAnswer('die Shcule', card('d', 'die Schule'))).toEqual({ verdict: 'almost', note: 'Kleiner Tippfehler.' });
+  });
+
+  it('accepts any part of «viel, sehr» and the alternatives', () => {
+    expect(checkTypedAnswer('sehr', card('e', 'viel, sehr')).verdict).toBe('right');
+    expect(checkTypedAnswer('Wagen', card('f', 'das Auto', { accepted: ['der Wagen'] })).verdict).toBe('almost');
+  });
+
+  it('stays strict where a typo changes the word', () => {
+    expect(checkTypedAnswer('Haus', card('g', 'Hand')).verdict).toBe('wrong');
+    expect(checkTypedAnswer('die Katze', hund).verdict).toBe('wrong');
+    expect(checkTypedAnswer('1219', card('h', '1291', { kind: 'number' })).verdict).toBe('wrong');
   });
 });

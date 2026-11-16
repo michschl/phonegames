@@ -159,8 +159,10 @@ interface Karte {
    Note): alle 20 Karten korrekt, Akzente erhalten, Name und Note weggelassen, gute falsche Antworten (einmal falscher
    Artikel: «der Aare»). Offen: Gegenprobe mit echten Handyfotos.
 2. **Grundlage:** ✅ Stapel erfassen (Foto und Text), Prüfansicht, Speichern und Sync, Kartenkasten (selbst prüfen
-   oder Auswahl aus vier), Blitzrunde. Noch nicht: Eintippen als Antwortprüfung, Fehler aus der Blitzrunde in den
-   Kartenkasten übernehmen (in der Blitzrunde antwortet das Team, nicht eine Person).
+   oder Auswahl aus vier), Blitzrunde. Eintippen als dritte Antwortprüfung ist inzwischen auch umgesetzt (tolerant: Gross-/Kleinschreibung,
+   Satzzeichen; fehlender Akzent, Artikel oder ein kleiner Tippfehler zählt als «fast richtig»; «Ich hatte recht»
+   korrigiert). Bewusst nicht: Fehler aus der Blitzrunde in den Kartenkasten übernehmen – dort antwortet das Team,
+   nicht eine Person.
 3. **Teilen:** ✅ Freigaben, Link als Einladung (höchstens 50 neue Konten pro Link), Übernahme, geteilte Version
    aktualisieren, Freigabe beenden.
 4. **Duell:** ✅ geteilter Bildschirm (obere Hälfte gedreht), gleiche Frage, je vier Antworten in eigener
