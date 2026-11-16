@@ -18,12 +18,14 @@ export function Prepare({ value, onChange }: GameSettingsProps<SpickzettelSettin
   const stacks = useStacks();
   const [params, setParams] = useSearchParams();
   const wanted = params.get('stapel');
+  const wantedMode = params.get('modus');
   const selected = stacks.find((s) => s.id === value.stackId);
 
   // A stack that was just created or edited comes in as ?stapel=…; otherwise keep a valid choice.
   useEffect(() => {
     if (wanted && stacks.some((s) => s.id === wanted)) {
-      if (value.stackId !== wanted) onChange({ ...value, stackId: wanted });
+      const mode = wantedMode === 'kasten' || wantedMode === 'duell' || wantedMode === 'blitz' ? wantedMode : value.mode;
+      if (value.stackId !== wanted || value.mode !== mode) onChange({ ...value, stackId: wanted, mode });
       setParams({}, { replace: true });
     } else if (!selected && stacks.length > 0) {
       onChange({ ...value, stackId: stacks[0]!.id });

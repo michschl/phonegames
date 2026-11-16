@@ -249,6 +249,11 @@ Das Lernspiel «Spickzettel» arbeitet mit **Lernstapeln** (Konzept: [KONZEPT-LE
 - **Kartenkasten:** Lernkartei mit 5 Fächern. Gewusst → ein Fach weiter (fällig nach 0, 1, 3, 7, 14 Tagen; im
   letzten Fach nach 30 Tagen), nicht gewusst → Fach 1 und in derselben Runde noch einmal. Fällig sind zuerst die
   Karten aus den vorderen Fächern, neue zuletzt.
+- **Erinnerung:** Die Startseite zeigt fällige Karten (`LearnDue`): pro Person und Stapel die Karten mit Lernstand,
+  deren Fälligkeit erreicht ist. Der Link `/spiel/spickzettel?stapel=…&modus=kasten` wählt Stapel und Spielform vor.
+- **Antworten eintippen:** `checkTypedAnswer` vergleicht ohne Gross-/Kleinschreibung, Leer- und Satzzeichen; ein
+  fehlender Akzent oder Artikel und ein kleiner Tippfehler (Damerau-Levenshtein, ab 5 Zeichen 1, ab 10 Zeichen 2)
+  gelten als «fast richtig» und zählen.
 - **Duell:** Zwei Personen, geteilter Bildschirm (die obere Hälfte ist um 180° gedreht). Antworten reagieren auf
   `pointerdown` statt `click`, damit beide gleichzeitig tippen können. Ein falscher Tipp sperrt die Seite kurz und
   setzt die Karte im Kartenkasten dieser Person zurück in Fach 1; richtige Antworten im Duell verschieben nichts,

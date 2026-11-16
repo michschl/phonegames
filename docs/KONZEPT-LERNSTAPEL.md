@@ -171,6 +171,13 @@ interface Karte {
    Weitere Spielformen (Schätzrunde für Zahlen, Lückentext) sind offen.
 5. Doku, Tests, Deploy.
 
+## Ergänzungen nach den Etappen
+
+- **Antworten eintippen** als dritte Antwortprüfung im Kartenkasten (siehe Etappe 2).
+- **«Heute fällig» auf der Startseite:** Sobald jemand Karten gelernt hat und welche wieder fällig sind, zeigt die
+  Startseite «Heute fällig: 7 Karten · Lea · «Unité 5»». Ein Tipp öffnet den Stapel direkt im Kartenkasten. Neue,
+  noch nie gelernte Karten zählen nicht – die Erinnerung soll ans Repetieren erinnern, nicht drängen.
+
 ## Offene Punkte
 
 - Gegenprobe mit echten Handyfotos (schräg, Schatten, echte Kinderhandschrift, Mathematik).
