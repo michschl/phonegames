@@ -77,6 +77,26 @@
   background: var(--yellow);
 }
 
+.stack-picker__caption {
+  margin: -4px 0 10px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.stack-chooser__search {
+  width: 100%;
+  min-height: 48px;
+  margin-bottom: 12px;
+  padding: 0 14px;
+  border-radius: var(--radius);
+  border: var(--border);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+}
+
 .stack-picker__actions {
   display: flex;
   flex-wrap: wrap;

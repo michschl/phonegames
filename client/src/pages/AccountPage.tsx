@@ -8,7 +8,7 @@ import { isIos, isStandalone, setHapticsEnabled } from '../lib/device.ts';
 import { speechAvailable, stopSpeaking } from '../lib/speech.ts';
 import { VoicePicker } from '../components/VoicePicker.tsx';
 import { PasskeySettings } from '../components/PasskeySettings.tsx';
-import { promptInstall, usePwa } from '../lib/pwa.ts';
+import { applyUpdate, checkForUpdate, promptInstall, usePwa } from '../lib/pwa.ts';
 import { deleteAccount, logout, updateProfile } from '../lib/session.ts';
 import { syncNow } from '../lib/sync.ts';
 import { AVATAR_EMOJIS, formatRelative, PLAYER_COLORS } from '../lib/util.ts';
@@ -17,6 +17,24 @@ import { useData, useHasPendingChanges } from '../store/data.ts';
 import { useSettings } from '../store/settings.ts';
 import { toast, useUi } from '../store/ui.ts';
 import { LIMITS } from '../../../shared/types.ts';
+
+/** «Nach Updates suchen»: loads a new version right away, or says that this is the newest. */
+async function lookForUpdate() {
+  const result = await checkForUpdate(true);
+  if (result === 'update') {
+    if (usePwa.getState().needRefresh) applyUpdate();
+    else {
+      usePwa.setState({ applyWhenReady: true });
+      toast('Neue Version wird geladen …');
+    }
+  } else if (result === 'current') {
+    toast('Du hast die neueste Version.', { tone: 'success' });
+  } else if (result === 'offline') {
+    toast('Offline – versuch es später nochmals.', { tone: 'error' });
+  } else {
+    toast('In diesem Browser kommen Updates beim nächsten Öffnen.');
+  }
+}
 
 export function AccountPage() {
   const user = useAuth((s) => s.user)!;
@@ -137,6 +155,9 @@ export function AccountPage() {
           Konto löschen
         </Button>
         <p className="app-version">Phonegames v{__APP_VERSION__} · Mit ❤️ in der Schweiz gehostet</p>
+        <button type="button" className="app-version__check" onClick={() => void lookForUpdate()}>
+          Nach Updates suchen
+        </button>
       </div>
 
       <AvatarSheet open={sheet === 'avatar'} onClose={close} />

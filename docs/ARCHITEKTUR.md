@@ -62,8 +62,19 @@ bearbeiten, Spiele zur Liste hinzufügen oder entfernen.
 (App-Shell, JavaScript aller 17 Spiele inklusive Inhalten, CSS, Schriften, Icons – zusammen rund 1 MB). Navigationen fallen offline auf
 `index.html` zurück. `/api/*` wird **nicht** gecacht – die Daten verwaltet die App selbst.
 
-Bei einer neuen Version erscheint ein Hinweis «Eine neue Version ist bereit – Aktualisieren». So wird nie mitten
-in einem Spiel neu geladen.
+**Neue Versionen ohne Neustart** ([`lib/pwa.ts`](../client/src/lib/pwa.ts),
+[`components/UpdateHint.tsx`](../client/src/components/UpdateHint.tsx)):
+
+- Gesucht wird, wenn die App wieder in den Vordergrund kommt, wenn sie wieder online ist und alle 15 Minuten,
+  solange sie sichtbar ist (höchstens einmal pro Minute; `sw.js` wird mit `no-cache` ausgeliefert). Browser
+  prüfen sonst nur beim Öffnen – eine PWA, die im Hintergrund schläft, blieb so bis zum Schliessen alt.
+- Liegt eine neue Version bereit, lädt die App sie beim nächsten sicheren Moment: beim nächsten Seitenwechsel oder
+  wenn die App wieder in den Vordergrund kommt – nie in einem laufenden Spiel, beim Bearbeiten eines Stapels oder
+  in Anmelde- und Registrierungsformularen. Bis dahin steht oben «✨ Neue Version ist da – Jetzt laden».
+- Gelegentlich blockiert der Browser den Wechsel, weil die alte Version noch eine Anfrage bearbeitet. Dann lädt die
+  App nach 4 Sekunden trotzdem neu (höchstens einmal pro Minute, nur auf sicheren Seiten). Übernimmt die neue
+  Version erst danach, merkt die App das am `index.html` des Service Workers (anderes Hauptskript) und lädt nochmals.
+- Unter Konto gibt es «Nach Updates suchen».
 
 ### Synchronisation
 

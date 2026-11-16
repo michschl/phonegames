@@ -654,6 +654,18 @@
   color: var(--muted);
 }
 
+.app-version__check {
+  min-height: 44px;
+  padding: 0 6px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 /* =========================================================== Game setup */
 
 .setup {

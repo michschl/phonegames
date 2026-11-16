@@ -15,6 +15,7 @@ import {
   nextProgress,
   parseTextCards,
   progressId,
+  recommendStacks,
   scoreEstimates,
   splitGap,
   suggestedModes,
@@ -220,5 +221,22 @@ describe('Schätzrunde', () => {
   it('suggests the modes the cards allow', () => {
     const numbers = stack(['1291', '1315', '1386'].map((a, i) => card(`n${i}`, a, { kind: 'number' })));
     expect([...suggestedModes(numbers)].sort()).toEqual(['kasten', 'schaetzen']);
+  });
+});
+
+describe('stack suggestions', () => {
+  const make = (id: string, updatedAt: number) => ({ ...stack([card('a', '1')]), id, title: id, updatedAt });
+  const stacks = [make('alt', 1), make('neu', 50), make('mitte', 20), make('faellig', 5), make('gelernt', 2)];
+  const progress: Record<string, LearnProgress> = {
+    p: { id: 'p', stackId: 'gelernt', player: 'Lea', cards: {}, updatedAt: 100, deleted: false },
+  };
+
+  it('puts due cards first, then what was learned or edited last', () => {
+    expect(recommendStacks(stacks, progress, { faellig: 4 }, null).map((s) => s.id)).toEqual(['faellig', 'gelernt', 'neu']);
+  });
+
+  it('always shows the chosen stack', () => {
+    expect(recommendStacks(stacks, progress, { faellig: 4 }, 'alt').map((s) => s.id)).toEqual(['faellig', 'gelernt', 'alt']);
+    expect(recommendStacks(stacks.slice(0, 2), {}, {}, 'alt').map((s) => s.id)).toEqual(['neu', 'alt']);
   });
 });

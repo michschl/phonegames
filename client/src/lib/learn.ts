@@ -420,3 +420,31 @@ export function suggestedModes(stack: LearnStack): Set<LearnMode> {
   if (clozeCards(stack).length >= MODE_MIN_CARDS.luecke) modes.add('luecke');
   return modes;
 }
+
+/* -------------------------------------------------------- stack choice */
+
+/**
+ * The stacks suggested on the setup screen: due cards first (most first), then the ones learned
+ * or edited most recently. The chosen stack is always among them.
+ */
+export function recommendStacks(
+  stacks: LearnStack[],
+  progress: Record<string, LearnProgress>,
+  due: Record<string, number>,
+  selectedId: string | null,
+  count = 3,
+): LearnStack[] {
+  const lastActivity = new Map<string, number>();
+  for (const stack of stacks) lastActivity.set(stack.id, stack.updatedAt);
+  for (const entry of Object.values(progress)) {
+    if (entry.deleted || !lastActivity.has(entry.stackId)) continue;
+    lastActivity.set(entry.stackId, Math.max(lastActivity.get(entry.stackId)!, entry.updatedAt));
+  }
+  const ranked = [...stacks].sort(
+    (a, b) => (due[b.id] ?? 0) - (due[a.id] ?? 0) || lastActivity.get(b.id)! - lastActivity.get(a.id)!,
+  );
+  const shown = ranked.slice(0, count);
+  const selected = stacks.find((stack) => stack.id === selectedId);
+  if (selected && !shown.includes(selected)) shown[shown.length - 1] = selected;
+  return shown;
+}

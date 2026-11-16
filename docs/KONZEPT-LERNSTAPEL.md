@@ -209,6 +209,9 @@ interface Karte {
     Zahl der fälligen Karten (bzw. ✓/⭐), mit kurzer Legende. Die Gruppen-Chips zeigen die Summe der fälligen Karten
     aller Personen der Gruppe.
   - Die Stapel-Listen (Spiel und «Lernstapel») zeigen «3 fällig» – summiert über alle Personen.
+- **Stapelwahl im Spiel:** Der Startbildschirm schlägt 3 Stapel vor – zuerst die mit fälligen Karten, dann die
+  zuletzt gelernten oder bearbeiteten (`recommendStacks`); der gewählte ist immer dabei. «Anderer Stapel» öffnet
+  alle Stapel alphabetisch, ab 7 Stapeln mit Suche nach Titel oder Fach. «Verwalten» führt zur Stapel-Liste.
 - **Schätzrunde und Lückentext** (siehe Spielformen). Die Spielform-Auswahl zeigt alle fünf Formen; was der Stapel
   nicht hergibt («keine Zahlen», «keine Lücken»), ist ausgegraut, passende Formen tragen einen Stern.
 - **Erfassen von Lückentexten:** Beim Abtippen steht das fehlende Wort in eckigen Klammern («Die Aare fliesst durch

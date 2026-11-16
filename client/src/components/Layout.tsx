@@ -154,10 +154,12 @@ export function OfflinePill() {
   );
 }
 
-export function Toaster() {
+/** Notices at the top; `before` shows lasting ones first (e.g. the update hint). */
+export function Toaster({ before }: { before?: ReactNode }) {
   const toasts = useUi((s) => s.toasts);
   return (
     <div className="toaster" role="status" aria-live="polite">
+      {before}
       {toasts.map((t) => (
         <div key={t.id} className={`toast toast--${t.tone}`}>
           <span className="toast__message">{t.message}</span>
