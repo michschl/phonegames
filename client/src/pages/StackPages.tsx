@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { LIMITS, type LearnUsage } from '../../../shared/types.ts';
 import { Mascot } from '../components/Brand.tsx';
 import { Icon } from '../components/Icon.tsx';
-import { Page, Section } from '../components/Layout.tsx';
+import { BottomBar, Page, Section } from '../components/Layout.tsx';
 import { StackEditor, toStackInput } from '../components/StackEditor.tsx';
 import { Button, ConfirmSheet, EmptyState } from '../components/ui.tsx';
 import { api, ApiError, errorMessage } from '../lib/api.ts';
@@ -235,11 +235,11 @@ export function NewStackPage() {
             Entwurf verwerfen
           </Button>
         </div>
-        <div className="start-bar">
+        <BottomBar>
           <Button size="lg" block icon="check" onClick={save}>
             Stapel speichern
           </Button>
-        </div>
+        </BottomBar>
         <ConfirmSheet
           open={confirmDiscard}
           onClose={() => setConfirmDiscard(false)}
@@ -280,11 +280,11 @@ export function NewStackPage() {
             )}
           </div>
         </Section>
-        <div className="start-bar">
+        <BottomBar>
           <Button size="lg" block icon="check" onClick={fromText}>
             Karten erstellen
           </Button>
-        </div>
+        </BottomBar>
       </Page>
     );
   }
@@ -360,11 +360,11 @@ export function NewStackPage() {
       </div>
 
       {photos.length > 0 && !blocked && (
-        <div className="start-bar">
+        <BottomBar>
           <Button size="lg" block icon="sparkles" onClick={() => void analyse()} disabled={preparing > 0}>
             {photos.length === 1 ? 'Foto auswerten' : `${photos.length} Fotos auswerten`}
           </Button>
-        </div>
+        </BottomBar>
       )}
     </Page>
   );
@@ -423,11 +423,11 @@ export function StackEditPage() {
           Stapel löschen
         </Button>
       </div>
-      <div className="start-bar">
+      <BottomBar>
         <Button size="lg" block icon="check" onClick={save}>
           Speichern
         </Button>
-      </div>
+      </BottomBar>
       <ConfirmSheet
         open={confirmDelete}
         onClose={() => setConfirmDelete(false)}

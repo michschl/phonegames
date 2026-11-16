@@ -3,7 +3,7 @@ import { Navigate, useNavigate, useParams } from 'react-router';
 import { Fold } from '../components/Fold.tsx';
 import { Icon } from '../components/Icon.tsx';
 import { Mascot } from '../components/Brand.tsx';
-import { Page, Section } from '../components/Layout.tsx';
+import { BottomBar, Page, Section } from '../components/Layout.tsx';
 import { PlayerEditor } from '../components/PlayerEditor.tsx';
 import { Button, EmptyState } from '../components/ui.tsx';
 import { getGame } from '../games/registry.ts';
@@ -160,7 +160,7 @@ function GameSetup({ game }: { game: GameDefinition }) {
         </Fold>
       )}
 
-      <div className="start-bar">
+      <BottomBar>
         <Button size="lg" block icon="play" onClick={start} disabled={!canStart}>
           {blocker
             ? blocker
@@ -170,7 +170,7 @@ function GameSetup({ game }: { game: GameDefinition }) {
               ? `Noch ${missing} ${missing === 1 ? 'Person' : 'Personen'} hinzufügen`
               : `Spiel starten · ${playerCount} ${playerCount === 1 ? 'Person' : 'Personen'}`}
         </Button>
-      </div>
+      </BottomBar>
     </Page>
   );
 }
