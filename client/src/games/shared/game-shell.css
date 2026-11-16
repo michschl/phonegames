@@ -576,6 +576,13 @@
 /* Tiles with a status line need more room: one column when two do not fit. */
 .pick-grid--status {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 9.5em), 1fr));
+  /* The corner badges stick out – the stage cuts off anything beyond its edge. */
+  padding: 6px 6px 0;
+}
+
+.pick-grid--status .due-badge--corner,
+.pick-grid--status .status-badge--corner {
+  right: -6px;
 }
 
 .pick-chip {

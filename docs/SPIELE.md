@@ -92,6 +92,16 @@ siehe [`bombe/logic.test.ts`](../client/src/games/bombe/logic.test.ts) und
 npm test && npm run typecheck
 ```
 
+Abläufe im Browser (Spiel starten, Zug, Auswertung) gehören in die Browser-Tests unter [`e2e/`](../e2e): Sie laufen
+gegen die gebaute App auf einem Handy-Bildschirm, prüfen Barrierefreiheit (axe) und schmale Bildschirme und laufen in
+GitHub Actions vor jedem Deploy. Hilfsfunktionen für Konto, Gruppe, Stapel und Spielstart stehen in
+[`e2e/helpers.ts`](../e2e/helpers.ts).
+
+```bash
+npm run test:e2e                          # alle, baut vorher die App
+npx playwright test e2e/spielformen.spec.ts --trace off   # eine Datei, App bereits gebaut
+```
+
 ## Wiederverwendbare Bausteine
 
 Die meisten Spiele bestehen nur aus Inhalten, ein bisschen Logik und diesen Bausteinen aus

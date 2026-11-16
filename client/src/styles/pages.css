@@ -224,6 +224,13 @@
   animation: rise-in 0.45s var(--ease-out) both;
 }
 
+/* Very narrow phones (folded Galaxy Fold): the word mark shrinks so the avatar keeps its place. */
+@media (max-width: 330px) {
+  .home-top .logo {
+    font-size: 17px !important;
+  }
+}
+
 .home-greeting {
   font-family: var(--font-display);
   font-size: clamp(26px, 8vw, 34px);

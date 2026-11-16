@@ -14,7 +14,7 @@ export function kastenTile(status: KastenStatus): PlayerStatus {
     case 'done':
       return { tone: 'green', due: 0, badge: '✓', label: 'Heute erledigt' };
     case 'mastered':
-      return { tone: 'yellow', due: 0, badge: '⭐', label: 'Alles in Fach 5' };
+      return { tone: 'yellow', due: 0, badge: '★', label: 'Alles in Fach 5' };
     default:
       return { tone: 'neutral', due: 0, label: 'Noch nicht begonnen' };
   }
@@ -23,7 +23,7 @@ export function kastenTile(status: KastenStatus): PlayerStatus {
 export const KASTEN_LEGEND: PlayerStatusInfo['legend'] = [
   { key: 'due', label: 'rote Zahl: fällige Karten' },
   { key: '✓', label: 'heute erledigt', tone: 'green' },
-  { key: '⭐', label: 'alles in Fach 5', tone: 'yellow' },
+  { key: '★', label: 'alles in Fach 5', tone: 'yellow' },
 ];
 
 /** Name tile status of a person for a stack (null without a stack); results are cached per name. */

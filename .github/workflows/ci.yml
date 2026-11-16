@@ -37,3 +37,38 @@ jobs:
       - name: Docker-Image bauen (ohne Push)
         if: github.event_name == 'pull_request'
         run: docker build --tag phonegames:ci .
+
+  e2e:
+    name: Browser-Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: Chromium für Playwright installieren
+        run: npx playwright install --with-deps chromium
+
+      - name: Build
+        run: npm run build
+
+      # Main flows on a phone-sized screen: games, Spickzettel, photos (stand-in AI), sharing,
+      # deleting with undo, accessibility (axe) and narrow screens. See e2e/ and playwright.config.ts.
+      - name: Browser-Tests
+        run: npx playwright test
+
+      - name: Bericht bei Fehlern hochladen
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

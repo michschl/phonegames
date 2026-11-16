@@ -21,7 +21,7 @@ export interface PlayerStatus {
   tone: StatusTone;
   /** Cards due – shown as a prominent red badge and added up on the group. */
   due: number;
-  /** Small symbol badge when nothing is due: ✓ or ⭐. */
+  /** Small symbol badge when nothing is due: ✓ or ★. */
   badge?: string;
   /** Short text, e.g. «7 fällig» – visible on large tiles, read out everywhere. */
   label: string;
@@ -31,7 +31,7 @@ export interface PlayerStatus {
 export interface PlayerStatusInfo {
   /** What the badges are about, e.g. «Kartenkasten «Unité 5»». */
   caption: string;
-  /** Explanation of the badges: `due` for the red number, otherwise the symbol (✓, ⭐). */
+  /** Explanation of the badges: `due` for the red number, otherwise the symbol (✓, ★). */
   legend: { key: string; label: string; tone?: StatusTone }[];
   status: (player: Player) => PlayerStatus | undefined;
 }
