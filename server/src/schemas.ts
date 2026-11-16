@@ -30,6 +30,8 @@ export const registerSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
   inviteCode: z.string().max(64, 'Der Einladungscode ist zu lang.').optional(),
+  /** A shared stack link counts as an invitation. */
+  shareId: z.string().regex(/^[A-Za-z0-9_-]{10,64}$/).optional(),
 });
 
 export const loginSchema = z.object({
@@ -116,6 +118,17 @@ const learnProgressSchema = z.object({
   updatedAt: timestamp,
   deleted: z.boolean(),
 });
+
+export const shareSchema = z.object({
+  stackId: id,
+  title: learnStackSchema.shape.title,
+  subject: learnStackSchema.shape.subject,
+  languages: learnStackSchema.shape.languages,
+  cards: z.array(learnCardSchema).min(1, 'Der Stapel hat keine Karten.').max(LIMITS.cardsPerStack),
+  suggestedModes: learnStackSchema.shape.suggestedModes,
+});
+
+export const shareIdSchema = z.object({ id: z.string().regex(/^[A-Za-z0-9_-]{10,64}$/, 'Ungültiger Link.') });
 
 export const syncSchema = z.object({
   library: z.array(libraryItemSchema).max(LIMITS.library * 2),

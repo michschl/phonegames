@@ -4,6 +4,8 @@ import { randomToken, sha256 } from './security.ts';
 import { TOMBSTONE_TTL_MS, shouldReplace } from '../../shared/sync.ts';
 import type {
   LearnProgress,
+  LearnShareInfo,
+  LearnShareStack,
   LearnStack,
   LibraryItem,
   PasskeyInfo,
@@ -355,6 +357,73 @@ export function getProgress(db: Database, userId: string): LearnProgress[] {
     updatedAt: row.updated_at,
     deleted: row.deleted === 1,
   }));
+}
+
+/* --------------------------------------------------------- shared stacks */
+
+interface ShareRow {
+  id: string;
+  owner_id: string;
+  stack_id: string;
+  data: string;
+  created_at: number;
+  updated_at: number;
+  imports: number;
+  signups: number;
+}
+
+export interface ShareRecord extends LearnShareInfo {
+  ownerId: string;
+  stack: LearnShareStack;
+}
+
+function toShare(row: ShareRow): ShareRecord {
+  return {
+    id: row.id,
+    ownerId: row.owner_id,
+    stackId: row.stack_id,
+    updatedAt: row.updated_at,
+    imports: row.imports,
+    signups: row.signups,
+    stack: JSON.parse(row.data) as LearnShareStack,
+  };
+}
+
+export function toShareInfo({ id, stackId, updatedAt, imports, signups }: ShareRecord): LearnShareInfo {
+  return { id, stackId, updatedAt, imports, signups };
+}
+
+export function getShare(db: Database, id: string): ShareRecord | null {
+  const row = db.prepare('SELECT * FROM learn_shares WHERE id = ?').get(id) as ShareRow | undefined;
+  return row ? toShare(row) : null;
+}
+
+export function listShares(db: Database, ownerId: string): ShareRecord[] {
+  const rows = db.prepare('SELECT * FROM learn_shares WHERE owner_id = ? ORDER BY created_at').all(ownerId) as unknown as ShareRow[];
+  return rows.map(toShare);
+}
+
+/** Creates the link for a stack, or updates the cards behind the existing link. */
+export function saveShare(db: Database, ownerId: string, stackId: string, stack: LearnShareStack, newId: string): ShareRecord {
+  const now = Date.now();
+  db.prepare(
+    `INSERT INTO learn_shares (id, owner_id, stack_id, data, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)
+     ON CONFLICT (owner_id, stack_id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at`,
+  ).run(newId, ownerId, stackId, JSON.stringify(stack), now, now);
+  const row = db.prepare('SELECT * FROM learn_shares WHERE owner_id = ? AND stack_id = ?').get(ownerId, stackId) as unknown as ShareRow;
+  return toShare(row);
+}
+
+export function deleteShare(db: Database, ownerId: string, id: string): boolean {
+  return Number(db.prepare('DELETE FROM learn_shares WHERE id = ? AND owner_id = ?').run(id, ownerId).changes) > 0;
+}
+
+export function countShareImport(db: Database, id: string): void {
+  db.prepare('UPDATE learn_shares SET imports = imports + 1 WHERE id = ?').run(id);
+}
+
+export function countShareSignup(db: Database, id: string): void {
+  db.prepare('UPDATE learn_shares SET signups = signups + 1 WHERE id = ?').run(id);
 }
 
 /* ------------------------------------------------------------ learn usage */

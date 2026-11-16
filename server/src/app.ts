@@ -14,6 +14,7 @@ import { syncRoutes } from './routes/sync.ts';
 import { passkeyRoutes, type WebAuthnConfig } from './routes/passkeys.ts';
 import { TTS_VOICES, ttsRoutes, type TtsConfig } from './routes/tts.ts';
 import { learnRoutes, type LearnConfig } from './routes/learn.ts';
+import { shareRoutes } from './routes/shares.ts';
 
 export interface AppOptions {
   db: Database;
@@ -170,6 +171,11 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   await app.register(accountRoutes, { prefix: '/api/account', rateLimit: options.rateLimit ?? true });
   await app.register(syncRoutes, { prefix: '/api' });
   await app.register(learnRoutes, { prefix: '/api/learn', rateLimit: options.rateLimit ?? true, learn: options.learn ?? null });
+  await app.register(shareRoutes, {
+    prefix: '/api/shares',
+    rateLimit: options.rateLimit ?? true,
+    inviteRequired: (options.inviteCodes ?? []).length > 0,
+  });
 
   if (options.serveClient && options.clientDir) {
     registerClient(app, options.clientDir);
@@ -229,6 +235,8 @@ function registerClient(app: FastifyInstance, clientDir: string): void {
     if (!isPage) {
       return reply.status(404).send({ error: 'not_found', message: 'Nicht gefunden.' });
     }
+    // Shared stack links are private – keep them out of search engines.
+    if (pathname.startsWith('/s/')) reply.header('X-Robots-Tag', 'noindex, nofollow');
     return sendIndex(reply);
   });
 }

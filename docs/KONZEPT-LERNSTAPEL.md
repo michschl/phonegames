@@ -4,7 +4,7 @@ Schulstoff spielerisch repetieren – im selben Look wie die Partyspiele. Lernin
 erfasst, eine KI in der Schweiz macht daraus Lernkarten, und derselbe Kartenstapel lässt sich danach in
 verschiedenen Spielformen spielen, allein oder in der Gruppe. Stapel lassen sich per Link teilen.
 
-Stand: Etappe 2 umgesetzt (Erfassen per Foto und Text, Prüfen, Kartenkasten, Blitzrunde). Teilen und Duell folgen.
+Stand: Etappen 2 und 3 umgesetzt (Erfassen per Foto und Text, Prüfen, Kartenkasten, Blitzrunde, Teilen per Link). Das Duell folgt.
 
 ## Entscheide
 
@@ -161,7 +161,8 @@ interface Karte {
 2. **Grundlage:** ✅ Stapel erfassen (Foto und Text), Prüfansicht, Speichern und Sync, Kartenkasten (selbst prüfen
    oder Auswahl aus vier), Blitzrunde. Noch nicht: Eintippen als Antwortprüfung, Fehler aus der Blitzrunde in den
    Kartenkasten übernehmen (in der Blitzrunde antwortet das Team, nicht eine Person).
-3. **Teilen:** Freigaben, Link als Einladung, Übernahme.
+3. **Teilen:** ✅ Freigaben, Link als Einladung (höchstens 50 neue Konten pro Link), Übernahme, geteilte Version
+   aktualisieren, Freigabe beenden.
 4. **Duell** und weitere Spielformen.
 5. Doku, Tests, Deploy.
 
@@ -170,5 +171,4 @@ interface Karte {
 - Gegenprobe mit echten Handyfotos (schräg, Schatten, echte Kinderhandschrift, Mathematik).
 - Qwen 3.8 ist bei Infomaniak noch Beta – Ersatzmodell festlegen, falls es sich ändert.
 - Konkrete Limiten (die Kosten erlauben deutlich mehr als 5 pro Monat).
-- Registrierungen pro geteiltem Link begrenzen?
 - Rechtliche Abklärung zum Teilen von Lehrmittel-Inhalten.

@@ -99,6 +99,20 @@ const MIGRATIONS: string[] = [
   );
   CREATE INDEX learn_usage_month ON learn_usage(month);
   `,
+  `
+  -- Shared learning stacks: a snapshot of the cards behind an unguessable link.
+  CREATE TABLE learn_shares (
+    id         TEXT PRIMARY KEY,
+    owner_id   TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    stack_id   TEXT NOT NULL,
+    data       TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    imports    INTEGER NOT NULL DEFAULT 0,
+    signups    INTEGER NOT NULL DEFAULT 0,
+    UNIQUE (owner_id, stack_id)
+  );
+  `,
 ];
 
 export function openDatabase(file: string): Database {

@@ -4,14 +4,14 @@ import { Mascot, type Mood } from '../components/Brand.tsx';
 import { TrustNote } from '../components/TrustNote.tsx';
 import { Button, TextField } from '../components/ui.tsx';
 import { GAMES } from '../games/registry.ts';
-import { ApiError, errorMessage } from '../lib/api.ts';
+import { api, ApiError, errorMessage } from '../lib/api.ts';
 import { useAuthOptions } from '../lib/authOptions.ts';
 import { PasskeyCancelled, passkeysSupported, preparePasskeySignIn, signInWithPasskey } from '../lib/passkeys.ts';
 import { confetti } from '../lib/confetti.ts';
 import { haptic } from '../lib/device.ts';
 import { login, register } from '../lib/session.ts';
 import { toast, useUi } from '../store/ui.ts';
-import { LIMITS } from '../../../shared/types.ts';
+import { LIMITS, type LearnSharePreview } from '../../../shared/types.ts';
 
 type FieldErrors = Partial<Record<'invite' | 'name' | 'email' | 'password', string>>;
 
@@ -135,8 +135,18 @@ export function RegisterPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const linkCode = (params.get('code') ?? '').trim().toUpperCase().slice(0, 64);
+  const shareId = params.get('teilen') ?? '';
+  // Coming from a shared stack link: the link counts as invitation (while it still works).
+  const [share, setShare] = useState<LearnSharePreview | null>(null);
+  useEffect(() => {
+    if (!shareId) return;
+    api
+      .sharePreview(shareId)
+      .then(setShare)
+      .catch(() => setShare(null));
+  }, [shareId]);
   // Unknown (offline, loading): keep showing the field, registering needs the server anyway.
-  const showInvite = useAuthOptions()?.inviteRequired !== false;
+  const showInvite = useAuthOptions()?.inviteRequired !== false && !share?.invites;
   const [inviteCode, setInviteCode] = useState(linkCode);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -172,10 +182,12 @@ export function RegisterPage() {
         email: email.trim(),
         password,
         ...(showInvite ? { inviteCode: inviteCode.trim() } : {}),
+        ...(share ? { shareId: share.id } : {}),
       });
       confetti({ count: 180 });
       toast(`Willkommen bei Phonegames, ${user.name}! 🎉`, { tone: 'success' });
-      navigate('/', { replace: true, viewTransition: true });
+      // Through a shared link: take the stack over right away.
+      navigate(share ? `/s/${share.id}?uebernehmen=1` : '/', { replace: true, viewTransition: true });
     } catch (err) {
       if (err instanceof ApiError && (err.code === 'invalid_invite' || err.code === 'invite_required')) {
         setInviteError(err.message);
@@ -194,6 +206,12 @@ export function RegisterPage() {
       subtitle={showInvite ? 'Noch geheim – nur mit Einladung.' : 'Dauert keine 30 Sekunden. Versprochen.'}
       mood={error || inviteError || Object.values(fieldErrors).some(Boolean) ? 'oops' : 'happy'}
     >
+      {share && (
+        <p className="notice notice--info auth__share">
+          📝 Danach übernimmst du den Lernstapel «{share.title}».
+          {share.invites && ' Der Link gilt als Einladung – kein Code nötig.'}
+        </p>
+      )}
       <form className="form" onSubmit={submit} noValidate>
         {showInvite && (
           <TextField
@@ -262,7 +280,7 @@ export function RegisterPage() {
         </Button>
       </form>
       <p className="auth__switch">
-        Schon dabei? <Link to="/anmelden">Anmelden</Link>
+        Schon dabei? <Link to={shareId ? `/anmelden?teilen=${encodeURIComponent(shareId)}` : '/anmelden'}>Anmelden</Link>
       </p>
       <TrustNote className="auth__trust" />
     </AuthShell>
@@ -271,6 +289,10 @@ export function RegisterPage() {
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const shareId = params.get('teilen');
+  /** Back to the shared stack after signing in through its link. */
+  const next = shareId ? `/s/${encodeURIComponent(shareId)}?uebernehmen=1` : '/';
   const options = useAuthOptions();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -291,7 +313,7 @@ export function LoginPage() {
       const user = await signInWithPasskey();
       confetti({ count: 90 });
       toast(`Schön, dass du da bist, ${user.name}!`, { tone: 'success' });
-      navigate('/', { replace: true, viewTransition: true });
+      navigate(next, { replace: true, viewTransition: true });
     } catch (err) {
       if (!(err instanceof PasskeyCancelled)) setError(err instanceof Error ? err.message : errorMessage(err));
     } finally {
@@ -317,7 +339,7 @@ export function LoginPage() {
     try {
       const user = await login({ email: email.trim(), password });
       toast(`Schön, dass du da bist, ${user.name}!`, { tone: 'success' });
-      navigate('/', { replace: true, viewTransition: true });
+      navigate(next, { replace: true, viewTransition: true });
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -371,7 +393,7 @@ export function LoginPage() {
         </>
       )}
       <p className="auth__switch">
-        Neu hier? <Link to="/registrieren">Konto erstellen</Link>
+        Neu hier? <Link to={shareId ? `/registrieren?teilen=${encodeURIComponent(shareId)}` : '/registrieren'}>Konto erstellen</Link>
       </p>
     </AuthShell>
   );
