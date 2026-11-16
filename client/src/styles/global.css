@@ -28,6 +28,8 @@
   --blue: #4d7cff;
   --violet: #7c5cff;
   --red: #ff5a5f;
+  /* Badges for cards due: white text needs a darker red (contrast 5:1). */
+  --due-red: #d61f33;
 
   --pink-soft: #ffe0ef;
   --yellow-soft: #fff3c4;

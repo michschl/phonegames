@@ -270,7 +270,7 @@ export function NewStackPage() {
               aria-invalid={!!textError}
               value={text}
               rows={10}
-              placeholder={'le chien = der Hund\nla maison = das Haus\nHauptort von Bern? = Bern'}
+              placeholder={'le chien = der Hund\nHauptort von Bern? = Bern\nDie Aare fliesst durch [Bern].'}
               onChange={(e) => {
                 setText(e.target.value);
                 setTextError(null);
@@ -279,7 +279,10 @@ export function NewStackPage() {
             {textError ? (
               <p className="field__error">{textError}</p>
             ) : (
-              <p className="field__hint">Trenne Frage und Antwort mit «=», «–» oder einem Tabulator. Du kannst auch eine Liste einfügen.</p>
+              <p className="field__hint">
+                Trenne Frage und Antwort mit «=», «–» oder einem Tabulator. Für einen Lückentext setzt du das fehlende Wort in
+                eckige Klammern: «Die Aare fliesst durch [Bern].»
+              </p>
             )}
           </div>
         </Section>

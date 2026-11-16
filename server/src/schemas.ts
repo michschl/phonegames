@@ -86,14 +86,14 @@ const cardText = z.string().trim().min(1).max(LIMITS.cardText);
 
 const learnCardSchema = z.object({
   id,
-  kind: z.enum(['translation', 'definition', 'qa', 'number']),
+  kind: z.enum(['translation', 'definition', 'qa', 'number', 'cloze']),
   prompt: cardText,
   answer: cardText,
   accepted: z.array(cardText).max(10),
   distractors: z.array(cardText).max(3),
 });
 
-const learnModeSchema = z.enum(['blitz', 'duell', 'kasten']);
+const learnModeSchema = z.enum(['blitz', 'duell', 'kasten', 'schaetzen', 'luecke']);
 
 const learnStackSchema = z.object({
   id,
@@ -101,7 +101,7 @@ const learnStackSchema = z.object({
   subject: z.string().trim().max(40),
   languages: z.array(z.string().regex(/^[a-z]{2,3}$/)).max(2),
   cards: z.array(learnCardSchema).max(LIMITS.cardsPerStack),
-  suggestedModes: z.array(learnModeSchema).max(3),
+  suggestedModes: z.array(learnModeSchema).max(5),
   source: z.enum(['photo', 'text', 'shared']),
   createdAt: timestamp,
   updatedAt: timestamp,

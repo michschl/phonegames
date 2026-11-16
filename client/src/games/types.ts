@@ -13,24 +13,27 @@ export interface GameSettingsProps<S> {
   onChange(next: S): void;
 }
 
-/** Colour family of a name tile that shows a status (e.g. the Kartenkasten in «Spickzettel»). */
+/** Colour family of a name tile that shows a status (the «Wer lernt?» tiles in «Spickzettel»). */
 export type StatusTone = 'neutral' | 'orange' | 'blue' | 'green' | 'yellow';
 
 /** Status of one person, shown on their name tile. */
 export interface PlayerStatus {
   tone: StatusTone;
-  /** Short content of the round badge: a number, ✓ or ⭐. */
+  /** Cards due – shown as a prominent red badge and added up on the group. */
+  due: number;
+  /** Small symbol badge when nothing is due: ✓ or ⭐. */
   badge?: string;
   /** Short text, e.g. «7 fällig» – visible on large tiles, read out everywhere. */
   label: string;
 }
 
-/** Status of every person in the group, with a legend for the colours. */
+/** Status per person for the setup screen: badges on the name chips and the group chips. */
 export interface PlayerStatusInfo {
-  /** What the colours are about, e.g. «Kartenkasten «Unité 5»». */
+  /** What the badges are about, e.g. «Kartenkasten «Unité 5»». */
   caption: string;
-  legend: { tone: StatusTone; label: string }[];
-  players: Record<string, PlayerStatus>;
+  /** Explanation of the badges: `due` for the red number, otherwise the symbol (✓, ⭐). */
+  legend: { key: string; label: string; tone?: StatusTone }[];
+  status: (player: Player) => PlayerStatus | undefined;
 }
 
 /**
@@ -74,10 +77,10 @@ export interface GameDefinition<S extends object = any> {
    */
   useBlocker?: (settings: S) => string | null;
   /**
-   * Hook: a status per person for the name tiles on the setup screen (colour and badge), or null.
-   * Called on every render of the setup screen.
+   * Hook: a status per person for the setup screen – badges on the name chips of the group and
+   * the sum of due cards on the group chips – or null. Called on every render of the setup screen.
    */
-  usePlayerStatus?: (settings: S, players: Player[]) => PlayerStatusInfo | null;
+  usePlayerStatus?: (settings: S) => PlayerStatusInfo | null;
   /** The game itself – lazy loaded so the start screen stays fast. */
   Play?: LazyExoticComponent<ComponentType<GameProps<S>>>;
   /** Optional illustration for the cards. Falls back to the emoji. */

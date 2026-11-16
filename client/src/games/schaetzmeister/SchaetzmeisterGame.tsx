@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type { GameProps } from '../types.ts';
 import { Avatar, Button } from '../../components/ui.tsx';
 import { sound } from '../../lib/audio.ts';
@@ -6,80 +6,13 @@ import { confetti } from '../../lib/confetti.ts';
 import { haptic } from '../../lib/device.ts';
 import { drawFresh } from '../shared/deck.ts';
 import { Actions, GameShell, Headline, PromptCard, Stage } from '../shared/GameShell.tsx';
+import { CountUp, EstimateForm } from '../shared/estimate.tsx';
 import { PassTurns } from '../shared/PassTurns.tsx';
 import { playerScores, ScoreList } from '../shared/players.tsx';
-import { CATEGORY_OPTIONS, formatValue, parseEstimate, scoreGuesses, type SchaetzSettings } from './logic.ts';
+import { CATEGORY_OPTIONS, formatValue, scoreGuesses, type SchaetzSettings } from './logic.ts';
 import { QUESTIONS, type EstimateQuestion } from './questions.ts';
-import './schaetzmeister.css';
 
 type Phase = 'question' | 'guess' | 'reveal' | 'end';
-
-function EstimateForm({ question, onSubmit }: { question: EstimateQuestion; onSubmit: (value: number) => void }) {
-  const [text, setText] = useState('');
-  const value = parseEstimate(text);
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    if (value === null) return;
-    sound.pop();
-    onSubmit(value);
-  };
-  return (
-    <Stage>
-      <PromptCard eyebrow="Geheim schätzen" tone="#ffd23f">
-        {question.text}
-      </PromptCard>
-      <form className="estimate-form" onSubmit={submit}>
-        <div className="estimate-form__field">
-          <input
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            inputMode="decimal"
-            autoComplete="off"
-            placeholder="Deine Schätzung"
-            aria-label="Deine Schätzung"
-            autoFocus
-            enterKeyHint="done"
-          />
-          {question.unit && question.unit !== 'Jahr' && <span>{question.unit}</span>}
-        </div>
-        <Button type="submit" size="lg" block disabled={value === null}>
-          Schätzung abgeben
-        </Button>
-      </form>
-    </Stage>
-  );
-}
-
-/** Animated count-up to the correct answer. */
-function CountUp({ from, to, unit, onDone }: { from: number; to: number; unit: string; onDone: () => void }) {
-  const [value, setValue] = useState(from);
-  const done = useRef(onDone);
-  done.current = onDone;
-  useEffect(() => {
-    const start = performance.now();
-    const duration = 1800;
-    let raf = 0;
-    let lastTick = 0;
-    let step = 0;
-    const frame = (now: number) => {
-      const t = Math.min(1, (now - start) / duration);
-      const eased = 1 - (1 - t) ** 3;
-      setValue(from + (to - from) * eased);
-      // Ticks climb in pitch and slow down together with the number.
-      if (now - lastTick > 55 + 160 * t && t < 1) {
-        lastTick = now;
-        sound.countTick(step++);
-      }
-      if (t < 1) raf = requestAnimationFrame(frame);
-      else done.current();
-    };
-    raf = requestAnimationFrame(frame);
-    return () => cancelAnimationFrame(raf);
-  }, [from, to]);
-  const decimals = Number.isInteger(to) ? 0 : 1;
-  const shown = Number(value.toFixed(decimals));
-  return <span className="countup">{formatValue(shown, unit)}</span>;
-}
 
 export default function SchaetzmeisterGame({ players, settings, onExit }: GameProps<SchaetzSettings>) {
   const pool = useMemo(() => {
@@ -175,7 +108,8 @@ export default function SchaetzmeisterGame({ players, settings, onExit }: GamePr
           onComplete={() => setPhase('reveal')}
           render={(player, done) => (
             <EstimateForm
-              question={question}
+              prompt={question.text}
+              unit={question.unit === 'Jahr' ? '' : question.unit}
               onSubmit={(value) => {
                 setGuesses((g) => ({ ...g, [player.id]: value }));
                 done();
@@ -189,7 +123,7 @@ export default function SchaetzmeisterGame({ players, settings, onExit }: GamePr
         <Stage>
           <p className="gs-eyebrow">Die richtige Antwort</p>
           <p className="gs-text">{question.text}</p>
-          <CountUp from={countFrom} to={question.answer} unit={question.unit} onDone={applyScores} />
+          <CountUp from={countFrom} to={question.answer} format={(n) => formatValue(n, question.unit)} onDone={applyScores} />
           {counted && question.note && <p className="gs-text">{question.note}</p>}
           {counted && (
             <ol className="guess-list">

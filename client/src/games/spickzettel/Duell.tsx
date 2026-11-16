@@ -11,6 +11,7 @@ import { Actions, GameShell, Headline, Stage } from '../shared/GameShell.tsx';
 import { PlayerPicker } from '../shared/players.tsx';
 import { CountdownOverlay, useStartCountdown } from '../shared/Timer.tsx';
 import type { SpickzettelSettings } from './index.tsx';
+import { CardPrompt, cardLine } from './cloze.tsx';
 
 type Phase = 'pick' | 'ready' | 'play' | 'done';
 type Side = 0 | 1;
@@ -154,7 +155,9 @@ export function Duell({
           <strong>{player.name}</strong>
           <span className="duel__score">{scores[side]}</span>
         </div>
-        <p className="duel__prompt">{round!.card.prompt}</p>
+        <p className="duel__prompt">
+          <CardPrompt card={round!.card} fill={winner !== null} />
+        </p>
         <div className="duel__options">
           {options.map((option) => {
             const right = isRight(round!.card, option);
@@ -287,9 +290,7 @@ export function Duell({
                 {missed.map((card) => (
                   <li key={card.id} className="is-skipped">
                     <span>↺</span>
-                    <span>
-                      {card.prompt} – {card.answer}
-                    </span>
+                    <span>{cardLine(card)}</span>
                   </li>
                 ))}
               </ul>

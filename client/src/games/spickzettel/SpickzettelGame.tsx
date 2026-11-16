@@ -8,6 +8,9 @@ import type { GameProps } from '../types.ts';
 import type { SpickzettelSettings } from './index.tsx';
 import { Duell } from './Duell.tsx';
 import { Kartenkasten } from './Kartenkasten.tsx';
+import { Lueckentext } from './Lueckentext.tsx';
+import { Schaetzrunde } from './Schaetzrunde.tsx';
+import { CardPrompt, cardLine } from './cloze.tsx';
 import './spickzettel.css';
 
 export default function SpickzettelGame({ players, settings, onExit }: GameProps<SpickzettelSettings>) {
@@ -32,6 +35,12 @@ export default function SpickzettelGame({ players, settings, onExit }: GameProps
   if (settings.mode === 'duell') {
     return <Duell stack={stack} players={players} settings={settings} onExit={onExit} />;
   }
+  if (settings.mode === 'schaetzen') {
+    return <Schaetzrunde stack={stack} players={players} settings={settings} onExit={onExit} />;
+  }
+  if (settings.mode === 'luecke') {
+    return <Lueckentext stack={stack} players={players} settings={settings} onExit={onExit} />;
+  }
 
   return (
     <TeamTurnGame<LearnCard>
@@ -42,13 +51,15 @@ export default function SpickzettelGame({ players, settings, onExit }: GameProps
       turnSeconds={settings.seconds}
       targetScore={settings.target}
       draw={(used) => drawFresh(`spickzettel-${stack.id}`, stack.cards, (c) => c.id, { exclude: used })}
-      cardLabel={(c) => `${c.prompt} – ${c.answer}`}
+      cardLabel={cardLine}
       correctLabel="Gewusst"
       skipLabel="Nicht gewusst"
       renderCard={(c) => (
         <div className="learn-card is-revealed learn-card--quiz">
           <span className="learn-card__kind">Vorlesen</span>
-          <p className="learn-card__prompt">{c.prompt}</p>
+          <p className="learn-card__prompt">
+            <CardPrompt card={c} />
+          </p>
           <div className="learn-card__answer">
             <span>Antwort – nicht verraten!</span>
             <p>{c.answer}</p>
