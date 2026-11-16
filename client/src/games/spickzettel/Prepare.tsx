@@ -111,7 +111,8 @@ export function Prepare({ value, onChange }: GameSettingsProps<SpickzettelSettin
           label="Spielform"
           value={value.mode}
           options={[
-            { value: 'kasten', label: 'Kartenkasten', hint: 'allein lernen' },
+            { value: 'kasten', label: 'Kartenkasten', hint: 'allein' },
+            { value: 'duell', label: 'Duell', hint: 'zu zweit' },
             { value: 'blitz', label: 'Blitzrunde', hint: 'Teams, ab 4' },
           ]}
           onChange={(mode) => onChange({ ...value, mode })}
@@ -119,8 +120,10 @@ export function Prepare({ value, onChange }: GameSettingsProps<SpickzettelSettin
         <p className="settings-panel__hint stack-mode-hint">
           {value.mode === 'kasten'
             ? 'Jede Person hat ihren eigenen Kartenkasten. Gewusste Karten kommen seltener, vergessene sofort wieder.'
-            : 'Zwei Teams. Eine Person liest vor und sieht die Antwort, ihr Team antwortet gegen die Zeit.'}
-          {selected?.suggestedModes.includes(value.mode === 'kasten' ? 'kasten' : 'blitz') && ' Passt gut zu diesem Stapel.'}
+            : value.mode === 'duell'
+              ? 'Handy zwischen euch, jede Person ihre Bildschirmhälfte: Wer zuerst richtig tippt, punktet. Fehler landen im Kartenkasten.'
+              : 'Zwei Teams. Eine Person liest vor und sieht die Antwort, ihr Team antwortet gegen die Zeit.'}
+          {selected?.suggestedModes.includes(value.mode) && ' Passt gut zu diesem Stapel.'}
         </p>
       </Section>
     </>

@@ -38,7 +38,7 @@ export function initPwa(): void {
     onOfflineReady() {
       // On the welcome and sign-in pages this would cover the hero for a first-time visitor —
       // the welcome text already says the games work offline.
-      if (/^\/(willkommen|anmelden|registrieren)/.test(window.location.pathname)) return;
+      if (/^\/(willkommen|anmelden|registrieren|s\/)/.test(window.location.pathname)) return;
       toast('Bereit für offline – Phonegames funktioniert jetzt auch ohne Internet ✈️');
     },
     onRegisteredSW(_url, registration) {

@@ -1705,3 +1705,133 @@
   font-weight: 800;
   color: var(--ink);
 }
+
+/* ============================================================ Teilen */
+
+.share-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--radius-lg);
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow-sm);
+}
+
+.share-card__text {
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.share-card__status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+}
+
+.share-card__link {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 2px solid var(--line);
+  background: var(--surface-2);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.share-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.share-card__hint {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.share-page__eyebrow {
+  margin-bottom: 6px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.share-page__meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin: 8px 0 16px;
+}
+
+.share-page__meta span {
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  background: var(--cyan-soft);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.share-page__meta span[aria-hidden='true'] {
+  border-color: transparent;
+  background: none;
+  font-size: 20px;
+  padding: 0 2px;
+}
+
+.share-page__sample {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 18px;
+  padding: 0;
+  list-style: none;
+}
+
+.share-page__sample li {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  border: 2px solid var(--ink);
+  background: var(--surface-2);
+}
+
+.share-page__sample li span {
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.share-page__sample .share-page__more {
+  border-style: dashed;
+  background: none;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: center;
+}
+
+.share-page__actions {
+  display: grid;
+  gap: 10px;
+}
+
+.share-page__hint {
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.auth__share {
+  margin-bottom: 16px;
+}

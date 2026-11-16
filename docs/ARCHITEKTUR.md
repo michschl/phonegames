@@ -120,6 +120,7 @@ die Daten in der Schweiz.
 | `learn_stacks` | `user_id`, `id`, `data` (JSON: Titel, Fach, Sprachen, Karten, empfohlene Spielformen, Quelle), `created_at`, `updated_at`, `deleted` |
 | `learn_progress` | `user_id`, `id` (aus Stapel und Personenname abgeleitet), `stack_id`, `data` (JSON: Name, Fach und Fälligkeit pro Karte), `updated_at`, `deleted` |
 | `learn_usage` | `user_id`, `month` (Kalendermonat in der Schweiz, z. B. `2026-11`), `count` – für das Monatslimit der Foto-Auswertung |
+| `learn_shares` | `id` (zufällig, 128 Bit), `owner_id`, `stack_id` (ein Link pro Stapel), `data` (JSON: Kopie der Karten ohne Lernstand), `imports`, `signups`, Zeitstempel |
 
 Migrationen stehen in [`server/src/db.ts`](../server/src/db.ts) und laufen beim Start automatisch. Neue
 Migrationen immer **anhängen**, nie bestehende ändern.
@@ -134,7 +135,7 @@ Alle Antworten sind JSON. Fehler haben die Form `{ "error": "code", "message": "
 | `GET /api/health` | – | – | `{ ok, version }` |
 | `GET /api/tts?voice=thorsten&text=…` | ✅ | – | `audio/wav` (ein Satz, max. 300 Zeichen) · `503 tts_unavailable` |
 | `GET /api/auth/options` | – | – | `{ inviteRequired }` |
-| `POST /api/auth/register` | – | `{ name, email, password, inviteCode? }` | `201 { user }` + Cookie · `403 invite_required` / `invalid_invite` |
+| `POST /api/auth/register` | – | `{ name, email, password, inviteCode?, shareId? }` | `201 { user }` + Cookie · `403 invite_required` / `invalid_invite` |
 | `POST /api/auth/login` | – | `{ email, password }` | `{ user }` + Cookie |
 | `POST /api/auth/logout` | – | – | `204` |
 | `POST /api/passkeys/login/options` | – | – | WebAuthn-Optionen zum Anmelden |
@@ -150,6 +151,11 @@ Alle Antworten sind JSON. Fehler haben die Form `{ "error": "code", "message": "
 | `GET /api/account/export` | ✅ | – | JSON-Datei mit allen Daten |
 | `POST /api/sync` | ✅ | `{ library, groups, stacks, progress }` (ältere Apps ohne `stacks`/`progress` gehen auch) | `{ library, groups, stacks, progress, serverTime }` |
 | `GET /api/learn/usage` | ✅ | – | `{ available, used, limit, remaining, resetsOn, maxPhotos }` |
+| `GET /api/shares/mine` | ✅ | – | `{ shares: LearnShareInfo[] }` |
+| `POST /api/shares` | ✅ | `{ stackId, title, subject, languages, cards, suggestedModes }` | `{ share }` – legt den Link an oder aktualisiert die Karten dahinter |
+| `DELETE /api/shares/:id` | ✅ | – | `204` – der Link funktioniert danach nicht mehr |
+| `GET /api/shares/:id` | – | – | Vorschau `{ title, subject, cardCount, sample, invites }` · `404 share_not_found` |
+| `POST /api/shares/:id/import` | ✅ | – | `{ stack }` (Kopie der Karten) |
 | `POST /api/learn/extract` | ✅ | `{ images: string[] }` (1–6 JPEG/PNG/WebP als Data-URL) | `{ draft, usage }` · `429 learn_limit` / `learn_running` · `422 learn_empty` · `502 learn_failed` · `503 learn_unavailable` / `learn_busy` |
 
 Die Typen stehen in [`shared/types.ts`](../shared/types.ts).
@@ -243,4 +249,15 @@ Das Lernspiel «Spickzettel» arbeitet mit **Lernstapeln** (Konzept: [KONZEPT-LE
 - **Kartenkasten:** Lernkartei mit 5 Fächern. Gewusst → ein Fach weiter (fällig nach 0, 1, 3, 7, 14 Tagen; im
   letzten Fach nach 30 Tagen), nicht gewusst → Fach 1 und in derselben Runde noch einmal. Fällig sind zuerst die
   Karten aus den vorderen Fächern, neue zuletzt.
+- **Duell:** Zwei Personen, geteilter Bildschirm (die obere Hälfte ist um 180° gedreht). Antworten reagieren auf
+  `pointerdown` statt `click`, damit beide gleichzeitig tippen können. Ein falscher Tipp sperrt die Seite kurz und
+  setzt die Karte im Kartenkasten dieser Person zurück in Fach 1; richtige Antworten im Duell verschieben nichts,
+  weil die Auswahl aus vier leichter ist als freies Antworten.
+- **Teilen:** Auf der Stapel-Seite erzeugt «Link teilen» eine Freigabe (`POST /api/shares`) mit zufälliger ID
+  (`/s/<id>`) und öffnet das Teilen-Menü des Handys (sonst wird der Link kopiert). Der Server speichert eine Kopie
+  der Karten, ohne Lernstand und ohne Namen. Die Vorschau sehen alle mit dem Link (Titel, Fach, Anzahl, drei
+  Beispielkarten, `X-Robots-Tag: noindex`); übernehmen können nur angemeldete Personen – als eigene Kopie. Solange
+  die Registrierung einen Einladungscode braucht, gilt der Link als Einladung, höchstens für 50 neue Konten
+  (`LIMITS.shareSignups`). Nach Registrierung oder Anmeldung über den Link wird der Stapel gleich übernommen. Wer
+  teilt, sieht, wie oft übernommen wurde, kann die geteilte Version aktualisieren und die Freigabe beenden.
 

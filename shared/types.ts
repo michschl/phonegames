@@ -134,6 +134,31 @@ export interface LearnUsage {
   maxPhotos: number;
 }
 
+/** A stack the user shares by link (for the owner). */
+export interface LearnShareInfo {
+  id: string;
+  stackId: string;
+  updatedAt: number;
+  /** How often the stack was taken over, and how many accounts were created with the link. */
+  imports: number;
+  signups: number;
+}
+
+/** Cards of a shared stack, without progress or names. */
+export type LearnShareStack = Pick<LearnStack, 'title' | 'subject' | 'languages' | 'cards' | 'suggestedModes'>;
+
+/** What anybody with the link sees. */
+export interface LearnSharePreview {
+  id: string;
+  title: string;
+  subject: string;
+  cardCount: number;
+  /** The first cards as a teaser. */
+  sample: { prompt: string; answer: string }[];
+  /** The link still works as an invitation (registering without a code). */
+  invites: boolean;
+}
+
 export interface LearnExtractResponse {
   draft: LearnDraft;
   usage: LearnUsage;
@@ -178,4 +203,6 @@ export const LIMITS = {
   cardText: 300,
   stackTitleMax: 80,
   learnPhotos: 6,
+  /** Accounts that may be created with one shared link. */
+  shareSignups: 50,
 } as const;

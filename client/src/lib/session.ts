@@ -18,6 +18,8 @@ export async function register(input: {
   email: string;
   password: string;
   inviteCode?: string;
+  /** Registering through a shared stack link (counts as invitation). */
+  shareId?: string;
 }): Promise<PublicUser> {
   const { user } = await api.register(input);
   signIn(user);

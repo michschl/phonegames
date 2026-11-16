@@ -4,6 +4,7 @@ import { LIMITS, type LearnUsage } from '../../../shared/types.ts';
 import { Mascot } from '../components/Brand.tsx';
 import { Icon } from '../components/Icon.tsx';
 import { BottomBar, Page, Section } from '../components/Layout.tsx';
+import { ShareStack } from '../components/ShareStack.tsx';
 import { StackEditor, toStackInput } from '../components/StackEditor.tsx';
 import { Button, ConfirmSheet, EmptyState } from '../components/ui.tsx';
 import { api, ApiError, errorMessage } from '../lib/api.ts';
@@ -418,6 +419,7 @@ export function StackEditPage() {
           setValue(next);
         }}
       />
+      <ShareStack stack={stack} />
       <div className="danger-zone">
         <Button variant="ghost" icon="trash" onClick={() => setConfirmDelete(true)}>
           Stapel löschen

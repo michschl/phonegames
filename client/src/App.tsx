@@ -11,6 +11,7 @@ import { DiscoverPage } from './pages/DiscoverPage.tsx';
 import { GamePlayPage, GameSetupPage } from './pages/GamePages.tsx';
 import { GroupEditPage, GroupsPage } from './pages/GroupsPage.tsx';
 import { NewStackPage, StackEditPage, StacksPage } from './pages/StackPages.tsx';
+import { SharePage } from './pages/SharePage.tsx';
 import { HomePage } from './pages/HomePage.tsx';
 import { useAuth } from './store/auth.ts';
 import { useSettings } from './store/settings.ts';
@@ -130,6 +131,8 @@ const router = createBrowserRouter([
           { path: '/spiel/:gameId/los', element: <GamePlayPage /> },
         ],
       },
+      // Shared learning stacks: for signed-in visitors and as an invitation for new ones.
+      { path: '/s/:shareId', element: <SharePage /> },
       { path: '*', element: <NotFound /> },
     ],
   },

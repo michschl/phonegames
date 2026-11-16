@@ -8,6 +8,9 @@ import type {
   ApiErrorBody,
   AuthOptions,
   LearnExtractResponse,
+  LearnShareInfo,
+  LearnSharePreview,
+  LearnShareStack,
   LearnUsage,
   PasskeyInfo,
   PublicUser,
@@ -68,7 +71,7 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
 
 export const api = {
   authOptions: () => request<AuthOptions>('GET', '/api/auth/options'),
-  register: (body: { name: string; email: string; password: string; inviteCode?: string }) =>
+  register: (body: { name: string; email: string; password: string; inviteCode?: string; shareId?: string }) =>
     request<{ user: PublicUser }>('POST', '/api/auth/register', body),
   login: (body: { email: string; password: string }) => request<{ user: PublicUser }>('POST', '/api/auth/login', body),
   logout: () => request<void>('POST', '/api/auth/logout'),
@@ -93,7 +96,17 @@ export const api = {
   learnUsage: () => request<LearnUsage>('GET', '/api/learn/usage'),
   /** Photos as data URLs (downscaled JPEG). Can take a while – the AI reads every photo. */
   learnExtract: (images: string[]) => request<LearnExtractResponse>('POST', '/api/learn/extract', { images }),
+  myShares: () => request<{ shares: LearnShareInfo[] }>('GET', '/api/shares/mine'),
+  shareStack: (body: LearnShareStack & { stackId: string }) => request<{ share: LearnShareInfo }>('POST', '/api/shares', body),
+  deleteShare: (id: string) => request<void>('DELETE', `/api/shares/${encodeURIComponent(id)}`),
+  sharePreview: (id: string) => request<LearnSharePreview>('GET', `/api/shares/${encodeURIComponent(id)}`),
+  importShare: (id: string) => request<{ stack: LearnShareStack }>('POST', `/api/shares/${encodeURIComponent(id)}/import`, {}),
 };
+
+/** Public address of a shared stack. */
+export function shareUrl(id: string): string {
+  return `${window.location.origin}/s/${id}`;
+}
 
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError || error instanceof OfflineError) return error.message;
