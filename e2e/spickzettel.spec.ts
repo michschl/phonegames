@@ -17,7 +17,9 @@ async function learnRound(page: Page, wrong: string[] = []): Promise<string> {
     await page.getByRole('button', { name: wrong.includes(prompt) ? 'Nicht gewusst' : 'Gewusst', exact: true }).click();
   }
   const result = await page.locator('.result-banner__title').innerText();
-  await page.getByRole('button', { name: 'Weiter', exact: true }).click();
+  // With cards still due it goes on; when everything is done the round ends with «Fertig».
+  const next = page.getByRole('button', { name: 'Weiter', exact: true });
+  if (await next.isVisible()) await next.click();
   return result;
 }
 
@@ -103,7 +105,13 @@ test('Wer lernt? Namenstafeln zeigen, wer wie viele Karten fällig hat', async (
   await createStack(page, 'Einmaleins', TIMES);
   await startLearning(page);
   await learnRound(page);
-  await endGame(page);
+  // Everything known: the round says when it goes on and suggests playing together.
+  await expect(page.locator('.all-done')).toContainText('Alles erledigt für heute');
+  await expect(page.locator('.all-done')).toContainText('Die nächsten 4 Karten sind morgen dran.');
+  await expect(page.getByRole('link', { name: /Duell zu zweit/ })).toBeVisible();
+  await expectAccessible(page);
+  await page.getByRole('button', { name: 'Fertig' }).click();
+  await expect(page).toHaveURL(/\/lernen\/[^/]+$/);
   await addLearner(page, 'Ben');
   await startLearning(page);
   await learnRound(page, ['7 × 8', '6 × 7']);
@@ -146,3 +154,75 @@ test('Stapelwahl: drei Vorschläge und «Anderer Stapel» mit Suche', async ({ p
   await expect(suggested).toHaveCount(3);
   await expect(page.locator('.stack-option.is-active')).toContainText('Kantone');
 });
+
+/** progressId() of the app: FNV-1a over the normalised name. */
+function progressId(stackId: string, player: string): string {
+  let hash = 0x811c9dc5;
+  for (const char of player.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()) {
+    hash ^= char.codePointAt(0)!;
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return `p-${stackId}-${hash.toString(36)}`;
+}
+
+test('Lernserie: Tage in Folge auf der Namenstafel und nach der Runde, Duell gegen die andere Person', async ({ page }) => {
+  await register(page, 'Lea');
+  await createStack(page, 'Einmaleins', TIMES);
+  const stackId = page.url().split('/').pop()!;
+  // Lea learned yesterday and the day before (on another phone) – Ben learns this stack too, both are in a group.
+  const day = (offset: number) => {
+    const date = new Date(Date.now() + offset * 24 * 60 * 60 * 1000);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  };
+  // The new stack reaches the server in the background.
+  let stack: { cards: { id: string }[] } | undefined;
+  await expect
+    .poll(async () => {
+      stack = (await (await page.request.get('/api/account/export')).json()).learnStacks[0];
+      return stack?.cards.length ?? 0;
+    })
+    .toBe(4);
+  const card = (id: string) => ({ box: 2, due: Date.now() - 1000, id });
+  const cards = Object.fromEntries(stack!.cards.map((c) => [c.id, { box: card(c.id).box, due: card(c.id).due }]));
+  const now = Date.now();
+  const res = await page.request.post('/api/sync', {
+    headers: { 'X-Requested-With': 'phonegames' },
+    data: {
+      library: [],
+      groups: [
+        {
+          id: 'group-familie-1',
+          name: 'Familie',
+          emoji: '🏡',
+          players: [
+            { id: 'player-lea-01', name: 'Lea', color: '#ff3d8b' },
+            { id: 'player-ben-01', name: 'Ben', color: '#5b8cff' },
+          ],
+          createdAt: now,
+          updatedAt: now,
+          deleted: false,
+        },
+      ],
+      stacks: [],
+      progress: [
+        { id: progressId(stackId, 'Lea'), stackId, player: 'Lea', cards, days: [day(-2), day(-1)], updatedAt: now, deleted: false },
+        { id: progressId(stackId, 'Ben'), stackId, player: 'Ben', cards, days: [day(-1)], updatedAt: now - 1, deleted: false },
+      ],
+    },
+  });
+  expect(res.ok()).toBe(true);
+  await page.reload();
+  await expect(page.getByRole('radio', { name: /^Lea/ }).locator('.streak')).toContainText('🔥2');
+  await expect(page.getByRole('radio', { name: /^Ben/ }).locator('.streak')).toHaveCount(0);
+  await page.getByRole('radio', { name: /^Lea/ }).click();
+  await startLearning(page);
+  await learnRound(page);
+  await expect(page.locator('.streak-note')).toHaveText('🔥 3 Tage in Folge gelernt – weiter so!');
+  // Ben learns the same stack and is in the same group: the Duell is suggested against him.
+  await page.getByRole('link', { name: 'Duell gegen Ben' }).click();
+  await expect(page).toHaveURL(/\/spiel\/spickzettel/);
+  await expect(page.getByRole('radio', { name: /Duell/ })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.locator('.group-pill.is-active')).toContainText('Familie');
+  await expect(page.locator('.start-bar .btn')).toHaveText('Spiel starten · 2 Personen');
+});
+

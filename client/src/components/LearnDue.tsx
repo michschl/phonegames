@@ -1,7 +1,8 @@
 import { Link } from 'react-router';
 import { soloLearnPath } from '../games/spickzettel/modes.ts';
-import { useDueList, type DueEntry } from '../store/learners.ts';
+import { useDueList, useStreaks, type DueEntry } from '../store/learners.ts';
 import { Icon } from './Icon.tsx';
+import { Streak } from './LearnerPicker.tsx';
 import { Avatar } from './ui.tsx';
 
 /** Rows shown on the start page – the rest is one tap away. */
@@ -9,6 +10,7 @@ const SHOWN = 3;
 
 /** One row per person and stack with cards due – one tap starts the first card. */
 export function DueRows({ entries }: { entries: DueEntry[] }) {
+  const streak = useStreaks();
   return (
     <ul className="learn-due__list">
       {entries.map(({ stack, learner, due }) => (
@@ -16,7 +18,10 @@ export function DueRows({ entries }: { entries: DueEntry[] }) {
           <Link to={soloLearnPath(stack.id, 'kasten', learner.name)} className="learn-due__row" viewTransition>
             <Avatar name={learner.name} color={learner.color} size={36} />
             <span className="learn-due__text">
-              <strong>{learner.name}</strong>
+              <strong>
+                {learner.name}
+                <Streak days={streak(learner.name)} />
+              </strong>
               <small>
                 {due} {due === 1 ? 'Karte' : 'Karten'} · «{stack.title}»
               </small>

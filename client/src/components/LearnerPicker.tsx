@@ -5,6 +5,7 @@ import { KASTEN_LEGEND, useKastenTiles } from '../games/spickzettel/status.ts';
 import { haptic } from '../lib/device.ts';
 import { sameName } from '../lib/learners.ts';
 import { sound } from '../lib/audio.ts';
+import { useStreaks } from '../store/learners.ts';
 import { useSettings } from '../store/settings.ts';
 import { Icon } from './Icon.tsx';
 import { Avatar } from './ui.tsx';
@@ -25,6 +26,7 @@ export function LearnerPicker({
   onSelect: (name: string) => void;
 }) {
   const tiles = useKastenTiles(stackId);
+  const streak = useStreaks();
   const addLearnerName = useSettings((s) => s.addLearnerName);
   const [adding, setAdding] = useState(learners.length === 0);
   const [name, setName] = useState('');
@@ -63,7 +65,10 @@ export function LearnerPicker({
             >
               <Avatar name={player.name} color={player.color} size={34} />
               <span className="learner-tile__text">
-                <span className="learner-tile__name">{player.name}</span>
+                <span className="learner-tile__name">
+                  {player.name}
+                  <Streak days={streak(player.name)} />
+                </span>
                 {info && <span className="learner-tile__status">{info.label}</span>}
               </span>
               {info && info.due > 0 && (
@@ -136,5 +141,16 @@ export function StatusLegend({ status, players }: { status: PlayerStatusInfo; pl
         ))}
       </ul>
     </div>
+  );
+}
+
+/** «🔥 3» after a name: days in a row – shown from the second day on. */
+export function Streak({ days }: { days: number }) {
+  if (days < 2) return null;
+  return (
+    <span className="streak" title={`${days} Tage in Folge gelernt`}>
+      <span aria-hidden="true">🔥{days}</span>
+      <span className="sr-only">, {days} Tage in Folge</span>
+    </span>
   );
 }

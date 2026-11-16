@@ -115,6 +115,11 @@ const learnProgressSchema = z.object({
   cards: z
     .record(id, z.object({ box: z.number().int().min(1).max(5), due: timestamp }))
     .refine((cards) => Object.keys(cards).length <= LIMITS.cardsPerStack, 'Zu viele Karten.'),
+  // Older app versions do not send learning days yet.
+  days: z
+    .array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ungültiges Datum.'))
+    .max(LIMITS.learnDays)
+    .default([]),
   updatedAt: timestamp,
   deleted: z.boolean(),
 });

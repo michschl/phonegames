@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useMemo, useState, type CSSProperties } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router';
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router';
 import { Fold } from '../components/Fold.tsx';
 import { Icon } from '../components/Icon.tsx';
 import { Mascot } from '../components/Brand.tsx';
@@ -16,13 +16,14 @@ import { useGameSettings, useSettings } from '../store/settings.ts';
 import { toast } from '../store/ui.ts';
 import { GroupPicker } from './GroupsPage.tsx';
 
-/** Pick the group to preselect: last used for this game, else the first one. */
+/** Pick the group to preselect: one asked for (?gruppe=…), the last used for this game, else the first one. */
 function useSelectedGroup(gameId: string) {
   const groups = useGroups();
+  const [params] = useSearchParams();
   const lastGroupId = useSettings((s) => s.lastGroupByGame[gameId]);
   const setLastGroup = useSettings((s) => s.setLastGroup);
   const fallback = groups.find((g) => g.id === lastGroupId)?.id ?? groups[0]?.id;
-  const [selectedId, setSelectedId] = useState<string | undefined>(fallback);
+  const [selectedId, setSelectedId] = useState<string | undefined>(() => groups.find((g) => g.id === params.get('gruppe'))?.id ?? fallback);
   const valid = groups.some((g) => g.id === selectedId) ? selectedId : fallback;
   return {
     selectedId: valid,

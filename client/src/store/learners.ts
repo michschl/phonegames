@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { LearnStack, Player } from '../../../shared/types.ts';
-import { kastenStatus } from '../lib/learn.ts';
+import { kastenStatus, learnStreak } from '../lib/learn.ts';
 import { collectLearners, defaultLearner, learnerColor, learnerId, sameName } from '../lib/learners.ts';
 import { useAuth } from './auth.ts';
 import { useData } from './data.ts';
@@ -62,4 +62,23 @@ export function useDueList(): DueEntry[] {
     }
     return list.sort((a, b) => b.due - a.due);
   }, [stacks, progress, learners]);
+}
+
+/** Days in a row this person learned (any stack), see learnStreak. */
+export function useStreak(name: string | null | undefined): { days: number; today: boolean } {
+  const progress = useData((s) => s.progress);
+  return useMemo(() => (name ? learnStreak(Object.values(progress), name) : { days: 0, today: false }), [progress, name]);
+}
+
+/** Streaks of everyone at once (normalised name → days), for lists of people. */
+export function useStreaks(): (name: string) => number {
+  const progress = useData((s) => s.progress);
+  return useMemo(() => {
+    const list = Object.values(progress);
+    const cache = new Map<string, number>();
+    return (name: string) => {
+      if (!cache.has(name)) cache.set(name, learnStreak(list, name).days);
+      return cache.get(name)!;
+    };
+  }, [progress]);
 }

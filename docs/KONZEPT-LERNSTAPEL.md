@@ -250,6 +250,22 @@ Die Spickzettel-Karten in «Spiele» und «Entdecken» führen zu `/lernen` (`Ga
 dorthin um, Bearbeiten (`/stapel/<id>`) kehrt zur Stapelseite zurück. Nach dem Speichern eines neuen Stapels geht es
 direkt in die erste Runde, wenn klar ist, wer lernt – sonst auf die Stapelseite.
 
+**Etappe 3 – motivieren:**
+
+- **Ende einer Runde:** Ist nichts mehr fällig, steht «Alles erledigt für heute 🎉» und wann es weitergeht («Die
+  nächsten 4 Karten sind morgen dran», `nextRepetition`). Darunter «Fertig», ein Vorschlag zum Zusammenspielen –
+  «Duell gegen Ben», wenn noch jemand den Stapel lernt; sind beide in einer Gruppe, ist sie vorausgewählt
+  (`?gruppe=`) – und «Weiter üben». Ist noch etwas fällig, geht es wie bisher mit «Weiter».
+- **Lernserie:** Jede Antwort markiert den Tag (lokales Datum) im Lernstand der Person (`LearnProgress.days`,
+  höchstens 60 pro Stapel, synchronisiert). Über alle Stapel zählt `learnStreak` die Tage in Folge; wer gestern
+  gelernt hat und heute noch nicht, behält die Serie bis zum Abend. Ab zwei Tagen zeigt «🔥3» sie auf der
+  Namenstafel und in «Heute dran», nach der Runde «🔥 3 Tage in Folge gelernt – weiter so!».
+
+| Ablauf | Vorher | Jetzt |
+|---|---|---|
+| Neues Blatt → erste Karte | 10 Tipps + Name eintippen | 6 Tipps; ein neuer Name nur einmal |
+| Fällige Karten lernen | 3 Tipps | 1 Tipp («Heute fällig» auf der Startseite oder «Heute dran») |
+
 ## Offene Punkte
 
 - Gegenprobe mit echten Handyfotos (schräg, Schatten, echte Kinderhandschrift, Mathematik).

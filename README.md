@@ -30,11 +30,11 @@ Mit dabei: vom tickenden Klassiker **💣 Bombe** über Bluff-Spiele wie **🕵�
 <p align="center">
   <img src="docs/screenshots/stapel-foto.jpg" width="180" alt="Neuer Lernstapel: Wörtliblatt fotografieren – genau übernehmen oder neue Aufgaben erfinden">
   <img src="docs/screenshots/karten-pruefen.jpg" width="180" alt="Erkannte Karten prüfen, unsichere sind markiert">
-  <img src="docs/screenshots/spickzettel.jpg" width="180" alt="Drei vorgeschlagene Lernstapel mit fälligen Karten">
-  <img src="docs/screenshots/wer-lernt.jpg" width="180" alt="Wer lernt? Namenstafeln mit Badges">
+  <img src="docs/screenshots/lernen.jpg" width="180" alt="Tab Lernen: Heute dran und alle Stapel">
+  <img src="docs/screenshots/stapelseite.jpg" width="180" alt="Stapelseite: Wer lernt? mit Lernserie und Badges">
 </p>
 <p align="center">
-  <img src="docs/screenshots/kartenkasten.jpg" width="180" alt="Kartenkasten mit fünf Fächern">
+  <img src="docs/screenshots/kartenkasten.jpg" width="180" alt="Kartenkasten: alles erledigt, Lernserie und Duell-Vorschlag">
   <img src="docs/screenshots/duell.jpg" width="180" alt="Duell auf dem geteilten Bildschirm">
   <img src="docs/screenshots/schaetzrunde.jpg" width="180" alt="Schätzrunde mit Zahlenstrahl">
   <img src="docs/screenshots/lueckentext.jpg" width="180" alt="Lückentext mit Wortbank">
@@ -74,7 +74,7 @@ Mit dabei: vom tickenden Klassiker **💣 Bombe** über Bluff-Spiele wie **🕵�
 | 🙋 **Ich hab noch nie …** | 3–30 | Wer schon hat, steht auf – mit Strichliste. 168 Aussagen |
 | ☝️ **Zufallsfinger** | 2–10 | Alle Finger aufs Display: eine Person, zwei Teams oder eine Reihenfolge auslosen |
 | 🍾 **Flaschendrehen** | beliebig | Wischen und drehen lassen – auf Wunsch mit Wahrheit-oder-Pflicht-Karte |
-| 📝 **Spickzettel** | 1–30 | Lernspiel mit eigenen Lernstapeln: **Kartenkasten** (Lernkartei mit 5 Fächern, Lernstand pro Person; selbst prüfen, Auswahl aus vier oder eintippen), **Duell** (zu zweit, geteilter Bildschirm, wer zuerst richtig tippt), **Blitzrunde** (Teams, eine Person fragt ab), **Schätzrunde** (Zahlen und Jahreszahlen, alle schätzen geheim) und **Lückentext** (Wortbank oder eintippen) |
+| 📝 **Spickzettel** | 1–30 | Lernspiel mit eigenen Lernstapeln, eigener Tab «Lernen»: **Kartenkasten** (Lernkartei mit 5 Fächern, Lernstand und Lernserie pro Person, allein ohne Spielgruppe; aufdecken, Auswahl aus vier oder eintippen), **Duell** (zu zweit, geteilter Bildschirm, wer zuerst richtig tippt), **Blitzrunde** (Teams, eine Person fragt ab), **Schätzrunde** (Zahlen und Jahreszahlen, alle schätzen geheim) und **Lückentext** (Wortbank oder eintippen) |
 
 Alle Inhalte sind in Schweizer Hochdeutsch geschrieben (ohne «ß») und funktionieren offline.
 

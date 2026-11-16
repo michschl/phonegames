@@ -323,6 +323,11 @@ describe('syncing learning stacks', () => {
     expect(first.stacks).toHaveLength(1);
     expect(first.stacks[0]!.cards[0]!.prompt).toBe('le chien');
     expect(first.progress[0]!.cards['card-0001']!.box).toBe(2);
+    // Older versions send no learning days – they come back as an empty list.
+    expect(first.progress[0]!.days).toEqual([]);
+
+    const withDays = await sync({ library: [], groups: [], stacks: [], progress: [{ ...progress, days: ['2026-11-15', '2026-11-16'], updatedAt: T + 5 }] });
+    expect(withDays.progress[0]!.days).toEqual(['2026-11-15', '2026-11-16']);
 
     const older = await sync({ library: [], groups: [], stacks: [stack({ title: 'Alt', updatedAt: T - 1 })], progress: [] });
     expect(older.stacks[0]!.title).toBe('Unité 5');
@@ -335,6 +340,16 @@ describe('syncing learning stacks', () => {
     const res = await sync({ library: [], groups: [] });
     expect(res.stacks).toEqual([]);
     expect(res.progress).toEqual([]);
+  });
+
+  it('rejects invalid learning days', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/sync',
+      headers: { ...HEADERS, cookie },
+      payload: { library: [], groups: [], stacks: [], progress: [{ id: 'p-x-123456', stackId: 'stack-0001', player: 'Lea', cards: {}, days: ['gestern'], updatedAt: T, deleted: false }] },
+    });
+    expect(res.statusCode).toBe(400);
   });
 
   it('rejects invalid boxes', async () => {

@@ -139,7 +139,7 @@ die Daten in der Schweiz.
 | `library` | `user_id`, `game_id`, `added_at`, `updated_at`, `deleted` |
 | `player_groups` | `user_id`, `id`, `name`, `emoji`, `players` (JSON), `created_at`, `updated_at`, `deleted` |
 | `learn_stacks` | `user_id`, `id`, `data` (JSON: Titel, Fach, Sprachen, Karten, empfohlene Spielformen, Quelle), `created_at`, `updated_at`, `deleted` |
-| `learn_progress` | `user_id`, `id` (aus Stapel und Personenname abgeleitet), `stack_id`, `data` (JSON: Name, Fach und Fälligkeit pro Karte), `updated_at`, `deleted` |
+| `learn_progress` | `user_id`, `id` (aus Stapel und Personenname abgeleitet), `stack_id`, `data` (JSON: Name, Fach und Fälligkeit pro Karte, Lerntage für die Lernserie), `updated_at`, `deleted` |
 | `learn_usage` | `user_id`, `month` (Kalendermonat in der Schweiz, z. B. `2026-11`), `count` – für das Monatslimit der Foto-Auswertung |
 | `learn_shares` | `id` (zufällig, 128 Bit), `owner_id`, `stack_id` (ein Link pro Stapel), `data` (JSON: Kopie der Karten ohne Lernstand), `imports`, `signups`, Zeitstempel |
 

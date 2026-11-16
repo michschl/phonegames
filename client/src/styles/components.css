@@ -2207,3 +2207,11 @@ button.list__item:active {
   font-weight: 800;
 }
 
+/* «🔥 3»: days in a row someone learned. */
+.streak {
+  margin-left: 6px;
+  font-size: 0.85em;
+  font-weight: 800;
+  white-space: nowrap;
+}
+

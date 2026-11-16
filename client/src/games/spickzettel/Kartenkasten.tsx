@@ -4,9 +4,22 @@ import { Button } from '../../components/ui.tsx';
 import { sound } from '../../lib/audio.ts';
 import { confetti } from '../../lib/confetti.ts';
 import { haptic } from '../../lib/device.ts';
-import { boxCounts, canPlayChoice, checkTypedAnswer, choicesFor, dueCards, dueDayLabel, kastenStatus, type TypedVerdict } from '../../lib/learn.ts';
+import { Link } from 'react-router';
+import {
+  boxCounts,
+  canPlayChoice,
+  checkTypedAnswer,
+  choicesFor,
+  dueCards,
+  dueDayLabel,
+  kastenStatus,
+  nextRepetition,
+  type TypedVerdict,
+} from '../../lib/learn.ts';
+import { sameName } from '../../lib/learners.ts';
 import { normalize, shuffle } from '../../lib/util.ts';
-import { useData, useProgress } from '../../store/data.ts';
+import { useData, useGroups, useProgress } from '../../store/data.ts';
+import { useLearners, useStreak } from '../../store/learners.ts';
 import { Actions, GameShell, Headline, Stage } from '../shared/GameShell.tsx';
 import { PlayerPicker } from '../shared/players.tsx';
 import type { SpickzettelSettings } from './index.tsx';
@@ -53,6 +66,9 @@ export function Kartenkasten({
   const progress = useProgress(stack.id, learner?.name);
   const recordAnswer = useData((s) => s.recordAnswer);
   const tiles = useKastenTiles(stack.id);
+  const streak = useStreak(learner?.name);
+  const learners = useLearners(stack.id);
+  const groups = useGroups();
 
   const [queue, setQueue] = useState<LearnCard[]>([]);
   const [index, setIndex] = useState(0);
@@ -174,6 +190,46 @@ export function Kartenkasten({
       sound.ding();
     }
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** Nothing due any more: when it goes on, and an idea for playing together. */
+  const allDone = () => {
+    const next = nextRepetition(stack, progress);
+    const rival = learners.find((p) => !sameName(p.name, learner?.name));
+    const sharedGroup = rival && groups.find((g) => [learner!.name, rival.name].every((n) => g.players.some((p) => sameName(p.name, n))));
+    return (
+      <>
+        <p className="gs-text all-done">
+          <strong>Alles erledigt für heute 🎉</strong>
+          {next && (
+            <>
+              {' '}
+              {next.count === 1 ? 'Die nächste Karte ist' : `Die nächsten ${next.count} Karten sind`} {dueDayLabel(next.at)} dran.
+            </>
+          )}
+        </p>
+        <Actions>
+          <Button size="lg" block icon="check" onClick={onExit}>
+            Fertig
+          </Button>
+          {canPlayChoice(stack) && (
+            <Link
+              to={`/spiel/spickzettel?stapel=${stack.id}&modus=duell${sharedGroup ? `&gruppe=${sharedGroup.id}` : ''}`}
+              className="btn btn--secondary btn--lg btn--block"
+              // Back from the Duell leads to the stack page, not into this round again.
+              replace
+              viewTransition
+            >
+              <span aria-hidden="true">⚔️</span>
+              <span>{rival ? `Duell gegen ${rival.name}` : 'Duell zu zweit'}</span>
+            </Link>
+          )}
+          <Button variant="ghost" block onClick={() => setPhase('overview')}>
+            Weiter üben
+          </Button>
+        </Actions>
+      </>
+    );
+  };
 
   const label =
     phase === 'card' ? `Karte ${index + 1} von ${queue.length}${practice ? ' · Üben' : ''}` : phase === 'who' ? 'Kartenkasten' : stack.title;
@@ -391,16 +447,25 @@ export function Kartenkasten({
                   ? 'Perfekt! Alle Karten sind ein Fach weiter.'
                   : 'Die vergessenen Karten sind zurück in Fach 1 und kommen bald wieder.'}
               </p>
+              {streak.days >= 2 && (
+                <p className="streak-note" role="status">
+                  <span aria-hidden="true">🔥</span> {streak.days} Tage in Folge gelernt – weiter so!
+                </p>
+              )}
             </>
           )}
-          <Actions>
-            <Button size="lg" block onClick={() => setPhase('overview')}>
-              Weiter
-            </Button>
-            <Button variant="ghost" block onClick={onExit}>
-              Beenden
-            </Button>
-          </Actions>
+          {practice || due.length > 0 ? (
+            <Actions>
+              <Button size="lg" block onClick={() => setPhase('overview')}>
+                Weiter
+              </Button>
+              <Button variant="ghost" block onClick={onExit}>
+                Beenden
+              </Button>
+            </Actions>
+          ) : (
+            allDone()
+          )}
         </Stage>
       )}
     </GameShell>

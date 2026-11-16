@@ -877,3 +877,20 @@
   color: var(--muted);
 }
 
+/* End of a Kartenkasten round. */
+.streak-note {
+  margin: 0;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 2.5px solid var(--ink);
+  background: var(--yellow-soft);
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.all-done strong {
+  display: block;
+  color: var(--ink);
+  font-size: 1.1em;
+}
+
