@@ -24,8 +24,10 @@ export function Fold({
     <details className={`fold ${className}`} onToggle={() => sound.tap()}>
       <summary>
         <Icon name={icon} size={18} />
-        <span className="fold__title">{title}</span>
-        {meta && <span className="fold__meta">{meta}</span>}
+        <span className="fold__head">
+          <span className="fold__title">{title}</span>
+          {meta && <span className="fold__meta">{meta}</span>}
+        </span>
       </summary>
       <div className="fold__body">{children}</div>
     </details>

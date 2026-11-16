@@ -799,9 +799,20 @@
   transform: rotate(45deg);
 }
 
-.fold__title {
+/* Title and meta share a line; with large text the meta drops below instead of squeezing the title. */
+.fold__head {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 8px;
+}
+
+.fold__title {
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 
 .fold__meta {
@@ -966,6 +977,8 @@
 
 .settings-panel {
   display: grid;
+  /* One wide control must not widen the whole column (and push everything out of the card). */
+  grid-template-columns: minmax(0, 1fr);
   gap: 22px;
   padding: 18px;
   border-radius: var(--radius-lg);
@@ -976,6 +989,7 @@
 
 .settings-panel__group {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
 }
 
