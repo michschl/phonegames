@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { NavLink, useLocation, useNavigate } from 'react-router';
 import { Icon, type IconName } from './Icon.tsx';
 import { haptic } from '../lib/device.ts';
@@ -179,6 +180,16 @@ export function Toaster() {
       ))}
     </div>
   );
+}
+
+/**
+ * Action bar pinned to the bottom of the screen («Spiel starten», «Speichern»).
+ * Rendered straight into <body>: inside the page, an entrance animation or a view
+ * transition gives an ancestor a transform, and Safari then lets the «fixed» bar
+ * scroll along with the content.
+ */
+export function BottomBar({ children }: { children: ReactNode }) {
+  return createPortal(<div className="start-bar">{children}</div>, document.body);
 }
 
 export function Section({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) {
