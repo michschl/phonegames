@@ -82,8 +82,10 @@ interface Karte {
 - **Anbieter:** Infomaniak AI, OpenAI-kompatible Schnittstelle
   `POST https://api.infomaniak.com/2/ai/{product_id}/openai/v1/chat/completions`, Bearer-Token.
   Modellliste mit `GET /1/ai/models`.
-- **Modell:** ein Qwen-Modell mit Bildverständnis (vorgeschlagen: Qwen 3.8 27B). Verfügbarkeit, Bildverständnis und
-  Qualität werden im Test geprüft; die Modell-ID ist konfigurierbar (`LEARN_AI_MODEL`).
+- **Modell:** `Qwen/Qwen3.8-27B-FP8` (versteht Bilder; bei Infomaniak als Beta markiert). Die Modell-ID ist
+  konfigurierbar (`LEARN_AI_MODEL`), damit bei Änderungen ohne neuen Code gewechselt werden kann.
+- **Ohne «Nachdenken»:** `reasoning_effort: "none"` ist nötig. Mit eingeschaltetem Denken verbrauchte das Modell im
+  Test alle 6000 Ausgabe-Tokens fürs Nachdenken und lieferte keine Karten.
 - **Ausgabe:** festes JSON-Schema über `response_format: { type: 'json_schema' }`; der Server prüft das Ergebnis
   zusätzlich mit zod und wiederholt bei ungültigem JSON einmal.
 - **Regeln im Prompt:**
@@ -104,7 +106,17 @@ interface Karte {
 - **Notbremse:** globales Monatslimit über alle Konten (`LEARN_GLOBAL_MONTHLY_LIMIT`).
 - Zusätzlich Rate-Limit pro Minute gegen Doppel-Tipps und Missbrauch.
 - Kosten trägt der Betreiber. Der Verbrauch lässt sich bei Infomaniak abrufen (`GET /1/ai/{product_id}/consumptions`).
-- Die konkreten Werte werden nach dem Kostentest festgelegt.
+- **Gemessene Kosten** (Qwen 3.8, aus dem Infomaniak-Verbrauch abgeleitet: CHF 0.40 pro 1 Mio. Eingabe-Tokens,
+  CHF 3.00 pro 1 Mio. Ausgabe-Tokens; ein Foto zählt als rund 2000 Tokens):
+
+  | Auswertung | Tokens (ein/aus) | Dauer | Kosten |
+  |---|---|---|---|
+  | 1 Foto (8 Karten) | 2 367 / 780 | 4.6 s | ca. CHF 0.003 |
+  | 2 Fotos (20 Karten) | 4 369 / 1 569 | 6.7 s | ca. CHF 0.007 |
+  | 6 Fotos (geschätzt) | ~12 400 / ~4 500 | – | ca. CHF 0.02 |
+
+  Selbst grosszügige Limiten bleiben günstig: 30 Auswertungen pro Monat mit je 6 Fotos kosten pro Person höchstens
+  rund 60 Rappen. Die konkreten Werte legt der Betreiber fest.
 
 ## Teilen
 
@@ -143,8 +155,9 @@ interface Karte {
 
 ## Etappen
 
-1. **Test:** Modell festlegen und mit 10–20 echten Fotos (Wörtliblätter, Heftseiten mit Handschrift) Qualität und
-   Kosten pro Auswertung messen. Daraus Limiten ableiten.
+1. **Test:** ✅ mit nachgestellten Fotos (gedrucktes Französisch-Wörtliblatt, handschriftliche Heftseite mit Name und
+   Note): alle 20 Karten korrekt, Akzente erhalten, Name und Note weggelassen, gute falsche Antworten (einmal falscher
+   Artikel: «der Aare»). Offen: Gegenprobe mit echten Handyfotos.
 2. **Grundlage:** Stapel erfassen (Foto und Text), Prüfansicht, Speichern und Sync, Kartenkasten, Blitzrunde.
 3. **Teilen:** Freigaben, Link als Einladung, Übernahme.
 4. **Duell** und weitere Spielformen.
@@ -152,7 +165,8 @@ interface Karte {
 
 ## Offene Punkte
 
-- Ist das vorgeschlagene Qwen-Modell bei Infomaniak verfügbar, und versteht es Bilder (Handschrift, Tabellen)?
-- Konkrete Limiten nach dem Kostentest.
+- Gegenprobe mit echten Handyfotos (schräg, Schatten, echte Kinderhandschrift, Mathematik).
+- Qwen 3.8 ist bei Infomaniak noch Beta – Ersatzmodell festlegen, falls es sich ändert.
+- Konkrete Limiten (die Kosten erlauben deutlich mehr als 5 pro Monat).
 - Registrierungen pro geteiltem Link begrenzen?
 - Rechtliche Abklärung zum Teilen von Lehrmittel-Inhalten.
