@@ -1,17 +1,104 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { Icon } from '../../components/Icon.tsx';
 import { Section } from '../../components/Layout.tsx';
 import { haptic } from '../../lib/device.ts';
-import { clozeCards, estimateCards, MODE_MIN_CARDS, subjectEmoji, suggestedModes } from '../../lib/learn.ts';
-import { useDueByStack, useStacks } from '../../store/data.ts';
+import { clozeCards, estimateCards, MODE_MIN_CARDS, recommendStacks, subjectEmoji, suggestedModes } from '../../lib/learn.ts';
+import { normalize } from '../../lib/util.ts';
+import { Sheet } from '../../components/ui.tsx';
+import { useData, useDueByStack, useStacks } from '../../store/data.ts';
 import type { GameSettingsProps } from '../types.ts';
 import type { LearnMode, LearnStack } from '../../../../shared/types.ts';
 import type { SpickzettelSettings } from './index.tsx';
 import './spickzettel.css';
 
-/** How many stacks are listed on the setup screen – the rest is under «Alle Stapel». */
-const SHOWN = 5;
+/** Stacks suggested on the setup screen – all others are one tap away under «Anderer Stapel». */
+const SUGGESTED = 3;
+/** From this many stacks the full list gets a search field. */
+const SEARCH_FROM = 7;
+
+function StackOption({ stack, active, due, onSelect }: { stack: LearnStack; active: boolean; due: number; onSelect: () => void }) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={active}
+      className={`stack-option ${active ? 'is-active' : ''}`}
+      onClick={() => {
+        haptic(6);
+        onSelect();
+      }}
+    >
+      <span className="stack-option__emoji" aria-hidden="true">
+        {subjectEmoji(stack.subject)}
+      </span>
+      <span className="stack-option__body">
+        <span className="stack-option__title">{stack.title}</span>
+        <span className="stack-option__meta">
+          {stack.cards.length} {stack.cards.length === 1 ? 'Karte' : 'Karten'}
+          {stack.subject && ` · ${stack.subject}`}
+        </span>
+        {due > 0 && <span className="due-pill">{due} fällig</span>}
+      </span>
+      <span className="stack-option__radio" aria-hidden="true">
+        {active && <Icon name="check" size={16} strokeWidth={3} />}
+      </span>
+    </button>
+  );
+}
+
+/** All stacks to choose from, alphabetical, with a search field for long lists. */
+function StackChooser({
+  open,
+  onClose,
+  stacks,
+  selectedId,
+  due,
+  onSelect,
+}: {
+  open: boolean;
+  onClose: () => void;
+  stacks: LearnStack[];
+  selectedId: string | null;
+  due: Record<string, number>;
+  onSelect: (id: string) => void;
+}) {
+  const [query, setQuery] = useState('');
+  const sorted = useMemo(() => [...stacks].sort((a, b) => a.title.localeCompare(b.title, 'de-CH')), [stacks]);
+  const q = normalize(query);
+  const shown = q ? sorted.filter((stack) => normalize(`${stack.title} ${stack.subject}`).includes(q)) : sorted;
+  return (
+    <Sheet open={open} onClose={onClose} title="Lernstapel wählen">
+      {stacks.length >= SEARCH_FROM && (
+        <input
+          className="stack-chooser__search"
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Stapel oder Fach suchen"
+          aria-label="Stapel oder Fach suchen"
+          enterKeyHint="search"
+        />
+      )}
+      <div className="stack-picker stack-chooser" role="radiogroup" aria-label="Alle Lernstapel">
+        {shown.map((stack) => (
+          <StackOption
+            key={stack.id}
+            stack={stack}
+            active={stack.id === selectedId}
+            due={due[stack.id] ?? 0}
+            onSelect={() => {
+              onSelect(stack.id);
+              setQuery('');
+              onClose();
+            }}
+          />
+        ))}
+        {shown.length === 0 && <p className="settings-panel__hint">Kein Stapel gefunden.</p>}
+      </div>
+    </Sheet>
+  );
+}
 
 const MODES: { value: LearnMode; emoji: string; label: string; hint: string; text: string }[] = [
   {
@@ -80,8 +167,13 @@ export function Prepare({ value, onChange }: GameSettingsProps<SpickzettelSettin
     }
   }, [wanted, stacks, selected]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const shown = stacks.slice(0, SHOWN);
-  if (selected && !shown.includes(selected)) shown[SHOWN - 1] = selected;
+  const progress = useData((s) => s.progress);
+  const shown = useMemo(
+    () => recommendStacks(stacks, progress, dueByStack, value.stackId, SUGGESTED),
+    [stacks, progress, dueByStack, value.stackId],
+  );
+  const more = stacks.length > SUGGESTED;
+  const [chooserOpen, setChooserOpen] = useState(false);
 
   return (
     <>
@@ -90,7 +182,7 @@ export function Prepare({ value, onChange }: GameSettingsProps<SpickzettelSettin
         action={
           stacks.length > 0 && (
             <Link to="/stapel" className="section__link" viewTransition>
-              Alle Stapel
+              Verwalten
             </Link>
           )
         }
@@ -111,37 +203,25 @@ export function Prepare({ value, onChange }: GameSettingsProps<SpickzettelSettin
           </div>
         ) : (
           <>
+            {more && <p className="stack-picker__caption">Vorschläge – fällige und zuletzt gelernte Stapel</p>}
             <div className="stack-picker" role="radiogroup" aria-label="Lernstapel wählen">
               {shown.map((stack) => (
-                <button
+                <StackOption
                   key={stack.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={stack.id === value.stackId}
-                  className={`stack-option ${stack.id === value.stackId ? 'is-active' : ''}`}
-                  onClick={() => {
-                    haptic(6);
-                    onChange({ ...value, stackId: stack.id });
-                  }}
-                >
-                  <span className="stack-option__emoji" aria-hidden="true">
-                    {subjectEmoji(stack.subject)}
-                  </span>
-                  <span className="stack-option__body">
-                    <span className="stack-option__title">{stack.title}</span>
-                    <span className="stack-option__meta">
-                      {stack.cards.length} {stack.cards.length === 1 ? 'Karte' : 'Karten'}
-                      {stack.subject && ` · ${stack.subject}`}
-                    </span>
-                    {(dueByStack[stack.id] ?? 0) > 0 && <span className="due-pill">{dueByStack[stack.id]} fällig</span>}
-                  </span>
-                  <span className="stack-option__radio" aria-hidden="true">
-                    {stack.id === value.stackId && <Icon name="check" size={16} strokeWidth={3} />}
-                  </span>
-                </button>
+                  stack={stack}
+                  active={stack.id === value.stackId}
+                  due={dueByStack[stack.id] ?? 0}
+                  onSelect={() => onChange({ ...value, stackId: stack.id })}
+                />
               ))}
             </div>
             <div className="stack-picker__actions">
+              {more && (
+                <button type="button" className="btn btn--primary btn--sm" onClick={() => setChooserOpen(true)}>
+                  <Icon name="cards" size={18} />
+                  <span>Anderer Stapel ({stacks.length})</span>
+                </button>
+              )}
               <Link to="/stapel/neu" className="btn btn--secondary btn--sm" viewTransition>
                 <Icon name="plus" size={18} />
                 <span>Neuer Stapel</span>
@@ -153,6 +233,14 @@ export function Prepare({ value, onChange }: GameSettingsProps<SpickzettelSettin
                 </Link>
               )}
             </div>
+            <StackChooser
+              open={chooserOpen}
+              onClose={() => setChooserOpen(false)}
+              stacks={stacks}
+              selectedId={value.stackId}
+              due={dueByStack}
+              onSelect={(stackId) => onChange({ ...value, stackId })}
+            />
           </>
         )}
       </Section>
