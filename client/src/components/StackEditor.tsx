@@ -6,6 +6,7 @@ import { Button, IconButton, TextField } from './ui.tsx';
 import { haptic } from '../lib/device.ts';
 import type { StackInput } from '../store/data.ts';
 import { emptyCard, type EditorCard, type EditorValue } from '../store/learnDraft.ts';
+import { withUndo } from '../store/undo.ts';
 
 /** Text area that grows with its content (one line by default). */
 function AutoTextarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
@@ -82,11 +83,28 @@ export function StackEditor({
   invalidIndex?: number | null;
 }) {
   const [focusKey, setFocusKey] = useState<string | null>(null);
+  // The undo of a deleted card goes into the value as it is then, not as it was.
+  const latest = useRef({ value, onChange });
+  latest.current = { value, onChange };
   const updateCard = (key: string, patch: Partial<EditorCard>) =>
     onChange({ ...value, cards: value.cards.map((card) => (card.key === key ? { ...card, ...patch } : card)) });
   const removeCard = (key: string) => {
+    const index = value.cards.findIndex((card) => card.key === key);
+    const removed = value.cards[index];
     haptic(10);
     onChange({ ...value, cards: value.cards.filter((card) => card.key !== key) });
+    if (!removed || (!removed.prompt.trim() && !removed.answer.trim())) return;
+    withUndo(
+      `Karte ${index + 1} gelöscht.`,
+      () => {
+        const current = latest.current;
+        if (current.value.cards.some((card) => card.key === removed.key)) return;
+        const cards = [...current.value.cards];
+        cards.splice(Math.min(index, cards.length), 0, removed);
+        current.onChange({ ...current.value, cards });
+      },
+      'Karte ist wieder da.',
+    );
   };
   const addCard = () => {
     haptic(8);

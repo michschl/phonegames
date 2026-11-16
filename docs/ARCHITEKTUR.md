@@ -78,6 +78,11 @@ und im Hintergrund mit dem Server abgeglichen ([`client/src/lib/sync.ts`](../cli
 - Synchronisiert wird nach jeder Änderung (entprellt), beim Start, wenn das Gerät wieder online ist, wenn die App
   in den Vordergrund kommt und alle 5 Minuten.
 - Zeitstempel aus der Zukunft (falsche Geräteuhr) werden vom Server auf «jetzt + 1 Minute» begrenzt.
+- **Löschen mit «Rückgängig»** ([`store/undo.ts`](../client/src/store/undo.ts)): Stapel, Gruppen, Personen,
+  Karten im Editor, Entwürfe und Spiele in «Meine Spiele» verschwinden sofort; der Hinweis bietet einige Sekunden
+  lang «Rückgängig». Wiederherstellen schreibt einen neueren Zeitstempel (`restoreStack`, `restoreGroup`,
+  `restorePlayer`), damit der Datensatz auch auf anderen Geräten zurückkommt. Stapel und Gruppen lassen sich in der
+  Liste über «⋯» und auf ihrer Seite oben rechts löschen – nicht nur ganz unten.
 
 Die Datenmengen sind klein (Gruppen mit Namen), deshalb wird immer der komplette Stand übertragen – das ist
 einfach und robust.

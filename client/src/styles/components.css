@@ -409,6 +409,38 @@
   margin-top: 20px;
 }
 
+/* Menu of actions for one object (ActionSheet). */
+.action-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.action-list__item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 56px;
+  padding: 0 16px;
+  border-radius: var(--radius);
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow-sm);
+  color: var(--ink);
+  font-size: 17px;
+  font-weight: 800;
+  text-align: left;
+}
+
+.action-list__item:active {
+  transform: translateY(3px);
+  box-shadow: none;
+}
+
+.action-list__item.is-danger {
+  color: var(--due-red);
+}
+
 @keyframes sheet-up {
   from {
     transform: translateY(100%);

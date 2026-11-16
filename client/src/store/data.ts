@@ -53,6 +53,10 @@ interface DataState {
   /** Creates a stack, or replaces the stack with `id`. */
   saveStack(input: StackInput, id?: string): LearnStack;
   deleteStack(id: string): void;
+  /** Brings back a deleted group, stack or person (for «Rückgängig»). */
+  restoreGroup(group: PlayerGroup): void;
+  restoreStack(stack: LearnStack, progress: LearnProgress[]): void;
+  restorePlayer(groupId: string, player: Player, index: number): void;
   /** Moves a card in the person's Kartenkasten after an answer. */
   recordAnswer(stackId: string, player: string, cardId: string, correct: boolean): void;
   resetProgress(stackId: string, player: string): void;
@@ -217,6 +221,33 @@ export const useData = create<DataState>()(
         };
         entry.cards[cardId] = nextProgress(entry.cards[cardId], correct);
         set((s) => ({ progress: { ...s.progress, [id]: entry }, revision: s.revision + 1 }));
+      },
+
+      restoreGroup(group) {
+        set((s) => ({
+          groups: { ...s.groups, [group.id]: { ...group, deleted: false, updatedAt: stamp() } },
+          revision: s.revision + 1,
+        }));
+      },
+
+      restoreStack(stack, entries) {
+        const now = stamp();
+        const progress = { ...get().progress };
+        for (const entry of entries) progress[entry.id] = { ...entry, deleted: false, updatedAt: now };
+        set((s) => ({
+          stacks: { ...s.stacks, [stack.id]: { ...stack, deleted: false, updatedAt: now } },
+          progress,
+          revision: s.revision + 1,
+        }));
+      },
+
+      restorePlayer(groupId, player, index) {
+        const group = get().groups[groupId];
+        if (!group || group.deleted || group.players.some((p) => p.id === player.id)) return;
+        if (group.players.length >= LIMITS.playersPerGroup) return;
+        const players = [...group.players];
+        players.splice(Math.min(index, players.length), 0, player);
+        get().updateGroup(groupId, { players });
       },
 
       resetProgress(stackId, player) {
