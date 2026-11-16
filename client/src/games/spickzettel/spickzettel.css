@@ -381,8 +381,9 @@
   transform: rotate(180deg);
 }
 
-.duel__side.is-locked {
-  opacity: 0.55;
+/* Only the answers are dimmed – the question and «Kurz gesperrt …» stay easy to read. */
+.duel__side.is-locked .duel__options {
+  opacity: 0.45;
 }
 
 .duel__who {

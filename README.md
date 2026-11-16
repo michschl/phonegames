@@ -116,6 +116,7 @@ npm run preview
 | `npm start` | Produktionsserver starten (liefert API **und** PWA aus) |
 | `npm run preview` | Build + Produktionsserver |
 | `npm test` | Tests (Vitest): API, Sync-Logik, Spiellogik und Inhalte |
+| `npm run test:e2e` | Browser-Tests (Playwright): baut die App und spielt die wichtigsten Abläufe auf einem Handy-Bildschirm durch – siehe [`e2e/`](e2e) |
 | `npm run typecheck` | TypeScript-Prüfung |
 | `npm run icons` | App-Icons aus `client/public/icons/phoni.svg` neu erzeugen |
 
@@ -137,6 +138,7 @@ npm run preview
 ├── server/                 API (Fastify + SQLite)
 │   ├── src/                app.ts, routes/, repo.ts (Datenbank), security.ts …
 │   └── test/               API-Tests
+├── e2e/                    Browser-Tests (Playwright) mit eigenem Testserver und Schein-KI
 ├── shared/                 Typen und Sync-Logik für Client und Server
 ├── deploy/                 docker-compose.yml, Caddyfile, setup-vps.sh, backup.sh
 ├── docs/                   Dokumentation

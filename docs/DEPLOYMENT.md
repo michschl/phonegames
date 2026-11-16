@@ -10,7 +10,7 @@ Nach der einmaligen Einrichtung wird **jeder Push auf `main` automatisch ausgero
       │
       ▼
  GitHub Actions ──────────────────────────────────────────────────────────────┐
- │ 1. CI: Typecheck, Tests, Build                                             │
+ │ 1. CI: Typecheck, Tests, Build – und Browser-Tests (Playwright)            │
  │ 2. Docker-Image bauen → ghcr.io/<owner>/<repo>:<commit-sha>  (+ :latest)   │
  │    Stimmen-Image <repo>-tts nur, wenn sich der Ordner tts/ geändert hat    │
  │ 3. SSH auf den VPS: docker-compose.yml, Caddyfile, .env kopieren           │
