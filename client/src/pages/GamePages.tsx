@@ -43,7 +43,7 @@ export function GameSetupPage() {
       </Page>
     );
   }
-  return <GameSetup game={game} />;
+  return <GameSetup key={game.id} game={game} />;
 }
 
 function GameSetup({ game }: { game: GameDefinition }) {
@@ -60,12 +60,18 @@ function GameSetup({ game }: { game: GameDefinition }) {
   const customised = useMemo(() => {
     const defaults = (game.defaultSettings ?? {}) as Record<string, unknown>;
     const current = settings as Record<string, unknown>;
-    return Object.keys(defaults).some((key) => JSON.stringify(current[key]) !== JSON.stringify(defaults[key]));
-  }, [game.defaultSettings, settings]);
+    const prepared = (game.prepareKeys ?? []) as string[];
+    return Object.keys(defaults)
+      .filter((key) => !prepared.includes(key))
+      .some((key) => JSON.stringify(current[key]) !== JSON.stringify(defaults[key]));
+  }, [game.defaultSettings, game.prepareKeys, settings]);
 
   const playerCount = group?.players.length ?? 0;
-  const missing = game.noGroup ? 0 : Math.max(0, game.minPlayers - playerCount);
-  const canStart = game.noGroup || (!!group && missing === 0);
+  const needed = game.playersNeeded?.(settings) ?? game.minPlayers;
+  const missing = game.noGroup ? 0 : Math.max(0, needed - playerCount);
+  // The component is keyed by game, so the hook order never changes.
+  const blocker = game.useBlocker?.(settings) ?? null;
+  const canStart = !blocker && (game.noGroup || (!!group && missing === 0));
 
   const start = () => {
     if (!canStart) return;
@@ -117,6 +123,8 @@ function GameSetup({ game }: { game: GameDefinition }) {
         </Fold>
       )}
 
+      {game.Prepare && <game.Prepare value={settings} onChange={setSettings} />}
+
       {!game.noGroup && (
       <Section title="Spielgruppe">
         {selectedId ? (
@@ -154,7 +162,9 @@ function GameSetup({ game }: { game: GameDefinition }) {
 
       <div className="start-bar">
         <Button size="lg" block icon="play" onClick={start} disabled={!canStart}>
-          {game.noGroup
+          {blocker
+            ? blocker
+            : game.noGroup
             ? 'Spiel starten'
             : missing > 0
               ? `Noch ${missing} ${missing === 1 ? 'Person' : 'Personen'} hinzufügen`
@@ -187,7 +197,8 @@ export function GamePlayPage() {
   }, []);
 
   if (!game?.Play || game.status !== 'available') return <Navigate to="/" replace />;
-  if (!game.noGroup && (!group || players.length < game.minPlayers)) return <Navigate to={`/spiel/${game.id}`} replace />;
+  const needed = game.playersNeeded?.(settings) ?? game.minPlayers;
+  if (!game.noGroup && (!group || players.length < needed)) return <Navigate to={`/spiel/${game.id}`} replace />;
 
   const Play = game.Play;
   return (

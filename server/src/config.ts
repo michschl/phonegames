@@ -8,6 +8,11 @@ function bool(value: string | undefined, fallback: boolean): boolean {
   return ['1', 'true', 'yes', 'on'].includes(value.toLowerCase());
 }
 
+function int(value: string | undefined, fallback: number): number {
+  const parsed = Number.parseInt(value ?? '', 10);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+}
+
 function list(value: string | undefined): string[] {
   return (value ?? '')
     .split(',')
@@ -39,6 +44,15 @@ export const config = {
   appOrigins: list(env.APP_ORIGIN ?? (isProd ? '' : 'http://localhost:5173,http://localhost:3000')),
   /** Piper TTS service for the narrator voice, e.g. http://tts:5000 (empty = device voices only). */
   ttsUrl: env.TTS_URL ?? '',
+  /** Photo analysis for learning stacks (Infomaniak AI). Switched off without token and product id. */
+  learn: {
+    url: env.LEARN_AI_URL || 'https://api.infomaniak.com',
+    token: env.INFOMANIAK_AI_TOKEN ?? '',
+    productId: env.INFOMANIAK_AI_PRODUCT_ID ?? '',
+    model: env.LEARN_AI_MODEL || 'Qwen/Qwen3.8-27B-FP8',
+    monthlyLimit: int(env.LEARN_MONTHLY_LIMIT, 5),
+    globalMonthlyLimit: int(env.LEARN_GLOBAL_MONTHLY_LIMIT, 2000),
+  },
 } as const;
 
 export type AppConfig = typeof config;

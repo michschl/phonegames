@@ -2,7 +2,16 @@ import type { Database } from './db.ts';
 import { transaction } from './db.ts';
 import { randomToken, sha256 } from './security.ts';
 import { TOMBSTONE_TTL_MS, shouldReplace } from '../../shared/sync.ts';
-import type { LibraryItem, PasskeyInfo, Player, PlayerGroup, PublicUser, SyncPayload } from '../../shared/types.ts';
+import type {
+  LearnProgress,
+  LearnStack,
+  LibraryItem,
+  PasskeyInfo,
+  Player,
+  PlayerGroup,
+  PublicUser,
+  SyncPayload,
+} from '../../shared/types.ts';
 
 export const SESSION_TTL_MS = 180 * 24 * 60 * 60 * 1000;
 /** Sessions are extended at most once per day to limit writes. */
@@ -303,6 +312,74 @@ export function getGroups(db: Database, userId: string): PlayerGroup[] {
  * Merge the client's state into the database (last write wins per record)
  * and return the complete, merged state for this user.
  */
+interface StackRow {
+  id: string;
+  data: string;
+  created_at: number;
+  updated_at: number;
+  deleted: number;
+}
+
+interface ProgressRow {
+  id: string;
+  stack_id: string;
+  data: string;
+  updated_at: number;
+  deleted: number;
+}
+
+type StackData = Pick<LearnStack, 'title' | 'subject' | 'languages' | 'cards' | 'suggestedModes' | 'source'>;
+type ProgressData = Pick<LearnProgress, 'player' | 'cards'>;
+
+export function getStacks(db: Database, userId: string): LearnStack[] {
+  const rows = db
+    .prepare('SELECT id, data, created_at, updated_at, deleted FROM learn_stacks WHERE user_id = ? ORDER BY created_at')
+    .all(userId) as unknown as StackRow[];
+  return rows.map((row) => ({
+    id: row.id,
+    ...(JSON.parse(row.data) as StackData),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    deleted: row.deleted === 1,
+  }));
+}
+
+export function getProgress(db: Database, userId: string): LearnProgress[] {
+  const rows = db
+    .prepare('SELECT id, stack_id, data, updated_at, deleted FROM learn_progress WHERE user_id = ?')
+    .all(userId) as unknown as ProgressRow[];
+  return rows.map((row) => ({
+    id: row.id,
+    stackId: row.stack_id,
+    ...(JSON.parse(row.data) as ProgressData),
+    updatedAt: row.updated_at,
+    deleted: row.deleted === 1,
+  }));
+}
+
+/* ------------------------------------------------------------ learn usage */
+
+export function getLearnUsage(db: Database, userId: string, month: string): number {
+  const row = db.prepare('SELECT count FROM learn_usage WHERE user_id = ? AND month = ?').get(userId, month) as
+    | { count: number }
+    | undefined;
+  return row?.count ?? 0;
+}
+
+export function getTotalLearnUsage(db: Database, month: string): number {
+  const row = db.prepare('SELECT COALESCE(SUM(count), 0) AS total FROM learn_usage WHERE month = ?').get(month) as {
+    total: number;
+  };
+  return row.total;
+}
+
+export function countLearnUsage(db: Database, userId: string, month: string): void {
+  db.prepare(
+    `INSERT INTO learn_usage (user_id, month, count) VALUES (?, ?, 1)
+     ON CONFLICT (user_id, month) DO UPDATE SET count = count + 1`,
+  ).run(userId, month);
+}
+
 export function syncUserData(db: Database, userId: string, incoming: SyncPayload): SyncPayload {
   const now = Date.now();
   // Never accept timestamps from the (far) future – a wrong device clock would
@@ -345,10 +422,49 @@ export function syncUserData(db: Database, userId: string, incoming: SyncPayload
       );
     }
 
+    const stacks = new Map(getStacks(db, userId).map((stack) => [stack.id, stack]));
+    const upsertStack = db.prepare(
+      `INSERT INTO learn_stacks (user_id, id, data, created_at, updated_at, deleted) VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT (user_id, id) DO UPDATE SET
+         data = excluded.data, created_at = excluded.created_at, updated_at = excluded.updated_at, deleted = excluded.deleted`,
+    );
+    for (const raw of incoming.stacks) {
+      const stack = { ...raw, updatedAt: clamp(raw.updatedAt) };
+      if (!shouldReplace(stacks.get(stack.id), stack)) continue;
+      const data: StackData = {
+        title: stack.title,
+        subject: stack.subject,
+        languages: stack.languages,
+        cards: stack.deleted ? [] : stack.cards,
+        suggestedModes: stack.suggestedModes,
+        source: stack.source,
+      };
+      upsertStack.run(userId, stack.id, JSON.stringify(data), stack.createdAt, stack.updatedAt, stack.deleted ? 1 : 0);
+    }
+
+    const progress = new Map(getProgress(db, userId).map((entry) => [entry.id, entry]));
+    const upsertProgress = db.prepare(
+      `INSERT INTO learn_progress (user_id, id, stack_id, data, updated_at, deleted) VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT (user_id, id) DO UPDATE SET
+         stack_id = excluded.stack_id, data = excluded.data, updated_at = excluded.updated_at, deleted = excluded.deleted`,
+    );
+    for (const raw of incoming.progress) {
+      const entry = { ...raw, updatedAt: clamp(raw.updatedAt) };
+      if (!shouldReplace(progress.get(entry.id), entry)) continue;
+      const data: ProgressData = { player: entry.player, cards: entry.deleted ? {} : entry.cards };
+      upsertProgress.run(userId, entry.id, entry.stackId, JSON.stringify(data), entry.updatedAt, entry.deleted ? 1 : 0);
+    }
+
     const cutoff = now - TOMBSTONE_TTL_MS;
-    db.prepare('DELETE FROM library WHERE user_id = ? AND deleted = 1 AND updated_at < ?').run(userId, cutoff);
-    db.prepare('DELETE FROM player_groups WHERE user_id = ? AND deleted = 1 AND updated_at < ?').run(userId, cutoff);
+    for (const table of ['library', 'player_groups', 'learn_stacks', 'learn_progress']) {
+      db.prepare(`DELETE FROM ${table} WHERE user_id = ? AND deleted = 1 AND updated_at < ?`).run(userId, cutoff);
+    }
   });
 
-  return { library: getLibrary(db, userId), groups: getGroups(db, userId) };
+  return {
+    library: getLibrary(db, userId),
+    groups: getGroups(db, userId),
+    stacks: getStacks(db, userId),
+    progress: getProgress(db, userId),
+  };
 }

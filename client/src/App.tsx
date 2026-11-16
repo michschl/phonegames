@@ -10,6 +10,7 @@ import { LoginPage, RegisterPage, WelcomePage } from './pages/AuthPages.tsx';
 import { DiscoverPage } from './pages/DiscoverPage.tsx';
 import { GamePlayPage, GameSetupPage } from './pages/GamePages.tsx';
 import { GroupEditPage, GroupsPage } from './pages/GroupsPage.tsx';
+import { NewStackPage, StackEditPage, StacksPage } from './pages/StackPages.tsx';
 import { HomePage } from './pages/HomePage.tsx';
 import { useAuth } from './store/auth.ts';
 import { useSettings } from './store/settings.ts';
@@ -122,6 +123,9 @@ const router = createBrowserRouter([
             ],
           },
           { path: '/gruppen/:groupId', element: <GroupEditPage /> },
+          { path: '/stapel', element: <StacksPage /> },
+          { path: '/stapel/neu', element: <NewStackPage /> },
+          { path: '/stapel/:stackId', element: <StackEditPage /> },
           { path: '/spiel/:gameId', element: <GameSetupPage /> },
           { path: '/spiel/:gameId/los', element: <GamePlayPage /> },
         ],

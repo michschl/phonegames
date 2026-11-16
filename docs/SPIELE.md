@@ -1,7 +1,7 @@
 # Spiele entwickeln
 
 Jedes Spiel ist ein eigener Ordner in [`client/src/games/`](../client/src/games/) und wird in
-[`registry.ts`](../client/src/games/registry.ts) eingetragen. Aktuell sind es 17 Spiele. Katalog, Suche, «Meine Spiele», Spielgruppen,
+[`registry.ts`](../client/src/games/registry.ts) eingetragen. Aktuell sind es 18 Spiele (17 Partyspiele und das Lernspiel «Spickzettel»). Katalog, Suche, «Meine Spiele», Spielgruppen,
 Einstellungen und der Vollbild-Spielmodus funktionieren danach automatisch.
 Regeln («So geht’s») und Einstellungen erscheinen auf dem Startbildschirm des Spiels zugeklappt; bei den
 Einstellungen zeigt ein Etikett, ob sie angepasst wurden.
@@ -117,6 +117,18 @@ Die meisten Spiele bestehen nur aus Inhalten, ein bisschen Logik und diesen Baus
 
 Werkzeuge wie «Zufallsfinger» oder «Flaschendrehen» brauchen keine Namen. Mit `noGroup: true` in der
 Definition entfällt die Gruppenauswahl auf dem Startbildschirm, und `players` ist leer.
+
+### Vorbereitung, die nicht zugeklappt sein darf
+
+Manche Spiele brauchen vor dem Start eine Wahl, ohne die es nicht geht – «Spickzettel» etwa den Lernstapel und die
+Spielform. Dafür gibt es in der Definition:
+
+| Feld | Wirkung |
+| --- | --- |
+| `Prepare` | Bereich, der offen über der Spielgruppe steht (bekommt wie `Settings` `value` und `onChange`) |
+| `prepareKeys` | Einstellungen aus `Prepare` – sie setzen das Etikett der Einstellungen nicht auf «Angepasst» |
+| `playersNeeded(settings)` | Mindestzahl Personen je nach Einstellung (sonst `minPlayers`), z. B. 1 für den Kartenkasten, 4 für die Blitzrunde |
+| `useBlocker(settings)` | Hook: Grund, warum noch nicht gestartet werden kann – erscheint auf dem Start-Knopf, z. B. «Wähle zuerst einen Lernstapel» |
 
 ### Ein Teamspiel in wenigen Zeilen
 

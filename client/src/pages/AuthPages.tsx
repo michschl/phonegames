@@ -87,7 +87,7 @@ export function WelcomePage() {
         <p className="welcome__tagline">
           <strong>Ein Handy. Die ganze Runde.</strong>
           <br />
-          {GAMES.length} Partyspiele – laut, lustig und auch offline.
+          {GAMES.length} Spiele – laut, lustig und auch offline.
         </p>
       </div>
 

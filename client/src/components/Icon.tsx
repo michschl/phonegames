@@ -115,6 +115,19 @@ const ICONS: Record<string, ReactNode> = {
       <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6" />
     </>
   ),
+  camera: (
+    <>
+      <path d="M14.5 4h-5L7.5 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3.5z" />
+      <circle cx="12" cy="13" r="3.5" />
+    </>
+  ),
+  text: <path d="M4 6h16M4 12h16M4 18h10" />,
+  cards: (
+    <>
+      <rect x="7" y="3" width="14" height="14" rx="2.5" />
+      <path d="M17 21H5.5A2.5 2.5 0 0 1 3 18.5V7" />
+    </>
+  ),
 };
 
 export type IconName = keyof typeof ICONS;

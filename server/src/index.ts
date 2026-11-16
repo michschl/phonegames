@@ -15,6 +15,7 @@ const app = await buildApp({
   version: config.version,
   inviteCodes: config.inviteCodes,
   tts: config.ttsUrl ? { url: config.ttsUrl, cacheDir: path.join(config.dataDir, 'tts-cache') } : null,
+  learn: config.learn.token && config.learn.productId ? config.learn : null,
   webauthn: config.appOrigins.length
     ? { rpID: new URL(config.appOrigins[0]!).hostname, rpName: 'Phonegames', origins: config.appOrigins }
     : null,
@@ -31,6 +32,11 @@ app.log.info(
     : 'Passkeys ausgeschaltet (APP_ORIGIN nicht gesetzt)',
 );
 app.log.info(config.ttsUrl ? `Erzählstimme über ${config.ttsUrl}` : 'Erzählstimme: nur Gerätestimmen (TTS_URL nicht gesetzt)');
+app.log.info(
+  config.learn.token && config.learn.productId
+    ? `Foto-Auswertung mit ${config.learn.model}, ${config.learn.monthlyLimit} pro Person und Monat`
+    : 'Foto-Auswertung ausgeschaltet (INFOMANIAK_AI_TOKEN / INFOMANIAK_AI_PRODUCT_ID nicht gesetzt)',
+);
 
 const shutdown = async (signal: string) => {
   app.log.info(`${signal} received, shutting down`);

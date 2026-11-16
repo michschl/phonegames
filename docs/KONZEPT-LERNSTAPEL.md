@@ -4,7 +4,7 @@ Schulstoff spielerisch repetieren – im selben Look wie die Partyspiele. Lernin
 erfasst, eine KI in der Schweiz macht daraus Lernkarten, und derselbe Kartenstapel lässt sich danach in
 verschiedenen Spielformen spielen, allein oder in der Gruppe. Stapel lassen sich per Link teilen.
 
-Stand: Konzept, noch nicht umgesetzt.
+Stand: Etappe 2 umgesetzt (Erfassen per Foto und Text, Prüfen, Kartenkasten, Blitzrunde). Teilen und Duell folgen.
 
 ## Entscheide
 
@@ -158,7 +158,9 @@ interface Karte {
 1. **Test:** ✅ mit nachgestellten Fotos (gedrucktes Französisch-Wörtliblatt, handschriftliche Heftseite mit Name und
    Note): alle 20 Karten korrekt, Akzente erhalten, Name und Note weggelassen, gute falsche Antworten (einmal falscher
    Artikel: «der Aare»). Offen: Gegenprobe mit echten Handyfotos.
-2. **Grundlage:** Stapel erfassen (Foto und Text), Prüfansicht, Speichern und Sync, Kartenkasten, Blitzrunde.
+2. **Grundlage:** ✅ Stapel erfassen (Foto und Text), Prüfansicht, Speichern und Sync, Kartenkasten (selbst prüfen
+   oder Auswahl aus vier), Blitzrunde. Noch nicht: Eintippen als Antwortprüfung, Fehler aus der Blitzrunde in den
+   Kartenkasten übernehmen (in der Blitzrunde antwortet das Team, nicht eine Person).
 3. **Teilen:** Freigaben, Link als Einladung, Übernahme.
 4. **Duell** und weitere Spielformen.
 5. Doku, Tests, Deploy.

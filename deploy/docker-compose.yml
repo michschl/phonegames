@@ -15,6 +15,12 @@ services:
       APP_ORIGIN: https://${APP_DOMAIN:?APP_DOMAIN fehlt}
       # Narrator voice (Piper), only reachable inside this stack.
       TTS_URL: http://tts:5000
+      # Photo analysis for learning stacks (Infomaniak AI, Switzerland). Off without token.
+      INFOMANIAK_AI_TOKEN: ${INFOMANIAK_AI_TOKEN:-}
+      INFOMANIAK_AI_PRODUCT_ID: ${INFOMANIAK_AI_PRODUCT_ID:-}
+      LEARN_AI_MODEL: ${LEARN_AI_MODEL:-}
+      LEARN_MONTHLY_LIMIT: ${LEARN_MONTHLY_LIMIT:-}
+      LEARN_GLOBAL_MONTHLY_LIMIT: ${LEARN_GLOBAL_MONTHLY_LIMIT:-}
     volumes:
       - app-data:/data
     expose:

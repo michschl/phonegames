@@ -2,11 +2,31 @@ import { useMemo } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { mergeRecords, pruneTombstones } from '../../../shared/sync.ts';
-import { LIMITS, type LibraryItem, type Player, type PlayerGroup, type SyncPayload } from '../../../shared/types.ts';
+import {
+  LIMITS,
+  type LearnCard,
+  type LearnProgress,
+  type LearnStack,
+  type LibraryItem,
+  type Player,
+  type PlayerGroup,
+  type SyncPayload,
+} from '../../../shared/types.ts';
+import { nextProgress, progressId } from '../lib/learn.ts';
 import { createId, nextColor, pickRandom, GROUP_EMOJIS } from '../lib/util.ts';
 
+/** A stack as edited by the user – ids are added when saving. */
+export interface StackInput {
+  title: string;
+  subject: string;
+  languages: string[];
+  cards: (Omit<LearnCard, 'id'> & { id?: string })[];
+  suggestedModes: LearnStack['suggestedModes'];
+  source: LearnStack['source'];
+}
+
 /**
- * Offline-first user data: the game library and the player groups.
+ * Offline-first user data: the game library, the player groups and the learning stacks.
  * Every change is stored locally first and synchronised in the background
  * (see lib/sync.ts). Deletions are kept as tombstones until synced.
  */
@@ -15,6 +35,8 @@ interface DataState {
   ownerId: string | null;
   library: Record<string, LibraryItem>;
   groups: Record<string, PlayerGroup>;
+  stacks: Record<string, LearnStack>;
+  progress: Record<string, LearnProgress>;
   /** Incremented on every local change. */
   revision: number;
   /** Revision that was last confirmed by the server. */
@@ -28,6 +50,12 @@ interface DataState {
   deleteGroup(id: string): void;
   addPlayer(groupId: string, name: string): Player | null;
   removePlayer(groupId: string, playerId: string): void;
+  /** Creates a stack, or replaces the stack with `id`. */
+  saveStack(input: StackInput, id?: string): LearnStack;
+  deleteStack(id: string): void;
+  /** Moves a card in the person's Kartenkasten after an answer. */
+  recordAnswer(stackId: string, player: string, cardId: string, correct: boolean): void;
+  resetProgress(stackId: string, player: string): void;
   applyRemote(payload: SyncPayload, sentRevision: number): void;
   resetFor(ownerId: string | null): void;
 }
@@ -35,6 +63,8 @@ interface DataState {
 const empty = {
   library: {} as Record<string, LibraryItem>,
   groups: {} as Record<string, PlayerGroup>,
+  stacks: {} as Record<string, LearnStack>,
+  progress: {} as Record<string, LearnProgress>,
   revision: 0,
   syncedRevision: 0,
   lastSyncAt: null as number | null,
@@ -132,10 +162,79 @@ export const useData = create<DataState>()(
         get().updateGroup(groupId, { players: group.players.filter((p) => p.id !== playerId) });
       },
 
+      saveStack(input, id) {
+        const now = stamp();
+        const existing = id ? get().stacks[id] : undefined;
+        const stack: LearnStack = {
+          id: existing?.id ?? createId(),
+          title: input.title.trim().slice(0, LIMITS.stackTitleMax) || 'Neuer Stapel',
+          subject: input.subject.trim().slice(0, 40),
+          languages: input.languages,
+          cards: input.cards.slice(0, LIMITS.cardsPerStack).map((card) => ({
+            id: card.id ?? createId(),
+            kind: card.kind,
+            prompt: card.prompt.trim().slice(0, LIMITS.cardText),
+            answer: card.answer.trim().slice(0, LIMITS.cardText),
+            accepted: card.accepted.map((a) => a.trim()).filter(Boolean).slice(0, 10),
+            distractors: card.distractors.map((d) => d.trim()).filter(Boolean).slice(0, 3),
+          })),
+          suggestedModes: input.suggestedModes,
+          source: existing?.source ?? input.source,
+          createdAt: existing?.createdAt ?? now,
+          updatedAt: now,
+          deleted: false,
+        };
+        set((s) => ({ stacks: { ...s.stacks, [stack.id]: stack }, revision: s.revision + 1 }));
+        return stack;
+      },
+
+      deleteStack(id) {
+        const stack = get().stacks[id];
+        if (!stack || stack.deleted) return;
+        const now = stamp();
+        // The progress of every person goes with the stack.
+        const progress = { ...get().progress };
+        for (const entry of Object.values(progress)) {
+          if (entry.stackId === id && !entry.deleted) progress[entry.id] = { ...entry, cards: {}, deleted: true, updatedAt: now };
+        }
+        set((s) => ({
+          stacks: { ...s.stacks, [id]: { ...stack, cards: [], deleted: true, updatedAt: now } },
+          progress,
+          revision: s.revision + 1,
+        }));
+      },
+
+      recordAnswer(stackId, player, cardId, correct) {
+        const id = progressId(stackId, player);
+        const current = get().progress[id];
+        const entry: LearnProgress = {
+          id,
+          stackId,
+          player: player.trim().slice(0, LIMITS.nameMax),
+          cards: { ...(current && !current.deleted ? current.cards : {}) },
+          updatedAt: stamp(),
+          deleted: false,
+        };
+        entry.cards[cardId] = nextProgress(entry.cards[cardId], correct);
+        set((s) => ({ progress: { ...s.progress, [id]: entry }, revision: s.revision + 1 }));
+      },
+
+      resetProgress(stackId, player) {
+        const id = progressId(stackId, player);
+        const current = get().progress[id];
+        if (!current || current.deleted) return;
+        set((s) => ({
+          progress: { ...s.progress, [id]: { ...current, cards: {}, deleted: true, updatedAt: stamp() } },
+          revision: s.revision + 1,
+        }));
+      },
+
       applyRemote(payload, sentRevision) {
         set((s) => ({
           library: pruneTombstones(mergeRecords(s.library, payload.library, (i) => i.gameId)),
           groups: pruneTombstones(mergeRecords(s.groups, payload.groups, (g) => g.id)),
+          stacks: pruneTombstones(mergeRecords(s.stacks, payload.stacks ?? [], (x) => x.id)),
+          progress: pruneTombstones(mergeRecords(s.progress, payload.progress ?? [], (x) => x.id)),
           syncedRevision: Math.max(s.syncedRevision, sentRevision),
           lastSyncAt: Date.now(),
         }));
@@ -152,6 +251,8 @@ export const useData = create<DataState>()(
         ownerId: s.ownerId,
         library: s.library,
         groups: s.groups,
+        stacks: s.stacks,
+        progress: s.progress,
         revision: s.revision,
         syncedRevision: s.syncedRevision,
         lastSyncAt: s.lastSyncAt,
@@ -190,6 +291,33 @@ export function useGroup(id: string | undefined): PlayerGroup | undefined {
   return useData((s) => {
     const group = id ? s.groups[id] : undefined;
     return group && !group.deleted ? group : undefined;
+  });
+}
+
+export function useStacks(): LearnStack[] {
+  const stacks = useData((s) => s.stacks);
+  return useMemo(
+    () =>
+      Object.values(stacks)
+        .filter((x) => !x.deleted)
+        .sort((a, b) => b.updatedAt - a.updatedAt),
+    [stacks],
+  );
+}
+
+export function useStack(id: string | null | undefined): LearnStack | undefined {
+  return useData((s) => {
+    const stack = id ? s.stacks[id] : undefined;
+    return stack && !stack.deleted ? stack : undefined;
+  });
+}
+
+/** What `player` knows of the stack (undefined = nothing learned yet). */
+export function useProgress(stackId: string | null | undefined, player: string | null | undefined): LearnProgress | undefined {
+  return useData((s) => {
+    if (!stackId || !player) return undefined;
+    const entry = s.progress[progressId(stackId, player)];
+    return entry && !entry.deleted ? entry : undefined;
   });
 }
 

@@ -36,6 +36,9 @@ export interface TeamTurnGameProps<C extends TurnCard> {
   rulesHint: ReactNode;
   /** Enables the red "Verboten!" button (−1 point). */
   foulLabel?: string;
+  /** Button labels, default «Erraten» / «Überspringen». */
+  correctLabel?: string;
+  skipLabel?: string;
 }
 
 type Phase = 'teams' | 'pass' | 'ready' | 'turn' | 'summary' | 'winner';
@@ -56,6 +59,8 @@ export function TeamTurnGame<C extends TurnCard>({
   cardLabel,
   rulesHint,
   foulLabel,
+  correctLabel = 'Erraten',
+  skipLabel = 'Überspringen',
 }: TeamTurnGameProps<C>) {
   const [teams, setTeams] = useState<Team[]>(() => makeTeams(players));
   const [phase, setPhase] = useState<Phase>('teams');
@@ -259,11 +264,11 @@ export function TeamTurnGame<C extends TurnCard>({
           <div className="big-buttons">
             <button type="button" className="big-btn big-btn--skip" onClick={() => record('skipped')}>
               <span aria-hidden="true">↷</span>
-              <span>Überspringen</span>
+              <span>{skipLabel}</span>
             </button>
             <button type="button" className="big-btn big-btn--correct" onClick={() => record('correct')}>
               <span aria-hidden="true">✓</span>
-              <span>Erraten</span>
+              <span>{correctLabel}</span>
             </button>
             {foulLabel && (
               <button type="button" className="big-btn big-btn--foul" onClick={() => record('foul')}>
