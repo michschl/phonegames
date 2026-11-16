@@ -159,3 +159,79 @@ export function subjectEmoji(subject: string): string {
   ];
   return table.find(([pattern]) => pattern.test(s))?.[1] ?? '📝';
 }
+
+/* -------------------------------------------------------- typed answers */
+
+export interface TypedVerdict {
+  /** right = korrekt, almost = zählt als richtig (Tippfehler, Akzent, Artikel), wrong = falsch. */
+  verdict: 'right' | 'almost' | 'wrong';
+  /** Short explanation for «almost». */
+  note?: string;
+}
+
+const ARTICLES = /^(der|die|das|den|dem|des|ein|eine|einen|le|la|les|l'|l’|un|une|des|the|a|an|il|lo|gli|el|los|las)\s*/i;
+
+/** Lower case, no punctuation, single spaces. */
+function plain(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[’`´]/g, "'")
+    .replace(/[.,;:!?"«»„“”()\[\]…]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** Also without accents and with ä → a (so «gluecklich» and «glucklich» both match «glücklich»). */
+function loose(text: string): string {
+  return normalize(plain(text).replace(/ä/g, 'a').replace(/ö/g, 'o').replace(/ü/g, 'u'))
+    .replace(/ae/g, 'a')
+    .replace(/oe/g, 'o')
+    .replace(/ue/g, 'u')
+    .replace(/ß/g, 'ss');
+}
+
+function withoutArticle(text: string): string {
+  return text.replace(ARTICLES, '').trim();
+}
+
+/** Edit distance where swapping two neighbouring letters («Shcule») counts as one typo. */
+function distance(a: string, b: string): number {
+  const d: number[][] = Array.from({ length: a.length + 1 }, (_, i) => Array.from({ length: b.length + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0)));
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      d[i]![j] = Math.min(d[i - 1]![j]! + 1, d[i]![j - 1]! + 1, d[i - 1]![j - 1]! + cost);
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i]![j] = Math.min(d[i]![j]!, d[i - 2]![j - 2]! + 1);
+    }
+  }
+  return d[a.length]![b.length]!;
+}
+
+/** All answers that count: the answer, its parts («viel, sehr»), and the accepted alternatives. */
+function expectedAnswers(card: LearnCard): string[] {
+  const parts = card.answer.split(/\s*(?:,|;|\/|\bodr?\b|\boder\b)\s*/).filter(Boolean);
+  return [...new Set([card.answer, ...card.accepted, ...(parts.length > 1 ? parts : [])])];
+}
+
+/**
+ * Checks a typed answer kindly: case, spaces and punctuation never matter;
+ * a missing accent, a missing article or one small typo count as «almost right».
+ */
+export function checkTypedAnswer(input: string, card: LearnCard): TypedVerdict {
+  const typed = plain(input);
+  if (!typed) return { verdict: 'wrong' };
+  const answers = expectedAnswers(card);
+  if (answers.some((a) => plain(a) === typed)) return { verdict: 'right' };
+  if (answers.some((a) => loose(a) === loose(typed))) return { verdict: 'almost', note: 'Achte auf Akzente und Umlaute.' };
+  if (answers.some((a) => withoutArticle(loose(a)) === withoutArticle(loose(typed)) && withoutArticle(loose(a)))) {
+    return { verdict: 'almost', note: 'Achte auf den Artikel.' };
+  }
+  const typo = answers.some((a) => {
+    const target = withoutArticle(loose(a));
+    const mine = withoutArticle(loose(typed));
+    if (target.length < 5) return false;
+    return distance(target, mine) <= (target.length >= 10 ? 2 : 1);
+  });
+  if (typo) return { verdict: 'almost', note: 'Kleiner Tippfehler.' };
+  return { verdict: 'wrong' };
+}

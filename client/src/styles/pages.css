@@ -1835,3 +1835,14 @@
 .auth__share {
   margin-bottom: 16px;
 }
+
+.learn-due {
+  background: var(--yellow-soft);
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.learn-due__icon {
+  background: var(--yellow);
+  font-size: 22px;
+}

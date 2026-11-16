@@ -4,7 +4,7 @@ import { Button } from '../../components/ui.tsx';
 import { sound } from '../../lib/audio.ts';
 import { confetti } from '../../lib/confetti.ts';
 import { haptic } from '../../lib/device.ts';
-import { BOXES, boxCounts, canPlayChoice, choicesFor, dueCards } from '../../lib/learn.ts';
+import { BOXES, boxCounts, canPlayChoice, checkTypedAnswer, choicesFor, dueCards, type TypedVerdict } from '../../lib/learn.ts';
 import { normalize, shuffle } from '../../lib/util.ts';
 import { useData, useProgress } from '../../store/data.ts';
 import { Actions, GameShell, Headline, Stage } from '../shared/GameShell.tsx';
@@ -69,6 +69,8 @@ export function Kartenkasten({
   const [index, setIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
   const [picked, setPicked] = useState<string | null>(null);
+  const [typed, setTyped] = useState('');
+  const [checked, setChecked] = useState<TypedVerdict | null>(null);
   const [results, setResults] = useState<{ cardId: string; correct: boolean }[]>([]);
   const [practice, setPractice] = useState(false);
   const asked = useRef(new Set<string>());
@@ -81,6 +83,7 @@ export function Kartenkasten({
   const dueTotal = dueCards(stack, progress, stack.cards.length).length;
   const card = queue[index];
   const choice = settings.check === 'choice' && canPlayChoice(stack);
+  const typing = settings.check === 'type';
   const options = useMemo(() => (card && choice ? choicesFor(card, stack) : []), [card?.id, index, choice]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const begin = (practiceRound: boolean) => {
@@ -99,6 +102,8 @@ export function Kartenkasten({
     setResults([]);
     setRevealed(false);
     setPicked(null);
+    setTyped('');
+    setChecked(null);
     setPhase('card');
   };
 
@@ -106,6 +111,8 @@ export function Kartenkasten({
     window.clearTimeout(advance.current);
     setRevealed(false);
     setPicked(null);
+    setTyped('');
+    setChecked(null);
     if (index + 1 < nextQueue.length) {
       setIndex(index + 1);
       sound.flip();
@@ -114,11 +121,7 @@ export function Kartenkasten({
     setPhase('done');
   };
 
-  /** Records the answer; a missed card is asked once more at the end of the round. */
-  const answer = (correct: boolean): LearnCard[] => {
-    if (!card || !learner) return queue;
-    if (!practice) recordAnswer(stack.id, learner.name, card.id, correct);
-    setResults((r) => [...r, { cardId: card.id, correct }]);
+  const feedback = (correct: boolean) => {
     if (correct) {
       sound.correct();
       haptic(15);
@@ -126,6 +129,14 @@ export function Kartenkasten({
       sound.wrong();
       haptic([30, 40, 30]);
     }
+  };
+
+  /** Records the answer; a missed card is asked once more at the end of the round. */
+  const answer = (correct: boolean, silent = false): LearnCard[] => {
+    if (!card || !learner) return queue;
+    if (!practice) recordAnswer(stack.id, learner.name, card.id, correct);
+    setResults((r) => [...r, { cardId: card.id, correct }]);
+    if (!silent) feedback(correct);
     let nextQueue = queue;
     if (!correct && !asked.current.has(card.id)) {
       asked.current.add(card.id);
@@ -142,6 +153,19 @@ export function Kartenkasten({
     const nextQueue = answer(isRight);
     // Right answers move on by themselves; for wrong ones there is time to read the solution.
     if (isRight) advance.current = window.setTimeout(() => next(nextQueue), 900);
+  };
+
+  /** Typed answer: checked kindly, the result shows before moving on. */
+  const check = (giveUp = false) => {
+    if (!card || checked) return;
+    if (!giveUp && !typed.trim()) {
+      haptic(20);
+      return;
+    }
+    const verdict: TypedVerdict = giveUp ? { verdict: 'wrong' } : checkTypedAnswer(typed, card);
+    setChecked(verdict);
+    setRevealed(true);
+    feedback(verdict.verdict !== 'wrong');
   };
 
   const finishedRight = results.filter((r) => r.correct).length;
@@ -255,6 +279,58 @@ export function Kartenkasten({
                 </Actions>
               )}
             </>
+          ) : typing ? (
+            checked ? (
+              <>
+                <p className={`typed-result is-${checked.verdict}`} role="status">
+                  <strong>
+                    {checked.verdict === 'right' ? 'Richtig!' : checked.verdict === 'almost' ? 'Fast richtig – zählt!' : typed.trim() ? 'Leider falsch.' : 'Schau dir die Antwort gut an.'}
+                  </strong>
+                  {checked.note && <span>{checked.note}</span>}
+                  {checked.verdict !== 'right' && typed.trim() && <span>Deine Antwort: «{typed.trim()}»</span>}
+                </p>
+                <Actions>
+                  <Button size="lg" block onClick={() => next(answer(checked.verdict !== 'wrong', true))}>
+                    Weiter
+                  </Button>
+                  {checked.verdict === 'wrong' && typed.trim() && (
+                    <Button variant="ghost" block icon="check" onClick={() => next(answer(true, true))}>
+                      Ich hatte recht
+                    </Button>
+                  )}
+                </Actions>
+              </>
+            ) : (
+              <form
+                className="typed-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  check();
+                }}
+              >
+                <input
+                  className="typed-input"
+                  value={typed}
+                  onChange={(e) => setTyped(e.target.value)}
+                  aria-label="Deine Antwort"
+                  placeholder="Antwort eintippen"
+                  autoFocus
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
+                  enterKeyHint="done"
+                  lang={stack.languages[1] || 'de'}
+                  maxLength={300}
+                />
+                <Button type="submit" size="lg" block icon="check">
+                  Prüfen
+                </Button>
+                <button type="button" className="typed-skip" onClick={() => check(true)}>
+                  Weiss ich nicht
+                </button>
+              </form>
+            )
           ) : revealed ? (
             <div className="big-buttons">
               <button type="button" className="big-btn big-btn--skip" onClick={() => next(answer(false))}>

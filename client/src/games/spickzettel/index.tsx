@@ -11,7 +11,7 @@ export interface SpickzettelSettings {
   /** kasten = Kartenkasten (allein), duell = Duell (zu zweit), blitz = Blitzrunde (Teams). */
   mode: 'kasten' | 'duell' | 'blitz';
   /** How answers are checked in the Kartenkasten. */
-  check: 'self' | 'choice';
+  check: 'self' | 'choice' | 'type';
   /** Cards per Kartenkasten session. */
   sessionSize: number;
   seconds: number;
@@ -52,9 +52,16 @@ function Settings({ value, onChange }: GameSettingsProps<SpickzettelSettings>) {
         options={[
           { value: 'self', label: 'Selbst prüfen', hint: 'aufdecken' },
           { value: 'choice', label: 'Auswahl', hint: 'aus vier' },
+          { value: 'type', label: 'Eintippen', hint: 'genau' },
         ]}
         onChange={(check) => onChange({ ...value, check })}
-        hint={value.check === 'self' ? 'Antwort im Kopf oder laut sagen, aufdecken und ehrlich bewerten.' : 'Vier Antworten zur Auswahl – die App prüft.'}
+        hint={
+          value.check === 'self'
+            ? 'Antwort im Kopf oder laut sagen, aufdecken und ehrlich bewerten.'
+            : value.check === 'choice'
+              ? 'Vier Antworten zur Auswahl – die App prüft.'
+              : 'Antwort eintippen. Ein kleiner Tippfehler, ein fehlender Akzent oder Artikel zählt als «fast richtig».'
+        }
       />
       <OptionRow
         label="Karten pro Runde"

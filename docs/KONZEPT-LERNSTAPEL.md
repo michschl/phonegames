@@ -159,8 +159,10 @@ interface Karte {
    Note): alle 20 Karten korrekt, Akzente erhalten, Name und Note weggelassen, gute falsche Antworten (einmal falscher
    Artikel: «der Aare»). Offen: Gegenprobe mit echten Handyfotos.
 2. **Grundlage:** ✅ Stapel erfassen (Foto und Text), Prüfansicht, Speichern und Sync, Kartenkasten (selbst prüfen
-   oder Auswahl aus vier), Blitzrunde. Noch nicht: Eintippen als Antwortprüfung, Fehler aus der Blitzrunde in den
-   Kartenkasten übernehmen (in der Blitzrunde antwortet das Team, nicht eine Person).
+   oder Auswahl aus vier), Blitzrunde. Eintippen als dritte Antwortprüfung ist inzwischen auch umgesetzt (tolerant: Gross-/Kleinschreibung,
+   Satzzeichen; fehlender Akzent, Artikel oder ein kleiner Tippfehler zählt als «fast richtig»; «Ich hatte recht»
+   korrigiert). Bewusst nicht: Fehler aus der Blitzrunde in den Kartenkasten übernehmen – dort antwortet das Team,
+   nicht eine Person.
 3. **Teilen:** ✅ Freigaben, Link als Einladung (höchstens 50 neue Konten pro Link), Übernahme, geteilte Version
    aktualisieren, Freigabe beenden.
 4. **Duell:** ✅ geteilter Bildschirm (obere Hälfte gedreht), gleiche Frage, je vier Antworten in eigener
@@ -168,6 +170,13 @@ interface Karte {
    Karte im Kartenkasten der Person zurück in Fach 1; beide falsch → Lösung wird gezeigt. 10, 15 oder 20 Fragen.
    Weitere Spielformen (Schätzrunde für Zahlen, Lückentext) sind offen.
 5. Doku, Tests, Deploy.
+
+## Ergänzungen nach den Etappen
+
+- **Antworten eintippen** als dritte Antwortprüfung im Kartenkasten (siehe Etappe 2).
+- **«Heute fällig» auf der Startseite:** Sobald jemand Karten gelernt hat und welche wieder fällig sind, zeigt die
+  Startseite «Heute fällig: 7 Karten · Lea · «Unité 5»». Ein Tipp öffnet den Stapel direkt im Kartenkasten. Neue,
+  noch nie gelernte Karten zählen nicht – die Erinnerung soll ans Repetieren erinnern, nicht drängen.
 
 ## Offene Punkte
 
