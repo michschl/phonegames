@@ -884,19 +884,25 @@
   font-weight: 900;
 }
 
-.rules li:nth-child(2)::before {
+/* Six colours in turn, so long rules (Spickzettel has 7 steps) never repeat a neighbour's colour. */
+.rules li:nth-child(6n + 2)::before {
   background: var(--cyan);
-  color: var(--ink);
 }
 
-.rules li:nth-child(3)::before {
+.rules li:nth-child(6n + 3)::before {
   background: var(--yellow);
-  color: var(--ink);
 }
 
-.rules li:nth-child(4)::before {
+.rules li:nth-child(6n + 4)::before {
   background: var(--lime);
-  color: var(--ink);
+}
+
+.rules li:nth-child(6n + 5)::before {
+  background: var(--orange);
+}
+
+.rules li:nth-child(6n)::before {
+  background: var(--blue);
 }
 
 .group-picker {
@@ -1852,4 +1858,16 @@
 .learn-due__icon {
   background: var(--yellow);
   font-size: 22px;
+}
+
+/* Photo analysis: take over exactly or invent new cards. */
+.photo-mode {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.photo-mode__title {
+  margin: 0;
+  font-weight: 800;
 }

@@ -156,7 +156,7 @@ Alle Antworten sind JSON. Fehler haben die Form `{ "error": "code", "message": "
 | `DELETE /api/shares/:id` | ✅ | – | `204` – der Link funktioniert danach nicht mehr |
 | `GET /api/shares/:id` | – | – | Vorschau `{ title, subject, cardCount, sample, invites }` · `404 share_not_found` |
 | `POST /api/shares/:id/import` | ✅ | – | `{ stack }` (Kopie der Karten) |
-| `POST /api/learn/extract` | ✅ | `{ images: string[] }` (1–6 JPEG/PNG/WebP als Data-URL) | `{ draft, usage }` · `429 learn_limit` / `learn_running` · `422 learn_empty` · `502 learn_failed` · `503 learn_unavailable` / `learn_busy` |
+| `POST /api/learn/extract` | ✅ | `{ images: string[], mode?: 'exact' \| 'creative', count?: 5–30 }` (1–6 JPEG/PNG/WebP als Data-URL) | `{ draft, usage }` · `429 learn_limit` / `learn_running` · `422 learn_empty` · `502 learn_failed` · `503 learn_unavailable` / `learn_busy` |
 
 Die Typen stehen in [`shared/types.ts`](../shared/types.ts).
 
@@ -239,6 +239,11 @@ Das Lernspiel «Spickzettel» arbeitet mit **Lernstapeln** (Konzept: [KONZEPT-LE
   Die Antwort wird nicht vertraut, sondern bereinigt ([`routes/learn.ts`](../server/src/routes/learn.ts), `toDraft`):
   leere und doppelte Karten fallen weg, falsche Antworten dürfen nicht der richtigen entsprechen, Längen werden
   begrenzt. Bei Fehlern wird einmal wiederholt; nur erfolgreiche Auswertungen zählen ans Limit.
+  Zwei Arten (`mode`): `exact` übernimmt nur, was auf den Fotos steht (`systemPrompt('exact')`, Temperatur 0.2);
+  `creative` erfindet `count` neue Karten zum erkannten Thema (Temperatur 0.7, `generated: true` im Entwurf). Erfundene
+  Karten prüft ein zweiter, reiner Textaufruf (`checkCards`, Temperatur 0); beanstandete Karten bekommen
+  `uncertain = «Möglicherweise falsch – …»` und sind in der Prüfansicht gelb. Fällt die Kontrolle aus, bleibt der
+  Entwurf trotzdem gültig.
 - **Prüfen:** Das Ergebnis ist ein Entwurf (`LearnDraft`), den die Person in der Prüfansicht korrigiert. Der Entwurf
   liegt bis zum Speichern im Browser (`phonegames-learn-draft`), damit eine Auswertung nicht verloren geht.
   Abtippen («le chien = der Hund», eine Zeile pro Karte) funktioniert ohne KI und offline

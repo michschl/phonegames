@@ -4,7 +4,7 @@ import http from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { buildApp } from '../src/app.ts';
 import { openDatabase } from '../src/db.ts';
-import { currentMonth, toDraft, type LearnConfig } from '../src/routes/learn.ts';
+import { currentMonth, shorten, toDraft, type LearnConfig } from '../src/routes/learn.ts';
 import type { LearnExtractResponse, LearnStack, LearnUsage, SyncResponse } from '../../shared/types.ts';
 
 const HEADERS = { 'x-requested-with': 'phonegames' };
@@ -128,6 +128,49 @@ describe('photo analysis (learning stacks)', () => {
     expect(images.map((part: { image_url: { url: string } }) => part.image_url.url)).toEqual([JPEG, PNG]);
   });
 
+  it('takes over exactly by default and invents new cards on request', async () => {
+    const exact = (await extract()).json() as LearnExtractResponse;
+    expect(exact.draft.generated).toBe(false);
+    expect(ai.calls[0]!.body.messages[0].content).toContain('Übernimm nur Lerninhalte, die auf den Fotos stehen.');
+    expect(ai.calls[0]!.body.temperature).toBe(0.2);
+
+    // Invented cards are checked once more – the second call has no photos and marks doubtful cards.
+    ai.replies.push({ content: JSON.stringify(GOOD_ANSWER) });
+    ai.replies.push({
+      content: JSON.stringify({ checks: [{ index: 0, correct: true, reason: '' }, { index: 1, correct: false, reason: '«beaucoup» heisst «viel».' }] }),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/learn/extract',
+      headers: { ...HEADERS, cookie },
+      payload: { images: [JPEG], mode: 'creative', count: 12 },
+    });
+    expect(res.statusCode).toBe(200);
+    const creative = (res.json() as LearnExtractResponse).draft;
+    expect(creative.generated).toBe(true);
+    expect(creative.cards.map((c) => c.uncertain)).toEqual(['', 'Möglicherweise falsch – «beaucoup» heisst «viel».', 'Schrift unklar']);
+    const check = ai.calls[2]!;
+    expect(check.body.messages[1].content).toContain('1. Frage/Satz: beaucoup | Antwort: viel, sehr');
+    expect(JSON.stringify(check.body)).not.toContain('image_url');
+    expect(check.body.temperature).toBe(0);
+    const call = ai.calls[1]!;
+    expect(call.body.messages[0].content).toContain('NEUE AUFGABEN ERFINDEN');
+    expect(call.body.messages[0].content).toContain('genau 12 neue Lernkarten');
+    expect(call.body.messages[0].content).not.toContain('Übernimm nur Lerninhalte');
+    expect(call.body.messages[1].content[0].text).toContain('Erfinde 12 neue Lernkarten');
+    expect(call.body.temperature).toBe(0.7);
+    // Both count towards the monthly limit.
+    expect(await usage()).toMatchObject({ used: 2 });
+
+    const tooMany = await app.inject({
+      method: 'POST',
+      url: '/api/learn/extract',
+      headers: { ...HEADERS, cookie },
+      payload: { images: [JPEG], mode: 'creative', count: 500 },
+    });
+    expect(tooMany.statusCode).toBe(400);
+  });
+
   it('is only available when signed in', async () => {
     expect((await extract([JPEG], '')).statusCode).toBe(401);
     expect((await app.inject({ method: 'GET', url: '/api/learn/usage' })).statusCode).toBe(401);
@@ -202,7 +245,15 @@ describe('photo analysis (learning stacks)', () => {
 describe('draft clean-up', () => {
   it('falls back to safe values for nonsense', () => {
     const draft = toDraft({ title: 42, cards: 'nope', languages: ['Französisch', 'de'], suggested_modes: ['party'] });
-    expect(draft).toEqual({ title: 'Neuer Stapel', subject: '', languages: [], cards: [], suggestedModes: ['kasten'], removedPersonalData: false });
+    expect(draft).toEqual({
+      title: 'Neuer Stapel',
+      subject: '',
+      languages: [],
+      cards: [],
+      suggestedModes: ['kasten'],
+      removedPersonalData: false,
+      generated: false,
+    });
   });
 
   it('keeps Lückentext cards only with exactly one gap', () => {
@@ -216,6 +267,8 @@ describe('draft clean-up', () => {
         card('qa', 'Der Rhein entspringt im Kanton ___.', 'Graubünden'),
         card('cloze', 'Zwischen ___ und ___ liegt der Gotthard.', 'Uri, Tessin'),
         card('cloze', 'Wie hoch ist der Säntis?', '2502 m'),
+        card('number', 'Wie heisst das höchste Gebirge der Schweiz?', 'Alpen'),
+        card('number', 'Wie hoch ist der Pilatus?', '2128 m'),
       ],
       suggested_modes: ['luecke', 'schaetzen', 'kasten'],
     });
@@ -226,8 +279,15 @@ describe('draft clean-up', () => {
       ['cloze', 'Der Rhein entspringt im Kanton ___.'],
       ['qa', 'Zwischen ___ und ___ liegt der Gotthard.'],
       ['qa', 'Wie hoch ist der Säntis?'],
+      ['qa', 'Wie heisst das höchste Gebirge der Schweiz?'],
+      ['number', 'Wie hoch ist der Pilatus?'],
     ]);
     expect(draft.suggestedModes).toEqual(['kasten', 'schaetzen', 'luecke']);
+  });
+
+  it('shortens long reasons at a word boundary', () => {
+    expect(shorten('kurz', 10)).toBe('kurz');
+    expect(shorten('Die Schweiz hat 26 Kantone, aber nicht alle Hauptorte', 30)).toBe('Die Schweiz hat 26 Kantone…');
   });
 
   it('uses the calendar month in Switzerland', () => {

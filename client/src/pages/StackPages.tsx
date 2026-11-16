@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
-import { LIMITS, type LearnUsage } from '../../../shared/types.ts';
+import { LIMITS, type LearnExtractMode, type LearnUsage } from '../../../shared/types.ts';
 import { Mascot } from '../components/Brand.tsx';
 import { Icon } from '../components/Icon.tsx';
 import { BottomBar, Page, Section } from '../components/Layout.tsx';
 import { ShareStack } from '../components/ShareStack.tsx';
 import { StackEditor, toStackInput } from '../components/StackEditor.tsx';
-import { Button, ConfirmSheet, EmptyState } from '../components/ui.tsx';
+import { Button, ConfirmSheet, EmptyState, Segmented } from '../components/ui.tsx';
 import { api, ApiError, errorMessage } from '../lib/api.ts';
 import { haptic } from '../lib/device.ts';
 import { parseTextCards, preparePhoto, subjectEmoji } from '../lib/learn.ts';
@@ -15,6 +15,7 @@ import { createId } from '../lib/util.ts';
 import { useAuth } from '../store/auth.ts';
 import { useData, useDueByStack, useStack, useStacks } from '../store/data.ts';
 import { fromDraft, fromStack, useLearnDraft, type EditorValue } from '../store/learnDraft.ts';
+import { useGameSettings } from '../store/settings.ts';
 import { toast, useUi } from '../store/ui.ts';
 
 /** Where the learning game lives – stacks are chosen and played there. */
@@ -114,6 +115,9 @@ export function NewStackPage() {
   const [invalidIndex, setInvalidIndex] = useState<number | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
+  // Remembered per device: take over exactly what is on the photos, or invent new cards on the topic.
+  const [photoMode, setPhotoMode] = useGameSettings<{ mode: LearnExtractMode; count: number }>('stapel-fotos', { mode: 'exact', count: 20 });
+  const creative = photoMode.mode === 'creative';
 
   useEffect(() => {
     if (!online) return;
@@ -151,7 +155,10 @@ export function NewStackPage() {
     setStep('reading');
     sound.unlock();
     try {
-      const result = await api.learnExtract(photos.map((p) => p.url));
+      const result = await api.learnExtract(
+        photos.map((p) => p.url),
+        photoMode,
+      );
       setUsage(result.usage);
       updateDraft(fromDraft(result.draft, 'photo'));
       setPhotos([]);
@@ -173,7 +180,10 @@ export function NewStackPage() {
       return;
     }
     updateDraft(
-      fromDraft({ title: '', subject: '', languages: [], cards, suggestedModes: ['blitz', 'kasten'], removedPersonalData: false }, 'text'),
+      fromDraft(
+        { title: '', subject: '', languages: [], cards, suggestedModes: ['blitz', 'kasten'], removedPersonalData: false, generated: false },
+        'text',
+      ),
     );
     setText('');
     setStep('review');
@@ -204,8 +214,8 @@ export function NewStackPage() {
       <Page title="Neuer Stapel" className="stack-new">
         <div className="reading" role="status" aria-live="polite">
           <Mascot size={150} mood="wow" />
-          <p className="reading__title">Phoni liest deine Fotos …</p>
-          <p className="reading__text">Das dauert etwa 10 Sekunden.</p>
+          <p className="reading__title">{creative ? 'Phoni erfindet neue Aufgaben …' : 'Phoni liest deine Fotos …'}</p>
+          <p className="reading__text">{creative ? 'Das dauert etwa 20 Sekunden.' : 'Das dauert etwa 10 Sekunden.'}</p>
           <span className="reading__dots" aria-hidden="true">
             <span />
             <span />
@@ -221,8 +231,18 @@ export function NewStackPage() {
     return (
       <Page title="Karten prüfen" back={GAME} className="stack-new">
         <p className="notice notice--info stack-review-note">
-          {draft.source === 'photo' ? `Phoni hat ${cardCount(draft.cards.length)} erkannt.` : `${cardCount(draft.cards.length)} erkannt.`}{' '}
-          {unsure > 0 ? `Bitte prüfe sie kurz – besonders die ${unsure} gelb markierten.` : 'Bitte prüfe sie kurz.'}
+          {draft.generated
+            ? `Phoni hat ${cardCount(draft.cards.length)} zum Thema deiner Fotos neu erfunden und nochmals kontrolliert. Auch eine KI irrt sich – bitte prüfe jede Karte.`
+            : draft.source === 'photo'
+              ? `Phoni hat ${cardCount(draft.cards.length)} erkannt.`
+              : `${cardCount(draft.cards.length)} erkannt.`}{' '}
+          {unsure > 0
+            ? draft.generated
+              ? `${unsure === 1 ? 'Eine Karte ist' : `${unsure} Karten sind`} bei der Kontrolle aufgefallen (gelb) – korrigiere oder lösche sie.`
+              : `Bitte prüfe sie kurz – besonders die ${unsure} gelb markierten.`
+            : draft.generated
+              ? ''
+              : 'Bitte prüfe sie kurz.'}
           {draft.removedPersonalData && ' Namen und Noten habe ich weggelassen.'}
         </p>
         <StackEditor
@@ -340,6 +360,53 @@ export function NewStackPage() {
           )}
         </div>
 
+        {photos.length > 0 && !blocked && (
+          <div className="photo-mode">
+            <p className="photo-mode__title" id="photo-mode-title">
+              Was soll Phoni daraus machen?
+            </p>
+            <div className="mode-picker mode-picker--two" role="radiogroup" aria-labelledby="photo-mode-title">
+              {(
+                [
+                  { value: 'exact', emoji: '📋', label: 'Genau übernehmen', hint: 'nur was auf den Fotos steht' },
+                  { value: 'creative', emoji: '✨', label: 'Neue Aufgaben erfinden', hint: 'gleiches Thema, neue Karten' },
+                ] as const
+              ).map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={photoMode.mode === option.value}
+                  className={`mode-option ${photoMode.mode === option.value ? 'is-active' : ''}`}
+                  onClick={() => {
+                    haptic(6);
+                    setPhotoMode({ ...photoMode, mode: option.value });
+                  }}
+                >
+                  <span className="mode-option__emoji" aria-hidden="true">
+                    {option.emoji}
+                  </span>
+                  <span className="mode-option__label">{option.label}</span>
+                  <span className="mode-option__hint">{option.hint}</span>
+                </button>
+              ))}
+            </div>
+            {creative && (
+              <>
+                <Segmented
+                  label="Wie viele neue Karten?"
+                  value={String(photoMode.count)}
+                  options={[10, 20, 30].map((n) => ({ value: String(n), label: `${n} Karten` }))}
+                  onChange={(count) => setPhotoMode({ ...photoMode, count: Number(count) })}
+                />
+                <p className="settings-panel__hint">
+                  Phoni erkennt Fach, Thema und Art der Aufgaben und erfindet neue, ähnliche – zum Üben über das Blatt hinaus.
+                  Bitte prüfe die Karten danach.
+                </p>
+              </>
+            )}
+          </div>
+        )}
         {usage?.available && (
           <p className={`usage-pill ${usage.remaining <= 1 ? 'is-low' : ''}`}>
             {usage.remaining > 0
@@ -368,7 +435,7 @@ export function NewStackPage() {
       {photos.length > 0 && !blocked && (
         <BottomBar>
           <Button size="lg" block icon="sparkles" onClick={() => void analyse()} disabled={preparing > 0}>
-            {photos.length === 1 ? 'Foto auswerten' : `${photos.length} Fotos auswerten`}
+            {creative ? `${photoMode.count} neue Karten erfinden` : photos.length === 1 ? 'Foto auswerten' : `${photos.length} Fotos auswerten`}
           </Button>
         </BottomBar>
       )}

@@ -118,6 +118,9 @@ export interface LearnDraftCard extends Omit<LearnCard, 'id'> {
   uncertain: string;
 }
 
+/** exact = nur was auf den Fotos steht, creative = Thema erkennen und neue, ähnliche Aufgaben erfinden. */
+export type LearnExtractMode = 'exact' | 'creative';
+
 export interface LearnDraft {
   title: string;
   subject: string;
@@ -126,6 +129,8 @@ export interface LearnDraft {
   suggestedModes: LearnMode[];
   /** Names, grades or signatures were left out. */
   removedPersonalData: boolean;
+  /** The AI invented new cards on the topic of the photos (mode «creative»). */
+  generated: boolean;
 }
 
 /** Photo analyses left this month. */
