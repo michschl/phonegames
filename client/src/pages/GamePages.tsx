@@ -70,20 +70,13 @@ function GameSetup({ game }: { game: GameDefinition }) {
   const needed = game.playersNeeded?.(settings) ?? game.minPlayers;
   // The component is keyed by game, so the hook order never changes.
   const blocker = game.useBlocker?.(settings) ?? null;
-  const solo = game.useSoloStart?.(settings) ?? null;
-  const withGroup = !game.noGroup && !solo;
-  const missing = withGroup ? Math.max(0, needed - playerCount) : 0;
-  const canStart = !blocker && (solo ? !!solo.path : game.noGroup || (!!group && missing === 0));
+  const missing = game.noGroup ? 0 : Math.max(0, needed - playerCount);
+  const canStart = !blocker && (game.noGroup || (!!group && missing === 0));
 
   const start = () => {
     if (!canStart) return;
     sound.unlock(); // must happen inside the tap for iOS
     haptic(20);
-    if (solo?.path) {
-      setLastPlayed(game.id);
-      navigate(solo.path, { viewTransition: true });
-      return;
-    }
     if (group) setLastGroup(game.id, group.id);
     setLastPlayed(game.id, game.noGroup ? undefined : group?.id);
     navigate(`/spiel/${game.id}/los`, { viewTransition: true });
@@ -132,7 +125,7 @@ function GameSetup({ game }: { game: GameDefinition }) {
 
       {game.Prepare && <game.Prepare value={settings} onChange={setSettings} />}
 
-      {withGroup && (
+      {!game.noGroup && (
       <Section title="Spielgruppe">
         {selectedId ? (
           <>
@@ -171,8 +164,6 @@ function GameSetup({ game }: { game: GameDefinition }) {
         <Button size="lg" block icon="play" onClick={start} disabled={!canStart}>
           {blocker
             ? blocker
-            : solo
-            ? solo.label
             : game.noGroup
             ? 'Spiel starten'
             : missing > 0

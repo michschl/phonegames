@@ -214,19 +214,41 @@ interface Karte {
     | Gelb | Alle Karten in Fach 5 | ★ |
     | Weiss | Noch nicht begonnen | – |
 
-  - «Wer lernt?» steht direkt auf dem Startbildschirm (Kartenkasten, Lückentext) – mit denselben Farben, der roten
-    Zahl der fälligen Karten (bzw. ✓/★) und einer kurzen Legende.
-  - Die Stapel-Listen (Spiel und «Lernstapel») zeigen «3 fällig» – summiert über alle Personen.
-- **Stapelwahl im Spiel:** Der Startbildschirm schlägt 3 Stapel vor – zuerst die mit fälligen Karten, dann die
-  zuletzt gelernten oder bearbeiteten (`recommendStacks`); der gewählte ist immer dabei. «Anderer Stapel» öffnet
-  alle Stapel alphabetisch, ab 7 Stapeln mit Suche nach Titel oder Fach. «Verwalten» führt zur Stapel-Liste.
-- **Schätzrunde und Lückentext** (siehe Spielformen). Die Spielform-Auswahl zeigt alle fünf Formen; was der Stapel
-  nicht hergibt («keine Zahlen», «keine Lücken»), ist ausgegraut, passende Formen tragen einen Stern.
+  - «Wer lernt?» steht auf der Stapelseite – mit denselben Farben, der roten Zahl der fälligen Karten (bzw. ✓/★)
+    und einer kurzen Legende.
+  - Die Stapel-Liste im Tab «Lernen» zeigt «3 fällig» – summiert über alle Personen.
+- **Stapelwahl zum Zusammenspielen:** Der Startbildschirm des Spiels schlägt 3 Stapel vor – zuerst die mit fälligen
+  Karten, dann die zuletzt gelernten oder bearbeiteten (`recommendStacks`); der gewählte ist immer dabei. «Anderer
+  Stapel» öffnet alle Stapel alphabetisch, ab 7 Stapeln mit Suche nach Titel oder Fach.
+- **Schätzrunde und Lückentext** (siehe Spielformen). Angeboten wird nur, was der Stapel hergibt (`modeFits`);
+  passende Formen tragen einen Stern.
 - **Erfassen von Lückentexten:** Beim Abtippen steht das fehlende Wort in eckigen Klammern («Die Aare fliesst durch
   [Bern].», mehrere Klammern → eine Karte pro Lücke). In der Prüfansicht wird ein Satz mit `___` oder `[Wort]`
   automatisch zur Lückentext-Karte. Die KI macht aus Lückentexten (mit Lösungen) und Merktexten Lückentext-Karten
   und aus Zahlen Zahlenkarten; Test mit einem Arbeitsblatt «Die Schweiz»: 5 Lücken und 4 Zahlenkarten richtig
   erkannt, Name weggelassen, Schätzrunde und Lückentext vorgeschlagen.
+
+## Einfachere Bedienung
+
+Ausgangslage: Spickzettel steckte zwischen den Partyspielen, wer allein lernte, brauchte eine Spielgruppe, und die
+Vorbereitungsseite fragte alles auf einmal (Stapel, fünf Spielformen, Gruppe, Einstellungen). Vom fotografierten
+Blatt bis zur ersten Karte waren es 10 Tipps plus ein Name, für die fälligen Karten des Tages 3 Tipps.
+
+**Etappe 1 – allein ohne Gruppe, ein Tipp bis zur Karte** (siehe Ergänzungen): «Wer lernt?» statt Spielgruppe,
+direkte Route `/lernen/<stapel>/<kasten|luecke>?person=…`, «Heute fällig» mit einer Zeile pro Person und Stapel,
+«Speichern & lernen», Spielformen nach Situation.
+
+**Etappe 2 – eigener Tab «Lernen»:**
+
+| Seite | Inhalt |
+|---|---|
+| `/lernen` (Tab) | «Heute dran»: eine Zeile pro Person und Stapel, ein Tipp startet die erste fällige Karte · «Alles erledigt» mit dem nächsten Termin · alle Stapel mit «fällig»-Zahl und Menü (Lernen, Bearbeiten, Löschen) · beim ersten Mal eine Einführung in drei Schritten mit «Foto aufnehmen» und «Karten abtippen» |
+| `/lernen/<stapel>` | «Wer lernt?» · Kartenkasten der gewählten Person mit Fächern, Stand und Antwortart (Aufdecken, Auswahl, Tippen – pro Person gemerkt) · «Weitere Spielformen» mit je einem Satz: Lückentext (allein, direkt), Duell, Blitzrunde, Schätzrunde (führen zum Startbildschirm mit Gruppe) · Karten pro Runde und Lückentext-Eingabe unter «Weitere Einstellungen» · unten der grosse Knopf «12 Karten lernen · Lina» |
+| `/spiel/spickzettel` | Nur noch zum Zusammenspielen: Stapel, Spielform (zu zweit, mit mehreren), Spielgruppe, Einstellungen; vier kurze Regeln statt sieben |
+
+Die Spickzettel-Karten in «Spiele» und «Entdecken» führen zu `/lernen` (`GameDefinition.href`), `/stapel` leitet
+dorthin um, Bearbeiten (`/stapel/<id>`) kehrt zur Stapelseite zurück. Nach dem Speichern eines neuen Stapels geht es
+direkt in die erste Runde, wenn klar ist, wer lernt – sonst auf die Stapelseite.
 
 ## Offene Punkte
 

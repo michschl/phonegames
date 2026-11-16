@@ -1,20 +1,329 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
-import { Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
-import { LIMITS, type Player } from '../../../shared/types.ts';
-import { isSoloMode } from '../games/spickzettel/modes.ts';
-import { modeFits } from '../lib/learn.ts';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
+import { LIMITS, type LearnStack, type Player } from '../../../shared/types.ts';
+import { Mascot } from '../components/Brand.tsx';
+import { Fold } from '../components/Fold.tsx';
+import { Icon } from '../components/Icon.tsx';
+import { DueRows } from '../components/LearnDue.tsx';
+import { LearnerPicker } from '../components/LearnerPicker.tsx';
+import { BottomBar, Page, Section } from '../components/Layout.tsx';
+import { ActionSheet, Button, EmptyState, IconButton, Segmented } from '../components/ui.tsx';
+import { BoxRow } from '../games/spickzettel/BoxRow.tsx';
+import { spickzettel, type SpickzettelSettings } from '../games/spickzettel/index.tsx';
+import { isSoloMode, MODES, SITUATIONS, soloLearnPath } from '../games/spickzettel/modes.ts';
+import '../games/spickzettel/spickzettel.css';
+import { haptic } from '../lib/device.ts';
+import { boxCounts, canPlayChoice, dueCards, dueDayLabel, kastenStatus, modeFits, subjectEmoji } from '../lib/learn.ts';
 import { learnerColor, learnerId, sameName } from '../lib/learners.ts';
-import { useStack } from '../store/data.ts';
-import { useLearners } from '../store/learners.ts';
-import { useSettings } from '../store/settings.ts';
+import { normalize } from '../lib/util.ts';
+import { useData, useDueByStack, useProgress, useStack, useStacks } from '../store/data.ts';
+import { useDefaultLearner, useDueList, useLearners } from '../store/learners.ts';
+import { useGameSettings, useSettings } from '../store/settings.ts';
+import { deleteStackWithUndo } from '../store/undo.ts';
 import { PlayLoading, usePlayScreen } from './GamePages.tsx';
 
 const SoloLearn = lazy(() => import('../games/spickzettel/SoloLearn.tsx'));
 
-/** Where a stack is learned from when the direct link does not work (e.g. the stack was deleted). */
+/** The page of a stack: who learns, the Kartenkasten and the other ways to play it. */
 export function stackHome(stackId: string | undefined): string {
-  return stackId ? `/spiel/spickzettel?stapel=${stackId}` : '/spiel/spickzettel';
+  return stackId ? `/lernen/${stackId}` : '/lernen';
 }
+
+function cardCount(n: number): string {
+  return `${n} ${n === 1 ? 'Karte' : 'Karten'}`;
+}
+
+/* ------------------------------------------------------------------ hub */
+
+/** First visit: what Spickzettel does, in three steps – and the way to the first stack. */
+function LearnIntro() {
+  return (
+    <div className="learn-intro">
+      <Mascot size={120} mood="happy" />
+      <h2 className="learn-intro__title">Schulstoff spielend repetieren</h2>
+      <ol className="learn-intro__steps">
+        <li>
+          <strong>Fotografieren</strong> – Wörtliblatt, Heftseite oder Lückentext. Oder abtippen.
+        </li>
+        <li>
+          <strong>Kurz prüfen</strong> – Phoni macht Lernkarten daraus, du schaust drüber.
+        </li>
+        <li>
+          <strong>Jeden Tag ein paar Minuten</strong> – der Kartenkasten weiss, was dran ist.
+        </li>
+      </ol>
+      <div className="learn-intro__actions">
+        <Link to="/stapel/neu" className="btn btn--primary btn--lg btn--block" viewTransition>
+          <Icon name="camera" size={20} />
+          <span>Foto aufnehmen</span>
+        </Link>
+        <Link to="/stapel/neu?text=1" className="btn btn--secondary btn--lg btn--block" viewTransition>
+          <Icon name="text" size={20} />
+          <span>Karten abtippen</span>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+/** «Lernen» tab: who has cards due today, and all stacks. */
+export function LearnHubPage() {
+  const stacks = useStacks();
+  const due = useDueList();
+  const dueByStack = useDueByStack();
+  const progress = useData((s) => s.progress);
+  const navigate = useNavigate();
+  const [menu, setMenu] = useState<LearnStack | null>(null);
+  // When is something due again – for a calm «Alles erledigt» instead of an empty list.
+  const next = useMemo(() => {
+    const now = Date.now();
+    let soonest = Infinity;
+    for (const entry of Object.values(progress)) {
+      if (entry.deleted) continue;
+      for (const card of Object.values(entry.cards)) if (card.due > now) soonest = Math.min(soonest, card.due);
+    }
+    return Number.isFinite(soonest) ? soonest : null;
+  }, [progress]);
+  const learned = Object.values(progress).some((entry) => !entry.deleted && Object.keys(entry.cards).length > 0);
+
+  return (
+    <Page
+      title="Lernen"
+      subtitle={stacks.length > 0 ? 'Schulstoff als Karten – allein oder zusammen.' : undefined}
+      actions={
+        stacks.length > 0 && (
+          <Link to="/stapel/neu" className="icon-btn icon-btn--accent" aria-label="Neuer Stapel" viewTransition>
+            <Icon name="plus" />
+          </Link>
+        )
+      }
+    >
+      {stacks.length === 0 ? (
+        <LearnIntro />
+      ) : (
+        <>
+          <Section title="Heute dran">
+            {due.length > 0 ? (
+              <DueRows entries={due} />
+            ) : (
+              <p className="learn-hub__calm">
+                {learned
+                  ? `Alles erledigt 🎉${next ? ` Die nächsten Karten sind ${dueDayLabel(next)} dran.` : ''}`
+                  : 'Tippe einen Stapel an und wähle, wer lernt.'}
+              </p>
+            )}
+          </Section>
+          <Section title="Stapel">
+            <div className="group-list">
+              {stacks.map((stack, i) => (
+                <div key={stack.id} className="list-row" style={{ animationDelay: `${i * 60}ms` }}>
+                  <Link to={`/lernen/${stack.id}`} className="group-card" viewTransition>
+                    <span className="group-card__emoji" aria-hidden="true">
+                      {subjectEmoji(stack.subject)}
+                    </span>
+                    <span className="group-card__body">
+                      <span className="group-card__name">{stack.title}</span>
+                      <span className="group-card__count">
+                        {cardCount(stack.cards.length)}
+                        {stack.subject && ` · ${stack.subject}`}
+                      </span>
+                      {(dueByStack[stack.id] ?? 0) > 0 && <span className="due-pill">{dueByStack[stack.id]} fällig</span>}
+                    </span>
+                  </Link>
+                  <IconButton icon="more" label={`Aktionen für «${stack.title}»`} className="list-row__more" onClick={() => setMenu(stack)} />
+                </div>
+              ))}
+            </div>
+          </Section>
+        </>
+      )}
+      <ActionSheet
+        open={menu !== null}
+        onClose={() => setMenu(null)}
+        title={menu?.title ?? ''}
+        actions={
+          menu
+            ? [
+                { label: 'Lernen', icon: 'play', onClick: () => navigate(`/lernen/${menu.id}`, { viewTransition: true }) },
+                { label: 'Karten bearbeiten', icon: 'edit', onClick: () => navigate(`/stapel/${menu.id}`, { viewTransition: true }) },
+                { label: 'Stapel löschen', icon: 'trash', danger: true, onClick: () => deleteStackWithUndo(menu) },
+              ]
+            : []
+        }
+      />
+    </Page>
+  );
+}
+
+/* ----------------------------------------------------------- stack page */
+
+const CHECK_OPTIONS = [
+  { value: 'self', label: 'Aufdecken' },
+  { value: 'choice', label: 'Auswahl' },
+  { value: 'type', label: 'Tippen' },
+] as const;
+
+const CHECK_HINT = {
+  self: 'Antwort im Kopf sagen, aufdecken, ehrlich bewerten.',
+  choice: 'Vier Antworten zur Auswahl – die App prüft.',
+  type: 'Antwort eintippen – kleine Tippfehler zählen als «fast richtig».',
+} as const;
+
+/** /lernen/:stackId – who learns, their Kartenkasten, and every other way to play the stack. */
+export function StackLearnPage() {
+  const { stackId } = useParams();
+  const stack = useStack(stackId);
+  const learners = useLearners(stackId);
+  const learner = useDefaultLearner(stackId, learners);
+  const setLastLearner = useSettings((s) => s.setLastLearner);
+  const checks = useSettings((s) => s.learnCheck);
+  const setLearnCheck = useSettings((s) => s.setLearnCheck);
+  const [settings, setSettings] = useGameSettings<SpickzettelSettings>(spickzettel.id, spickzettel.defaultSettings!);
+  const progress = useProgress(stackId, learner);
+
+  if (!stack) {
+    return (
+      <Page title="Lernstapel" back="/lernen">
+        <EmptyState emoji="🤷" title="Stapel nicht gefunden" text="Vielleicht wurde er gelöscht." />
+      </Page>
+    );
+  }
+
+  const status = kastenStatus(stack, progress);
+  const round = dueCards(stack, progress, settings.sessionSize).length;
+  const choiceOk = canPlayChoice(stack);
+  const stored = learner ? checks[normalize(learner)] : undefined;
+  const check = stored === 'choice' && !choiceOk ? 'self' : (stored ?? settings.check);
+  const cloze = modeFits('luecke', stack);
+  const together = SITUATIONS.filter((s) => s.value !== 'allein')
+    .map((situation) => ({ situation, modes: MODES.filter((m) => m.situation === situation.value && modeFits(m.value, stack)) }))
+    .filter((group) => group.modes.length > 0);
+  const lueckentext = MODES.find((m) => m.value === 'luecke')!;
+
+  return (
+    <Page
+      title={stack.title}
+      subtitle={`${subjectEmoji(stack.subject)} ${cardCount(stack.cards.length)}${stack.subject ? ` · ${stack.subject}` : ''}`}
+      back="/lernen"
+      className="stack-learn"
+      actions={
+        <Link to={`/stapel/${stack.id}`} className="icon-btn" aria-label="Karten bearbeiten" viewTransition>
+          <Icon name="edit" />
+        </Link>
+      }
+    >
+      <Section title="Wer lernt?">
+        <LearnerPicker stackId={stack.id} learners={learners} selected={learner} onSelect={(name) => setLastLearner(stack.id, name)} />
+      </Section>
+
+      {learner && (
+        <section className="learn-panel" aria-labelledby="kasten-title">
+          <h2 className="learn-panel__title" id="kasten-title">
+            <span aria-hidden="true">🗂️</span> Kartenkasten
+          </h2>
+          <BoxRow counts={boxCounts(stack, progress)} />
+          <p className="learn-panel__status" role="status">
+            {status.due > 0
+              ? `Heute fällig: ${cardCount(status.due)}${status.fresh > 0 ? `, dazu ${status.fresh} neue` : ''}`
+              : status.fresh > 0
+                ? `${status.fresh} ${status.fresh === 1 ? 'neue Karte' : 'neue Karten'}`
+                : status.state === 'mastered'
+                  ? `Alle Karten in Fach 5 ★ – wieder dran ${status.nextDue ? dueDayLabel(status.nextDue) : 'bald'}.`
+                  : `Alles erledigt 🎉 – wieder dran ${status.nextDue ? dueDayLabel(status.nextDue) : 'bald'}.`}
+          </p>
+          <Segmented
+            label="Antworten"
+            value={check}
+            options={CHECK_OPTIONS.filter((o) => o.value !== 'choice' || choiceOk).map((o) => ({ ...o }))}
+            onChange={(value) => {
+              haptic(6);
+              setLearnCheck(learner, value);
+            }}
+          />
+          <p className="settings-panel__hint">{CHECK_HINT[check]}</p>
+        </section>
+      )}
+
+      {(cloze || together.length > 0) && (
+        <Section title="Weitere Spielformen">
+          <div className="mode-rows">
+            {cloze && learner && (
+              <ModeRow to={soloLearnPath(stack.id, 'luecke', learner)} emoji={lueckentext.emoji} label={lueckentext.label} meta="allein" text={lueckentext.text} />
+            )}
+            {together.map(({ situation, modes }) =>
+              modes.map((mode) => (
+                <ModeRow
+                  key={mode.value}
+                  to={`/spiel/spickzettel?stapel=${stack.id}&modus=${mode.value}`}
+                  emoji={mode.emoji}
+                  label={mode.label}
+                  meta={situation.label.toLowerCase()}
+                  text={mode.text}
+                />
+              )),
+            )}
+          </div>
+        </Section>
+      )}
+
+      <Fold title="Weitere Einstellungen" icon="settings">
+        <div className="settings-panel">
+          <Segmented
+            label="Karten pro Runde"
+            value={String(settings.sessionSize)}
+            options={[10, 20, 30].map((n) => ({ value: String(n), label: `${n} Karten` }))}
+            onChange={(value) => setSettings({ ...settings, sessionSize: Number(value) })}
+          />
+          {cloze && (
+            <Segmented
+              label="Lückentext"
+              value={settings.clozeInput}
+              options={[
+                { value: 'bank', label: 'Wortbank' },
+                { value: 'type', label: 'Eintippen' },
+              ]}
+              onChange={(clozeInput) => setSettings({ ...settings, clozeInput })}
+            />
+          )}
+        </div>
+      </Fold>
+
+      <BottomBar>
+        {learner ? (
+          <Link to={soloLearnPath(stack.id, 'kasten', learner)} className="btn btn--primary btn--lg btn--block" viewTransition>
+            <Icon name="play" size={20} />
+            <span>
+              {round > 0 ? `${cardCount(round)} lernen` : 'Trotzdem üben'} · {learner}
+            </span>
+          </Link>
+        ) : (
+          <Button size="lg" block disabled>
+            Wer lernt? Name eingeben
+          </Button>
+        )}
+      </BottomBar>
+    </Page>
+  );
+}
+
+function ModeRow({ to, emoji, label, meta, text }: { to: string; emoji: string; label: string; meta: string; text: string }) {
+  return (
+    <Link to={to} className="mode-row" viewTransition>
+      <span className="mode-row__emoji" aria-hidden="true">
+        {emoji}
+      </span>
+      <span className="mode-row__body">
+        <span className="mode-row__label">
+          {label} <small>{meta}</small>
+        </span>
+        <span className="mode-row__text">{text}</span>
+      </span>
+      <Icon name="next" />
+    </Link>
+  );
+}
+
+/* ---------------------------------------------------------- play alone */
 
 /**
  * /lernen/:stackId/:mode?person=Lina – one person learns a stack right away: the Kartenkasten

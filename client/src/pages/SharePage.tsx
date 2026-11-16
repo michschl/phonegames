@@ -62,7 +62,7 @@ export function SharePage() {
       sound.fanfare();
       confetti({ count: 120 });
       toast(`«${saved.title}» ist jetzt in deinen Lernstapeln 🎉`, { tone: 'success' });
-      navigate(`/spiel/spickzettel?stapel=${saved.id}`, { replace: true, viewTransition: true });
+      navigate(`/lernen/${saved.id}`, { replace: true, viewTransition: true });
     } catch (err) {
       toast(errorMessage(err), { tone: 'error' });
       setImporting(false);

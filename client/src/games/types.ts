@@ -36,12 +36,6 @@ export interface PlayerStatusInfo {
   status: (player: Player) => PlayerStatus | undefined;
 }
 
-export interface SoloStart {
-  path: string | null;
-  /** Start button text, e.g. «Lina lernt». */
-  label: string;
-}
-
 /**
  * Everything the app needs to know about a game. Add a new game by creating
  * a folder in `src/games/<id>/` and registering its definition in
@@ -66,6 +60,8 @@ export interface GameDefinition<S extends object = any> {
   status: 'available' | 'soon';
   /** The game needs no player group (e.g. tools like «Zufallsfinger»). */
   noGroup?: boolean;
+  /** Where the game cards lead instead of the setup screen (Spickzettel: the «Lernen» tab). */
+  href?: string;
   /** Short rules shown on the setup screen. */
   rules?: string[];
   defaultSettings?: S;
@@ -82,12 +78,6 @@ export interface GameDefinition<S extends object = any> {
    * Called on every render of the setup screen.
    */
   useBlocker?: (settings: S) => string | null;
-  /**
-   * Hook: these settings are played by one person without a group (Spickzettel: Kartenkasten,
-   * Lückentext). The setup screen then hides the group, `Prepare` asks who plays, and the start
-   * button goes to `path` (null = nobody chosen yet). Null for games with a group.
-   */
-  useSoloStart?: (settings: S) => SoloStart | null;
   /** The game itself – lazy loaded so the start screen stays fast. */
   Play?: LazyExoticComponent<ComponentType<GameProps<S>>>;
   /** Optional illustration for the cards. Falls back to the emoji. */

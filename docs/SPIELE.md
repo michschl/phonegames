@@ -140,7 +140,7 @@ Spielform. Dafür gibt es in der Definition:
 | `prepareKeys` | Einstellungen aus `Prepare` – sie setzen das Etikett der Einstellungen nicht auf «Angepasst» |
 | `playersNeeded(settings)` | Mindestzahl Personen je nach Einstellung (sonst `minPlayers`), z. B. 1 für den Kartenkasten, 4 für die Blitzrunde |
 | `useBlocker(settings)` | Hook: Grund, warum noch nicht gestartet werden kann – erscheint auf dem Start-Knopf, z. B. «Wähle zuerst einen Lernstapel» |
-| `useSoloStart(settings)` | Hook: Mit diesen Einstellungen spielt eine Person allein, ohne Spielgruppe – der Startbildschirm blendet die Gruppe aus, `Prepare` fragt, wer spielt, und der Start-Knopf führt zu `path` (Text `label`). `null` für Spiele mit Gruppe. Beispiel: Kartenkasten und Lückentext in «Spickzettel» |
+| `href` | Wohin die Spielkarten führen statt zum Startbildschirm – «Spickzettel» hat mit `/lernen` einen eigenen Tab; der Startbildschirm dient dort nur noch den Spielformen zum Zusammenspielen |
 
 ### Ein Teamspiel in wenigen Zeilen
 

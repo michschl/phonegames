@@ -28,9 +28,9 @@ test('Tabs und Seiten sind zugänglich und scrollen nie seitlich', async ({ page
   await register(page);
   for (const [path, heading] of [
     ['/', /Lea/],
+    ['/lernen', 'Lernen'],
     ['/entdecken', 'Entdecken'],
     ['/gruppen', 'Spielgruppen'],
-    ['/stapel', 'Lernstapel'],
     ['/konto', 'Konto'],
   ] as const) {
     await page.goto(path);
@@ -38,7 +38,7 @@ test('Tabs und Seiten sind zugänglich und scrollen nie seitlich', async ({ page
     await expectAccessible(page);
   }
   await page.setViewportSize({ width: 280, height: 700 });
-  for (const path of ['/', '/entdecken', '/gruppen', '/konto']) {
+  for (const path of ['/', '/lernen', '/entdecken', '/gruppen', '/konto']) {
     await page.goto(path);
     await expect(page.locator('h1').first()).toBeVisible();
     await expectNoSidewaysScroll(page);
@@ -49,7 +49,9 @@ test('Jedes Spiel hat eine Startseite mit Weg zurück', async ({ page }) => {
   await register(page);
   await page.goto('/entdecken');
   const links = await page.locator('a[href^="/spiel/"]').evaluateAll((els) => [...new Set(els.map((e) => e.getAttribute('href')!))]);
-  expect(links.length).toBeGreaterThanOrEqual(18);
+  expect(links.length).toBeGreaterThanOrEqual(17);
+  // Spickzettel has its own tab: the card leads to «Lernen».
+  await expect(page.locator('a[href="/lernen"]').filter({ hasText: 'Spickzettel' }).first()).toBeVisible();
   await page.setViewportSize({ width: 320, height: 720 });
   for (const href of links) {
     await page.goto(href);

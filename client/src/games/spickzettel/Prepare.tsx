@@ -6,11 +6,8 @@ import { haptic } from '../../lib/device.ts';
 import { modeFits, recommendStacks, subjectEmoji, suggestedModes } from '../../lib/learn.ts';
 import { normalize } from '../../lib/util.ts';
 import { Sheet } from '../../components/ui.tsx';
-import { LearnerPicker } from '../../components/LearnerPicker.tsx';
 import { useData, useDueByStack, useStacks } from '../../store/data.ts';
-import { useDefaultLearner, useLearners } from '../../store/learners.ts';
-import { useSettings } from '../../store/settings.ts';
-import { isSoloMode, MODES, SITUATIONS } from './modes.ts';
+import { MODES, SITUATIONS } from './modes.ts';
 import type { GameSettingsProps } from '../types.ts';
 import type { LearnMode, LearnStack } from '../../../../shared/types.ts';
 import type { SpickzettelSettings } from './index.tsx';
@@ -113,10 +110,8 @@ export function Prepare({ value, onChange }: GameSettingsProps<SpickzettelSettin
   const wantedMode = params.get('modus');
   const selected = stacks.find((s) => s.id === value.stackId);
   const suggested = selected ? suggestedModes(selected) : new Set<LearnMode>();
-  const fitting = MODES.filter((mode) => !selected || modeFits(mode.value, selected));
-  const learners = useLearners(value.stackId);
-  const learner = useDefaultLearner(value.stackId, learners);
-  const setLastLearner = useSettings((s) => s.setLastLearner);
+  // Here the stack is played together – learning alone starts on the stack page in «Lernen».
+  const fitting = MODES.filter((mode) => mode.situation !== 'allein' && (!selected || modeFits(mode.value, selected)));
 
   // A stack that was just created or edited comes in as ?stapel=…; otherwise keep a valid choice.
   useEffect(() => {
@@ -129,10 +124,11 @@ export function Prepare({ value, onChange }: GameSettingsProps<SpickzettelSettin
     }
   }, [wanted, stacks, selected]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Modes that do not fit the stack are not offered – fall back to the Kartenkasten.
+  // Only modes for playing together that fit the stack are offered.
   useEffect(() => {
-    if (selected && !wanted && !modeFits(value.mode, selected)) onChange({ ...value, mode: 'kasten' });
-  }, [selected, value.mode, wanted]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!selected || wanted || fitting.some((mode) => mode.value === value.mode) || fitting.length === 0) return;
+    onChange({ ...value, mode: fitting[0]!.value });
+  }, [selected, value.mode, wanted, fitting.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const progress = useData((s) => s.progress);
   const shown = useMemo(
@@ -148,8 +144,8 @@ export function Prepare({ value, onChange }: GameSettingsProps<SpickzettelSettin
         title="Lernstapel"
         action={
           stacks.length > 0 && (
-            <Link to="/stapel" className="section__link" viewTransition>
-              Verwalten
+            <Link to="/lernen" className="section__link" viewTransition>
+              Alle Stapel
             </Link>
           )
         }
@@ -189,16 +185,6 @@ export function Prepare({ value, onChange }: GameSettingsProps<SpickzettelSettin
                   <span>Anderer Stapel ({stacks.length})</span>
                 </button>
               )}
-              <Link to="/stapel/neu" className="btn btn--secondary btn--sm" viewTransition>
-                <Icon name="plus" size={18} />
-                <span>Neuer Stapel</span>
-              </Link>
-              {selected && (
-                <Link to={`/stapel/${selected.id}`} className="btn btn--ghost btn--sm" viewTransition>
-                  <Icon name="edit" size={18} />
-                  <span>Karten ansehen</span>
-                </Link>
-              )}
             </div>
             <StackChooser
               open={chooserOpen}
@@ -213,6 +199,14 @@ export function Prepare({ value, onChange }: GameSettingsProps<SpickzettelSettin
       </Section>
 
       <Section title="Spielform">
+        {selected && fitting.length === 0 && (
+          <p className="notice notice--info">
+            «{selected.title}» hat zu wenige Karten, um zusammen zu spielen.{' '}
+            <Link to={`/lernen/${selected.id}`} viewTransition>
+              Allein lernen
+            </Link>
+          </p>
+        )}
         {SITUATIONS.map((situation) => {
           const modes = fitting.filter((mode) => mode.situation === situation.value);
           if (modes.length === 0) return null;
@@ -253,22 +247,14 @@ export function Prepare({ value, onChange }: GameSettingsProps<SpickzettelSettin
             </div>
           );
         })}
-        <p className="settings-panel__hint stack-mode-hint">
-          {MODES.find((m) => m.value === value.mode)?.text}
-          {suggested.has(value.mode) && ' ★ Passt gut zu diesem Stapel.'}
-        </p>
+        {fitting.length > 0 && (
+          <p className="settings-panel__hint stack-mode-hint">
+            {MODES.find((m) => m.value === value.mode)?.text}
+            {suggested.has(value.mode) && ' ★ Passt gut zu diesem Stapel.'}
+          </p>
+        )}
       </Section>
 
-      {selected && isSoloMode(value.mode) && (
-        <Section title="Wer lernt?">
-          <LearnerPicker
-            stackId={selected.id}
-            learners={learners}
-            selected={learner}
-            onSelect={(name) => setLastLearner(selected.id, name)}
-          />
-        </Section>
-      )}
     </>
   );
 }

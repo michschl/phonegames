@@ -1,19 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
-import { LIMITS, type LearnExtractMode, type LearnStack, type LearnUsage } from '../../../shared/types.ts';
+import { useNavigate, useParams, useSearchParams } from 'react-router';
+import { LIMITS, type LearnExtractMode, type LearnUsage } from '../../../shared/types.ts';
 import { Mascot } from '../components/Brand.tsx';
 import { Icon } from '../components/Icon.tsx';
 import { BottomBar, Page, Section } from '../components/Layout.tsx';
 import { ShareStack } from '../components/ShareStack.tsx';
 import { StackEditor, toStackInput } from '../components/StackEditor.tsx';
-import { ActionSheet, Button, ConfirmSheet, EmptyState, IconButton, Segmented } from '../components/ui.tsx';
+import { Button, ConfirmSheet, EmptyState, IconButton, Segmented } from '../components/ui.tsx';
 import { api, ApiError, errorMessage } from '../lib/api.ts';
 import { haptic } from '../lib/device.ts';
-import { parseTextCards, preparePhoto, subjectEmoji } from '../lib/learn.ts';
+import { parseTextCards, preparePhoto } from '../lib/learn.ts';
 import { sound } from '../lib/audio.ts';
 import { createId } from '../lib/util.ts';
 import { useAuth } from '../store/auth.ts';
-import { useData, useDueByStack, useStack, useStacks } from '../store/data.ts';
+import { useData, useStack } from '../store/data.ts';
 import { fromDraft, fromStack, useLearnDraft, type EditorValue } from '../store/learnDraft.ts';
 import { soloLearnPath } from '../games/spickzettel/modes.ts';
 import { obviousLearner } from '../lib/learners.ts';
@@ -22,8 +22,8 @@ import { useGameSettings, useSettings } from '../store/settings.ts';
 import { toast, useUi } from '../store/ui.ts';
 import { deleteStackWithUndo, withUndo } from '../store/undo.ts';
 
-/** Where the learning game lives – stacks are chosen and played there. */
-const GAME = '/spiel/spickzettel';
+/** Where stacks are learned – the «Lernen» tab. */
+const LEARN = '/lernen';
 
 function cardCount(n: number): string {
   return `${n} ${n === 1 ? 'Karte' : 'Karten'}`;
@@ -33,79 +33,6 @@ function cardCount(n: number): string {
 function dayLabel(isoDay: string): string {
   const [year, month, day] = isoDay.split('-').map(Number) as [number, number, number];
   return new Date(year, month - 1, day).toLocaleDateString('de-CH', { day: 'numeric', month: 'long' });
-}
-
-/* ------------------------------------------------------------- overview */
-
-export function StacksPage() {
-  const stacks = useStacks();
-  const dueByStack = useDueByStack();
-  const navigate = useNavigate();
-  const [menu, setMenu] = useState<LearnStack | null>(null);
-  return (
-    <Page
-      title="Lernstapel"
-      subtitle="Dein Lernstoff als Karten – für den Kartenkasten und die Blitzrunde."
-      back={GAME}
-      actions={
-        stacks.length > 0 && (
-          <Link to="/stapel/neu" className="icon-btn icon-btn--accent" aria-label="Neuer Stapel" viewTransition>
-            <Icon name="plus" />
-          </Link>
-        )
-      }
-    >
-      {stacks.length === 0 ? (
-        <EmptyState
-          mascot="happy"
-          emoji="📝"
-          title="Noch kein Lernstapel"
-          text="Fotografiere ein Wörtliblatt oder eine Heftseite – Phoni macht Lernkarten daraus."
-          action={
-            <Link to="/stapel/neu" className="btn btn--primary btn--lg" viewTransition>
-              <Icon name="camera" size={20} />
-              <span>Stapel erstellen</span>
-            </Link>
-          }
-        />
-      ) : (
-        <div className="group-list">
-          {stacks.map((stack, i) => (
-            <div key={stack.id} className="list-row" style={{ animationDelay: `${i * 60}ms` }}>
-              <Link to={`/stapel/${stack.id}`} className="group-card" viewTransition>
-                <span className="group-card__emoji" aria-hidden="true">
-                  {subjectEmoji(stack.subject)}
-                </span>
-                <span className="group-card__body">
-                  <span className="group-card__name">{stack.title}</span>
-                  <span className="group-card__count">
-                    {cardCount(stack.cards.length)}
-                    {stack.subject && ` · ${stack.subject}`}
-                  </span>
-                  {(dueByStack[stack.id] ?? 0) > 0 && <span className="due-pill">{dueByStack[stack.id]} fällig</span>}
-                </span>
-              </Link>
-              <IconButton icon="more" label={`Aktionen für «${stack.title}»`} className="list-row__more" onClick={() => setMenu(stack)} />
-            </div>
-          ))}
-        </div>
-      )}
-      <ActionSheet
-        open={menu !== null}
-        onClose={() => setMenu(null)}
-        title={menu?.title ?? ''}
-        actions={
-          menu
-            ? [
-                { label: 'Spielen', icon: 'play', onClick: () => navigate(`${GAME}?stapel=${menu.id}`, { viewTransition: true }) },
-                { label: 'Karten bearbeiten', icon: 'edit', onClick: () => navigate(`/stapel/${menu.id}`, { viewTransition: true }) },
-                { label: 'Stapel löschen', icon: 'trash', danger: true, onClick: () => deleteStackWithUndo(menu) },
-              ]
-            : []
-        }
-      />
-    </Page>
-  );
 }
 
 /* ------------------------------------------------------------ new stack */
@@ -233,7 +160,7 @@ export function NewStackPage() {
     toast(`«${stack.title}» ist gespeichert 🎉`, { tone: 'success' });
     // Straight into the first round when it is clear who learns; otherwise «Wer lernt?» asks.
     const learner = obviousLearner(learners, stack.id, useSettings.getState().lastLearnerByStack, Object.values(useData.getState().progress));
-    navigate(learner ? soloLearnPath(stack.id, 'kasten', learner) : `${GAME}?stapel=${stack.id}&modus=kasten`, {
+    navigate(learner ? soloLearnPath(stack.id, 'kasten', learner) : `${LEARN}/${stack.id}`, {
       replace: true,
       viewTransition: true,
     });
@@ -261,7 +188,7 @@ export function NewStackPage() {
     return (
       <Page
         title="Karten prüfen"
-        back={GAME}
+        back={LEARN}
         className="stack-new"
         actions={<IconButton icon="trash" label="Entwurf verwerfen" onClick={() => setConfirmDiscard(true)} />}
       >
@@ -328,7 +255,7 @@ export function NewStackPage() {
 
   if (step === 'text') {
     return (
-      <Page title="Karten abtippen" back={GAME} className="stack-new">
+      <Page title="Karten abtippen" back={LEARN} className="stack-new">
         <Section title="Eine Karte pro Zeile">
           <div className={`field ${textError ? 'has-error' : ''}`}>
             <textarea
@@ -366,7 +293,7 @@ export function NewStackPage() {
   const used = usage !== null && usage.available && usage.remaining <= 0;
   const blocked = !online || unavailable || used;
   return (
-    <Page title="Neuer Stapel" subtitle="Fotografiere dein Wörtliblatt oder deine Heftseite." back={GAME} className="stack-new">
+    <Page title="Neuer Stapel" subtitle="Fotografiere dein Wörtliblatt oder deine Heftseite." back={LEARN} className="stack-new">
       <input
         ref={cameraInput}
         type="file"
@@ -520,7 +447,7 @@ export function StackEditPage() {
 
   if (!stack || !value) {
     return (
-      <Page title="Lernstapel" back="/stapel">
+      <Page title="Lernstapel" back={LEARN}>
         <EmptyState emoji="🤷" title="Stapel nicht gefunden" text="Vielleicht wurde er gelöscht." />
       </Page>
     );
@@ -541,13 +468,13 @@ export function StackEditPage() {
     saveStack(input, stack.id);
     sound.coin();
     toast('Gespeichert.', { tone: 'success' });
-    navigate(`${GAME}?stapel=${stack.id}`, { viewTransition: true });
+    navigate(`${LEARN}/${stack.id}`, { viewTransition: true });
   };
 
   return (
     <Page
       title={stack.title}
-      back="/stapel"
+      back={`${LEARN}/${stack.id}`}
       className="stack-new"
       actions={<IconButton icon="trash" label="Stapel löschen" onClick={() => setConfirmDelete(true)} />}
     >
@@ -580,7 +507,7 @@ export function StackEditPage() {
         onConfirm={() => {
           setConfirmDelete(false);
           deleteStackWithUndo(stack);
-          navigate('/stapel', { replace: true, viewTransition: true });
+          navigate(LEARN, { replace: true, viewTransition: true });
         }}
       />
     </Page>

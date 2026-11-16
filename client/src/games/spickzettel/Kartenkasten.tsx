@@ -1,15 +1,16 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { LearnCard, LearnStack, Player } from '../../../../shared/types.ts';
 import { Button } from '../../components/ui.tsx';
 import { sound } from '../../lib/audio.ts';
 import { confetti } from '../../lib/confetti.ts';
 import { haptic } from '../../lib/device.ts';
-import { BOXES, boxCounts, canPlayChoice, checkTypedAnswer, choicesFor, dueCards, dueDayLabel, kastenStatus, type TypedVerdict } from '../../lib/learn.ts';
+import { boxCounts, canPlayChoice, checkTypedAnswer, choicesFor, dueCards, dueDayLabel, kastenStatus, type TypedVerdict } from '../../lib/learn.ts';
 import { normalize, shuffle } from '../../lib/util.ts';
 import { useData, useProgress } from '../../store/data.ts';
 import { Actions, GameShell, Headline, Stage } from '../shared/GameShell.tsx';
 import { PlayerPicker } from '../shared/players.tsx';
 import type { SpickzettelSettings } from './index.tsx';
+import { BoxRow } from './BoxRow.tsx';
 import { CardPrompt } from './cloze.tsx';
 import { useKastenTiles } from './status.ts';
 
@@ -28,30 +29,6 @@ function possessive(name: string): string {
   return /[sxzß]$/i.test(name) ? `${name}’` : `${name}s`;
 }
 
-export function BoxRow({ counts, highlight }: { counts: number[]; highlight?: number }) {
-  const max = Math.max(1, ...counts);
-  return (
-    <div className="box-row" aria-label="Karten pro Fach">
-      {counts.map((count, box) => (
-        <div
-          key={box}
-          className={`box-col ${box === highlight ? 'is-highlight' : ''}`}
-          style={{ '--fill': `${Math.round((count / max) * 100)}%` } as CSSProperties}
-        >
-          <span className="box-col__bar" aria-hidden="true" />
-          {box === BOXES && (
-            <span className="box-col__star" aria-hidden="true">
-              ★
-            </span>
-          )}
-          <strong>{count}</strong>
-          <small>{box === 0 ? 'neu' : `Fach ${box}`}</small>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 /**
  * Kartenkasten (Leitner system): one person answers the cards that are due.
  * Known cards move one box up and come back later, missed ones go back to box 1
@@ -68,7 +45,7 @@ export function Kartenkasten({
   players: Player[];
   settings: SpickzettelSettings;
   onExit: () => void;
-  /** Straight to the first due card (one tap from «Heute fällig») instead of the overview. */
+  /** Straight to the first due card (one tap from «Heute fällig») instead of the overview – or practice if nothing is due. */
   autoStart?: boolean;
 }) {
   const [learner, setLearner] = useState<Player | null>(players.length === 1 ? players[0]! : null);
@@ -182,7 +159,8 @@ export function Kartenkasten({
   };
 
   useLayoutEffect(() => {
-    if (autoStart && learner && due.length > 0) begin(false);
+    // Nothing due: a practice round that does not change the boxes («Trotzdem üben»).
+    if (autoStart && learner) begin(due.length === 0);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const finishedRight = results.filter((r) => r.correct).length;

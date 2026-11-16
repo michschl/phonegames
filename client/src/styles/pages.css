@@ -1998,3 +1998,159 @@
   transform: translateY(-50%);
   background: rgba(27, 16, 51, 0.08);
 }
+
+/* «Lernen» tab: first visit in three steps. */
+.learn-intro {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  padding: 8px 4px 0;
+  text-align: center;
+}
+
+.learn-intro__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 1.15;
+}
+
+.learn-intro__steps {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+  text-align: left;
+}
+
+.learn-intro__steps li {
+  counter-increment: step;
+  position: relative;
+  padding: 12px 14px 12px 54px;
+  border-radius: var(--radius);
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: 0 3px 0 var(--ink);
+  font-weight: 600;
+}
+
+.learn-intro__steps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2.5px solid var(--ink);
+  background: var(--yellow);
+  font-family: var(--font-display);
+  font-weight: 900;
+}
+
+.learn-intro__actions {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+}
+
+.learn-hub__calm {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 2.5px dashed var(--ink-3, rgba(27, 16, 51, 0.35));
+  font-weight: 700;
+  color: var(--muted);
+}
+
+/* Stack page: room below for the start button. */
+.stack-learn {
+  padding-bottom: calc(var(--safe-bottom) + 140px);
+}
+
+/* Stack page: the Kartenkasten of the chosen person. */
+.learn-panel {
+  display: grid;
+  gap: 10px;
+  margin-top: 22px;
+  padding: 14px;
+  border-radius: var(--radius-lg);
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow);
+}
+
+.learn-panel__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 20px;
+}
+
+.learn-panel__status {
+  margin: 0;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+/* Other ways to play a stack: one row each with a sentence. */
+.mode-rows {
+  display: grid;
+  gap: 10px;
+}
+
+.mode-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 10px 10px;
+  border-radius: var(--radius);
+  border: var(--border);
+  background: var(--paper);
+  color: var(--ink);
+  text-decoration: none;
+  box-shadow: 0 3px 0 var(--ink);
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.mode-row:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+
+.mode-row__emoji {
+  flex: none;
+  font-size: 26px;
+}
+
+.mode-row__body {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.mode-row__label {
+  font-weight: 800;
+}
+
+.mode-row__label small {
+  margin-left: 4px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.mode-row__text {
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--muted);
+}
+

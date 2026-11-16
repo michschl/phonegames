@@ -1,12 +1,15 @@
 import { expect, test, type Locator } from '@playwright/test';
-import { createGroup, createStack, endGame, expectAccessible, openSettings, register, startGame, startLearning } from './helpers.ts';
+import { createGroup, createStack, endGame, expectAccessible, openMode, register, startGame } from './helpers.ts';
 
 const WORDS: Record<string, string> = { 'le chien': 'der Hund', 'la maison': 'das Haus', manger: 'essen', toujours: 'immer' };
 
 test('Duell: falscher Tipp sperrt, wer zuerst richtig tippt, punktet', async ({ page }) => {
   await register(page);
   await createStack(page, 'Wörtli', Object.entries(WORDS).map(([q, a]) => `${q} = ${a}`));
-  await page.getByRole('radio', { name: /Duell/ }).click();
+  // From the stack page to the setup screen of the Duell.
+  await openMode(page, /Duell/);
+  await expect(page.getByRole('radio', { name: /Duell/ })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByRole('radio', { name: /Kartenkasten/ })).toHaveCount(0);
   await createGroup(page, ['Lea', 'Ben', 'Carla']);
   await page.locator('.start-bar .btn').click();
   await expect(page.getByText('Wer spielt gegeneinander?')).toBeVisible();
@@ -42,7 +45,7 @@ test('Duell: falscher Tipp sperrt, wer zuerst richtig tippt, punktet', async ({ 
 test('Blitzrunde: wer abfragt, sieht Frage und Antwort', async ({ page }) => {
   await register(page);
   await createStack(page, 'Wörtli', Object.entries(WORDS).map(([q, a]) => `${q} = ${a}`));
-  await page.getByRole('radio', { name: /Blitzrunde/ }).click();
+  await openMode(page, /Blitzrunde/);
   await createGroup(page, ['Lea', 'Ben', 'Carla', 'Dario']);
   await startGame(page);
   await page.getByRole('button', { name: 'Los geht’s' }).click();
@@ -66,8 +69,8 @@ test('Schätzrunde: Volltreffer punkten, weit daneben landet im Kartenkasten', a
   await register(page);
   await createStack(page, 'Schweizer Geschichte', [...Object.entries(answers).map(([q, a]) => `${q} = ${a}`), 'le chien = der Hund']);
   // Only what fits the stack is offered: numbers, but no gaps.
-  await expect(page.getByRole('radio', { name: /Lückentext/ })).toHaveCount(0);
-  await page.getByRole('radio', { name: /Schätzrunde/ }).click();
+  await expect(page.locator('.mode-row', { hasText: /Lückentext/ })).toHaveCount(0);
+  await openMode(page, /Schätzrunde/);
   await createGroup(page, ['Lea', 'Ben']);
   // A small phone: the reveal does not fit and scrolls.
   await page.setViewportSize({ width: 360, height: 520 });
@@ -104,8 +107,9 @@ test('Schätzrunde: Volltreffer punkten, weit daneben landet im Kartenkasten', a
   await expect(page.locator('.turn-list li')).toHaveCount(4);
   await page.getByRole('button', { name: 'Beenden', exact: true }).click();
 
-  // Ben's far-off guesses are now due in his Kartenkasten.
-  await page.getByRole('radio', { name: /Kartenkasten/ }).click();
+  // Ben's far-off guesses are now due in his Kartenkasten – on the stack page in «Lernen».
+  await page.getByRole('link', { name: 'Alle Stapel' }).click();
+  await page.locator('.group-card', { hasText: 'Schweizer Geschichte' }).click();
   await expect(page.getByRole('radio', { name: /^Ben/ }).locator('.due-badge')).toHaveText('4');
 });
 
@@ -129,8 +133,8 @@ test('Lückentext: Wortbank, Korrektur und Eintippen', async ({ page }) => {
     'Im Tessin spricht man [Italienisch].',
   ]);
   // Alone, without a group: straight to the first page.
-  await page.getByRole('radio', { name: /Lückentext/ }).click();
-  await startLearning(page);
+  await openMode(page, /Lückentext/);
+  await expect(page).toHaveURL(/\/luecke\?person=Lea$/);
 
   // Page 1: everything right; a filled gap gives its word back when tapped.
   const sentences = async () => {
@@ -158,11 +162,12 @@ test('Lückentext: Wortbank, Korrektur und Eintippen', async ({ page }) => {
   await page.getByRole('button', { name: 'Zum Ergebnis' }).click();
   await expect(page.locator('.result-banner__title')).toHaveText('4 von 6 Lücken');
   await page.getByRole('button', { name: 'Beenden', exact: true }).click();
+  await expect(page).toHaveURL(/\/lernen\/[^/]+$/);
 
   // Typing: lower case is right, a swapped letter almost right, a wrong word wrong.
-  await openSettings(page);
-  await page.getByRole('radio', { name: /Eintippen/ }).click();
-  await startLearning(page);
+  await page.locator('summary', { hasText: 'Weitere Einstellungen' }).click();
+  await page.getByRole('radio', { name: 'Eintippen' }).click();
+  await openMode(page, /Lückentext/);
   list = await sentences();
   const plan = [answerFor(list[0]!).toLowerCase(), 'Zürich', answerFor(list[2]!).replace('ei', 'ie')];
   for (const [i, text] of plan.entries()) {

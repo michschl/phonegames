@@ -1,5 +1,6 @@
 import type { LearnStack, Player } from '../../../../shared/types.ts';
-import { useGameSettings } from '../../store/settings.ts';
+import { normalize } from '../../lib/util.ts';
+import { useGameSettings, useSettings } from '../../store/settings.ts';
 import { spickzettel, type SpickzettelSettings } from './index.tsx';
 import { Kartenkasten } from './Kartenkasten.tsx';
 import { Lueckentext } from './Lueckentext.tsx';
@@ -18,7 +19,10 @@ export default function SoloLearn({
   learner: Player;
   onExit: () => void;
 }) {
-  const [settings] = useGameSettings<SpickzettelSettings>(spickzettel.id, spickzettel.defaultSettings!);
+  const [stored] = useGameSettings<SpickzettelSettings>(spickzettel.id, spickzettel.defaultSettings!);
+  // Everyone answers their own way: revealing, choosing or typing (chosen on the stack page).
+  const check = useSettings((s) => s.learnCheck[normalize(learner.name)]) ?? stored.check;
+  const settings = { ...stored, check };
   const players = [learner];
   if (mode === 'luecke') return <Lueckentext stack={stack} players={players} settings={settings} onExit={onExit} />;
   return <Kartenkasten stack={stack} players={players} settings={settings} onExit={onExit} autoStart />;

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { normalize } from '../lib/util.ts';
 
 /** Device-local preferences (not synchronised). */
 interface SettingsState {
@@ -20,6 +21,8 @@ interface SettingsState {
   lastLearner: string | null;
   /** Spickzettel: names added as learners on this device that are in no group yet. */
   learnerNames: string[];
+  /** Spickzettel: how each person answers in the Kartenkasten (normalised name → mode). */
+  learnCheck: Record<string, 'self' | 'choice' | 'type'>;
   setSound(on: boolean): void;
   setHaptics(on: boolean): void;
   setGameSettings(gameId: string, value: unknown): void;
@@ -29,6 +32,7 @@ interface SettingsState {
   dismissHint(key: string): void;
   setLastLearner(stackId: string, name: string): void;
   addLearnerName(name: string): void;
+  setLearnCheck(name: string, check: 'self' | 'choice' | 'type'): void;
 }
 
 export const useSettings = create<SettingsState>()(
@@ -44,6 +48,7 @@ export const useSettings = create<SettingsState>()(
       lastLearnerByStack: {},
       lastLearner: null,
       learnerNames: [],
+      learnCheck: {},
       setSound: (sound) => set({ sound }),
       setHaptics: (haptics) => set({ haptics }),
       setGameSettings: (gameId, value) => set((s) => ({ gameSettings: { ...s.gameSettings, [gameId]: value } })),
@@ -53,6 +58,7 @@ export const useSettings = create<SettingsState>()(
       dismissHint: (key) => set((s) => ({ dismissedHints: s.dismissedHints.includes(key) ? s.dismissedHints : [...s.dismissedHints, key] })),
       setLastLearner: (stackId, name) =>
         set((s) => ({ lastLearnerByStack: { ...s.lastLearnerByStack, [stackId]: name }, lastLearner: name })),
+      setLearnCheck: (name, check) => set((s) => ({ learnCheck: { ...s.learnCheck, [normalize(name)]: check } })),
       addLearnerName: (name) =>
         set((s) => ({ learnerNames: s.learnerNames.includes(name) ? s.learnerNames : [...s.learnerNames, name].slice(-30) })),
     }),

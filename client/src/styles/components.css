@@ -857,7 +857,7 @@
   width: var(--w);
   height: var(--tabbar-h);
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(var(--tabs, 4), minmax(0, 1fr));
   padding: 6px;
   border-radius: 26px;
   background: var(--paper);
@@ -870,7 +870,7 @@
   top: 6px;
   bottom: 6px;
   left: 6px;
-  width: calc((100% - 12px) / 4);
+  width: calc((100% - 12px) / var(--tabs, 4));
   border-radius: 18px;
   background: var(--tab-color, var(--pink));
   border: 2.5px solid var(--ink);
@@ -887,8 +887,10 @@
   align-content: center;
   gap: 2px;
   color: var(--ink-2);
-  font-size: 11.5px;
+  /* Five labels side by side: «Entdecken» still fits on a 280 px phone. */
+  font-size: clamp(9.5px, 3.1vw, 11.5px);
   font-weight: 800;
+  letter-spacing: -0.01em;
   text-decoration: none;
   transition: color 0.2s;
 }

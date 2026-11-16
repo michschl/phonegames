@@ -1,12 +1,11 @@
 import { lazy } from 'react';
 import type { LearnMode } from '../../../../shared/types.ts';
-import type { GameDefinition, GameSettingsProps, SoloStart } from '../types.ts';
+import type { GameDefinition, GameSettingsProps } from '../types.ts';
 import { OptionRow, SettingsPanel } from '../shared/settings.tsx';
 import { TurnSettingsRows } from '../shared/turnSettings.tsx';
-import { BLITZ_MIN_CARDS, canPlayChoice, clozeCards, estimateCards, MODE_MIN_CARDS } from '../../lib/learn.ts';
+import { modeFits } from '../../lib/learn.ts';
 import { useStack } from '../../store/data.ts';
-import { useDefaultLearner, useLearners } from '../../store/learners.ts';
-import { isSoloMode, soloLearnPath } from './modes.ts';
+import { isSoloMode } from './modes.ts';
 import { Prepare } from './Prepare.tsx';
 
 export interface SpickzettelSettings {
@@ -44,26 +43,6 @@ function Settings({ value, onChange }: GameSettingsProps<SpickzettelSettings>) {
       </SettingsPanel>
     );
   }
-  if (value.mode === 'luecke') {
-    return (
-      <SettingsPanel>
-        <OptionRow
-          label="Lücken füllen"
-          value={value.clozeInput}
-          options={[
-            { value: 'bank', label: 'Wortbank', hint: 'antippen' },
-            { value: 'type', label: 'Eintippen', hint: 'genau' },
-          ]}
-          onChange={(clozeInput) => onChange({ ...value, clozeInput })}
-          hint={
-            value.clozeInput === 'bank'
-              ? 'Die fehlenden Wörter stehen unter dem Text – antippen und in die Lücke setzen.'
-              : 'Wörter selbst eintippen. Ein kleiner Tippfehler, ein fehlender Akzent oder Artikel zählt als «fast richtig».'
-          }
-        />
-      </SettingsPanel>
-    );
-  }
   if (value.mode === 'blitz') {
     return (
       <SettingsPanel>
@@ -84,57 +63,16 @@ function Settings({ value, onChange }: GameSettingsProps<SpickzettelSettings>) {
       </SettingsPanel>
     );
   }
-  return (
-    <SettingsPanel>
-      <OptionRow
-        label="Antworten"
-        value={value.check}
-        options={[
-          { value: 'self', label: 'Selbst prüfen', hint: 'aufdecken' },
-          { value: 'choice', label: 'Auswahl', hint: 'aus vier' },
-          { value: 'type', label: 'Eintippen', hint: 'genau' },
-        ]}
-        onChange={(check) => onChange({ ...value, check })}
-        hint={
-          value.check === 'self'
-            ? 'Antwort im Kopf oder laut sagen, aufdecken und ehrlich bewerten.'
-            : value.check === 'choice'
-              ? 'Vier Antworten zur Auswahl – die App prüft.'
-              : 'Antwort eintippen. Ein kleiner Tippfehler, ein fehlender Akzent oder Artikel zählt als «fast richtig».'
-        }
-      />
-      <OptionRow
-        label="Karten pro Runde"
-        value={value.sessionSize}
-        options={[10, 20, 30].map((n) => ({ value: n, label: `${n}` }))}
-        onChange={(sessionSize) => onChange({ ...value, sessionSize })}
-      />
-    </SettingsPanel>
-  );
+  // Kartenkasten and Lückentext are set up on the stack page in «Lernen».
+  return null;
 }
 
 function useBlocker(settings: SpickzettelSettings): string | null {
   const stack = useStack(settings.stackId);
   if (!stack) return 'Wähle zuerst einen Lernstapel';
-  if (stack.cards.length === 0) return 'Der Stapel hat noch keine Karten';
-  if (settings.mode === 'blitz' && stack.cards.length < BLITZ_MIN_CARDS) return `Blitzrunde: mindestens ${BLITZ_MIN_CARDS} Karten`;
-  if (settings.mode === 'duell' && !canPlayChoice(stack)) return 'Duell: mindestens 4 Karten';
-  if (settings.mode === 'schaetzen' && estimateCards(stack).length < MODE_MIN_CARDS.schaetzen) {
-    return `Schätzrunde: mindestens ${MODE_MIN_CARDS.schaetzen} Karten mit Zahlen`;
-  }
-  if (settings.mode === 'luecke' && clozeCards(stack).length < MODE_MIN_CARDS.luecke) {
-    return `Lückentext: mindestens ${MODE_MIN_CARDS.luecke} Sätze mit Lücke`;
-  }
+  // Prepare offers only the modes that fit – none fits when the stack is too small.
+  if (isSoloMode(settings.mode) || !modeFits(settings.mode, stack)) return 'Zu wenige Karten zum Zusammenspielen';
   return null;
-}
-
-/** Kartenkasten and Lückentext: one person learns, no group – «Wer lernt?» is asked in Prepare. */
-function useSoloStart(settings: SpickzettelSettings): SoloStart | null {
-  const learners = useLearners(settings.stackId);
-  const learner = useDefaultLearner(settings.stackId, learners);
-  if (!isSoloMode(settings.mode)) return null;
-  if (!settings.stackId || !learner) return { path: null, label: 'Wer lernt? Name eingeben' };
-  return { path: soloLearnPath(settings.stackId, settings.mode, learner), label: `Lernen · ${learner}` };
 }
 
 export const spickzettel: GameDefinition<SpickzettelSettings> = {
@@ -151,18 +89,17 @@ export const spickzettel: GameDefinition<SpickzettelSettings> = {
   age: 'ab 7 J.',
   tags: ['Lernen', 'Schule', 'Allein', 'Teams'],
   status: 'available',
+  // Learning alone, the stacks and who has cards due live in the «Lernen» tab.
+  href: '/lernen',
   rules: [
-    'Erstelle einen Lernstapel: Fotos von Wörtliblatt oder Heft – oder die Karten abtippen. Prüfe die erkannten Karten kurz.',
-    'Kartenkasten: Wer lernt, beantwortet die fälligen Karten. Gewusst → ein Fach weiter, nicht gewusst → zurück ins erste Fach.',
-    'Karten in den hinteren Fächern kommen seltener: nach 1, 3, 7 und 14 Tagen. So bleibt der Stoff im Kopf.',
-    'Duell: Das Handy liegt zwischen zwei Personen, jede hat ihre Bildschirmhälfte. Wer zuerst richtig tippt, holt den Punkt – falsch getippt sperrt kurz.',
-    'Blitzrunde: Zwei Teams. Eine Person liest die Fragen vor und sieht die Antwort, ihr Team antwortet gegen die Zeit.',
-    'Schätzrunde: Bei Zahlen und Jahreszahlen schätzen alle geheim. Volltreffer 3 Punkte, ganz nah 2, nah dran 1 – wer am nächsten liegt, bekommt einen Bonuspunkt.',
-    'Lückentext: Der Text kommt Seite für Seite. Setze die fehlenden Wörter aus der Wortbank ein oder tippe sie, dann prüfen.',
+    'Wähle einen Lernstapel. Neue Stapel erstellst du – und allein lernst du – unter «Lernen».',
+    'Duell: Das Handy liegt zwischen zwei Personen. Wer zuerst richtig tippt, holt den Punkt – falsch getippt sperrt kurz.',
+    'Blitzrunde: Zwei Teams. Eine Person liest vor und sieht die Antwort, ihr Team antwortet gegen die Zeit.',
+    'Schätzrunde: Alle schätzen Zahlen und Jahreszahlen geheim. Wer am nächsten liegt, punktet.',
   ],
   defaultSettings: {
     stackId: null,
-    mode: 'kasten',
+    mode: 'duell',
     check: 'self',
     sessionSize: 20,
     seconds: 60,
@@ -176,6 +113,5 @@ export const spickzettel: GameDefinition<SpickzettelSettings> = {
   Settings,
   playersNeeded: (settings) => (settings.mode === 'blitz' ? 4 : settings.mode === 'duell' ? 2 : 1),
   useBlocker,
-  useSoloStart,
   Play: lazy(() => import('./SpickzettelGame.tsx')),
 };
