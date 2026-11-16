@@ -62,14 +62,30 @@ export function isSafeToReload(path = window.location.pathname): boolean {
 }
 
 const FORCED_RELOAD_KEY = 'phonegames-update-reload';
+const HARD_RELOAD_KEY = 'phonegames-update-hard-reload';
+/** After an update reload, how long the new version may still wait before the app lets go of the old one. */
+const STUCK_AFTER_MS = 8000;
+const HOUR_MS = 60 * 60 * 1000;
 
-function lastForcedReload(): number {
+function readStamp(storage: () => Storage, key: string): number {
   try {
-    return Number(sessionStorage.getItem(FORCED_RELOAD_KEY) ?? 0);
+    return Number(storage().getItem(key) ?? 0);
   } catch {
     return 0;
   }
 }
+
+function writeStamp(storage: () => Storage, key: string): void {
+  try {
+    storage().setItem(key, String(Date.now()));
+  } catch {
+    // Private mode: nothing to remember.
+  }
+}
+
+const lastForcedReload = () => readStamp(() => sessionStorage, FORCED_RELOAD_KEY);
+const lastHardReload = () => readStamp(() => localStorage, HARD_RELOAD_KEY);
+
 let applying = false;
 
 /** The main script of the code that is running (from index.html). */
@@ -114,15 +130,35 @@ export function applyUpdate(): void {
   void update();
   window.setTimeout(() => {
     const last = lastForcedReload();
-    try {
-      sessionStorage.setItem(FORCED_RELOAD_KEY, String(Date.now()));
-    } catch {
-      // Private mode: reload once anyway.
-    }
+    writeStamp(() => sessionStorage, FORCED_RELOAD_KEY);
     // Not when a game was started in the meantime – the hint stays and the update comes later.
     if (Date.now() - last > 60_000 && isSafeToReload()) window.location.reload();
     else applying = false;
   }, 4000);
+}
+
+/**
+ * Last resort right after an update reload: the old version is still busy – e.g. with a request
+ * on a bad mobile network that does not end – and keeps the new one waiting; reloading does not
+ * change that. The app then lets go of the old version and loads the new one straight from the
+ * server; the offline copy is set up again in the background. Only online, on a safe page and at
+ * most once an hour.
+ */
+async function finishStuckUpdate(reg: ServiceWorkerRegistration): Promise<void> {
+  if (!reg.waiting || Date.now() - lastForcedReload() > 30_000) return;
+  // In case the first «take over» message got lost.
+  reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+  await new Promise((resolve) => window.setTimeout(resolve, STUCK_AFTER_MS));
+  if (!reg.waiting || !navigator.onLine || !isSafeToReload() || Date.now() - lastHardReload() < HOUR_MS) return;
+  try {
+    // The server must answer – sw.js never comes from the offline copy.
+    if (!(await fetch('/sw.js', { cache: 'no-store' })).ok) return;
+  } catch {
+    return;
+  }
+  writeStamp(() => localStorage, HARD_RELOAD_KEY);
+  await reg.unregister();
+  window.location.reload();
 }
 
 export function initPwa(): void {
@@ -158,11 +194,14 @@ export function initPwa(): void {
       // On the welcome and sign-in pages this would cover the hero for a first-time visitor —
       // the welcome text already says the games work offline.
       if (/^\/(willkommen|anmelden|registrieren|s\/)/.test(window.location.pathname)) return;
+      // After letting go of a stuck old version the offline copy is set up again – nothing new for the user.
+      if (Date.now() - lastHardReload() < 60_000) return;
       toast('Bereit für offline – Phonegames funktioniert jetzt auch ohne Internet ✈️');
     },
     onRegisteredSW(_url, reg) {
       if (!reg) return;
       registration = reg;
+      void finishStuckUpdate(reg);
       // Back in the foreground, back online, and every 15 minutes while the app is visible.
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') void checkForUpdate();

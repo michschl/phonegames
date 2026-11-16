@@ -39,8 +39,13 @@ export function BoxRow({ counts, highlight }: { counts: number[]; highlight?: nu
           style={{ '--fill': `${Math.round((count / max) * 100)}%` } as CSSProperties}
         >
           <span className="box-col__bar" aria-hidden="true" />
+          {box === BOXES && (
+            <span className="box-col__star" aria-hidden="true">
+              ★
+            </span>
+          )}
           <strong>{count}</strong>
-          <small>{box === 0 ? 'neu' : box === BOXES ? 'Fach 5 ⭐' : `Fach ${box}`}</small>
+          <small>{box === 0 ? 'neu' : `Fach ${box}`}</small>
         </div>
       ))}
     </div>
