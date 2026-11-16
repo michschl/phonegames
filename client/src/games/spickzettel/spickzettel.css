@@ -606,6 +606,8 @@
 .number-line {
   --row-h: 32px;
   position: relative;
+  /* Never squeezed when the stage scrolls – the pins would slide up over the answer. */
+  flex: none;
   width: min(100%, 480px);
   height: calc(var(--rows) * var(--row-h) + 58px);
   margin: 4px 0;
@@ -676,6 +678,7 @@
 
 .guess-verdict {
   display: block;
+  white-space: normal;
   font-size: 12.5px;
   font-weight: 700;
   color: var(--muted);

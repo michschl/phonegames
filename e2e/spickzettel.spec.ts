@@ -86,6 +86,11 @@ test('Namenstafeln und Badges zeigen, wer wie viele Karten fällig hat', async (
   await expect(tile('Ben').locator('.due-badge')).toHaveText('2');
   await expect(tile('Mia').locator('.pick-chip__status')).toHaveText('Noch nicht begonnen');
   await expectAccessible(page);
+  // On a narrow phone the corner badge sticks out of the tile, but not out of the screen area.
+  await page.setViewportSize({ width: 360, height: 740 });
+  const badge = (await tile('Ben').locator('.due-badge').boundingBox())!;
+  const stage = (await page.locator('.gs-stage').boundingBox())!;
+  expect(badge.x + badge.width).toBeLessThanOrEqual(stage.x + stage.width);
   await endGame(page);
 
   // Setup screen: player colours stay, Ben has the red badge, the group shows the sum.

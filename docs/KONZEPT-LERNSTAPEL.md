@@ -202,11 +202,11 @@ interface Karte {
     | Orange | Karten zum Wiederholen fällig («3 fällig · 2 neu») | rote Zahl |
     | Blau | Nichts fällig, aber noch neue Karten | – |
     | Grün | Heute erledigt | ✓ |
-    | Gelb | Alle Karten in Fach 5 | ⭐ |
+    | Gelb | Alle Karten in Fach 5 | ★ |
     | Weiss | Noch nicht begonnen | – |
 
   - Startbildschirm (Spielform Kartenkasten): Die Namen der Spielgruppe behalten ihre Farben und tragen die rote
-    Zahl der fälligen Karten (bzw. ✓/⭐), mit kurzer Legende. Die Gruppen-Chips zeigen die Summe der fälligen Karten
+    Zahl der fälligen Karten (bzw. ✓/★), mit kurzer Legende. Die Gruppen-Chips zeigen die Summe der fälligen Karten
     aller Personen der Gruppe.
   - Die Stapel-Listen (Spiel und «Lernstapel») zeigen «3 fällig» – summiert über alle Personen.
 - **Stapelwahl im Spiel:** Der Startbildschirm schlägt 3 Stapel vor – zuerst die mit fälligen Karten, dann die

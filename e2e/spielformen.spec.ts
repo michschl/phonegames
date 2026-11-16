@@ -68,6 +68,8 @@ test('Schätzrunde: Volltreffer punkten, weit daneben landet im Kartenkasten', a
   await createGroup(page, ['Lea', 'Ben']);
   await expect(page.getByRole('radio', { name: /Lückentext/ })).toHaveAttribute('aria-disabled', 'true');
   await page.getByRole('radio', { name: /Schätzrunde/ }).click();
+  // A small phone: the reveal does not fit and scrolls.
+  await page.setViewportSize({ width: 360, height: 520 });
   await startGame(page);
 
   for (let q = 0; q < 4; q++) {
@@ -84,7 +86,16 @@ test('Schätzrunde: Volltreffer punkten, weit daneben landet im Kartenkasten', a
     await expect(list.locator('li').first()).toContainText('Volltreffer');
     await expect(list.locator('li', { hasText: 'Ben' })).toContainText('Daneben');
     await expect(page.locator('.number-line')).toBeVisible();
-    if (q === 0) await expectAccessible(page);
+    if (q === 0) {
+      // Rows stay on the screen, and the pins stay below the answer instead of sliding over it.
+      for (const right of await list.locator('li').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().right))) {
+        expect(right).toBeLessThanOrEqual(360);
+      }
+      const shown = (await page.locator('.countup').boundingBox())!;
+      const pins = await page.locator('.number-line__marker').evaluateAll((els) => Math.min(...els.map((e) => e.getBoundingClientRect().top)));
+      expect(pins).toBeGreaterThanOrEqual(shown.y + shown.height);
+      await expectAccessible(page);
+    }
     await page.getByRole('button', { name: /Nächste Frage|Zur Schlussrangliste/ }).click();
   }
   await expect(page.getByText('Das beste Schätzauge')).toBeVisible();

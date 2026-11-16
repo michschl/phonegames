@@ -26,6 +26,19 @@ Mit dabei: vom tickenden Klassiker **💣 Bombe** über Bluff-Spiele wie **🕵�
   <img src="docs/screenshots/mehr-oder-weniger.jpg" width="180" alt="Mehr oder weniger">
   <img src="docs/screenshots/zufallsfinger.jpg" width="180" alt="Zufallsfinger">
 </p>
+<p align="center"><b>📝 Spickzettel – Schulstoff als Spiel</b></p>
+<p align="center">
+  <img src="docs/screenshots/stapel-foto.jpg" width="180" alt="Neuer Lernstapel: Wörtliblatt fotografieren – genau übernehmen oder neue Aufgaben erfinden">
+  <img src="docs/screenshots/karten-pruefen.jpg" width="180" alt="Erkannte Karten prüfen, unsichere sind markiert">
+  <img src="docs/screenshots/spickzettel.jpg" width="180" alt="Drei vorgeschlagene Lernstapel mit fälligen Karten">
+  <img src="docs/screenshots/wer-lernt.jpg" width="180" alt="Wer lernt? Namenstafeln mit Badges">
+</p>
+<p align="center">
+  <img src="docs/screenshots/kartenkasten.jpg" width="180" alt="Kartenkasten mit fünf Fächern">
+  <img src="docs/screenshots/duell.jpg" width="180" alt="Duell auf dem geteilten Bildschirm">
+  <img src="docs/screenshots/schaetzrunde.jpg" width="180" alt="Schätzrunde mit Zahlenstrahl">
+  <img src="docs/screenshots/lueckentext.jpg" width="180" alt="Lückentext mit Wortbank">
+</p>
 
 ## Funktionen
 
