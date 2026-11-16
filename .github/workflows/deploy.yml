@@ -96,6 +96,10 @@ jobs:
       APP_DOMAIN: ${{ vars.APP_DOMAIN }}
       REDIRECT_DOMAINS: ${{ vars.REDIRECT_DOMAINS }}
       IMAGE_TAG: ${{ inputs.image_tag || needs.image.outputs.tag }}
+      INFOMANIAK_AI_PRODUCT_ID: ${{ vars.INFOMANIAK_AI_PRODUCT_ID }}
+      LEARN_AI_MODEL: ${{ vars.LEARN_AI_MODEL }}
+      LEARN_MONTHLY_LIMIT: ${{ vars.LEARN_MONTHLY_LIMIT }}
+      LEARN_GLOBAL_MONTHLY_LIMIT: ${{ vars.LEARN_GLOBAL_MONTHLY_LIMIT }}
     steps:
       - uses: actions/checkout@v5
 
@@ -103,6 +107,7 @@ jobs:
         env:
           HAS_SSH_KEY: ${{ secrets.VPS_SSH_KEY != '' }}
           INVITE_CODES: ${{ secrets.INVITE_CODES }}
+          INFOMANIAK_AI_TOKEN: ${{ secrets.INFOMANIAK_AI_TOKEN }}
         run: |
           missing=0
           for v in VPS_HOST APP_DOMAIN IMAGE_TAG; do
@@ -119,6 +124,25 @@ jobs:
             echo "::warning::Secret INVITE_CODES fehlt – die Registrierung ist für alle offen."
           elif ! [[ "$INVITE_CODES" =~ $codes_pattern ]]; then
             echo "::error::INVITE_CODES darf nur Buchstaben, Ziffern, - und _ enthalten (mehrere Codes mit Komma trennen)."
+            missing=1
+          fi
+          if [ -z "$INFOMANIAK_AI_TOKEN" ]; then
+            echo "::warning::Secret INFOMANIAK_AI_TOKEN fehlt – die Foto-Auswertung für Lernstapel ist ausgeschaltet (Abtippen geht)."
+          else
+            if ! [[ "$INFOMANIAK_AI_TOKEN" =~ ^[A-Za-z0-9._~+/=-]+$ ]]; then
+              echo "::error::INFOMANIAK_AI_TOKEN enthält ungültige Zeichen (Leerzeichen oder Zeilenumbruch mitkopiert?)."
+              missing=1
+            fi
+            if ! [[ "$INFOMANIAK_AI_PRODUCT_ID" =~ ^[0-9]+$ ]]; then
+              echo "::error::Variable INFOMANIAK_AI_PRODUCT_ID fehlt oder ist keine Zahl (Produkt-ID der Infomaniak AI Tools)."
+              missing=1
+            fi
+          fi
+          for v in LEARN_MONTHLY_LIMIT LEARN_GLOBAL_MONTHLY_LIMIT; do
+            if [ -n "${!v}" ] && ! [[ "${!v}" =~ ^[0-9]+$ ]]; then echo "::error::Variable $v muss eine ganze Zahl sein."; missing=1; fi
+          done
+          if [ -n "$LEARN_AI_MODEL" ] && ! [[ "$LEARN_AI_MODEL" =~ ^[A-Za-z0-9._/:-]+$ ]]; then
+            echo "::error::Variable LEARN_AI_MODEL enthält ungültige Zeichen."
             missing=1
           fi
           exit $missing
@@ -151,6 +175,7 @@ jobs:
       - name: Dateien übertragen
         env:
           INVITE_CODES: ${{ secrets.INVITE_CODES }}
+          INFOMANIAK_AI_TOKEN: ${{ secrets.INFOMANIAK_AI_TOKEN }}
         run: |
           IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}"
           TTS_TAG="$(cat tts/* | sha256sum | cut -c1-16)"
@@ -163,6 +188,13 @@ jobs:
             # "a.ch b.ch" or "a.ch,b.ch" -> "a.ch, b.ch" (Caddy site addresses)
             if [ -n "$REDIRECT_DOMAINS" ]; then echo "REDIRECT_DOMAINS=\"$(echo "$REDIRECT_DOMAINS" | tr ', ' '\n\n' | grep -v '^$' | paste -sd, - | sed 's/,/, /g')\""; fi
             echo "INVITE_CODES=${INVITE_CODES// /}"
+            if [ -n "$INFOMANIAK_AI_TOKEN" ]; then
+              echo "INFOMANIAK_AI_TOKEN=${INFOMANIAK_AI_TOKEN}"
+              echo "INFOMANIAK_AI_PRODUCT_ID=${INFOMANIAK_AI_PRODUCT_ID}"
+            fi
+            for v in LEARN_AI_MODEL LEARN_MONTHLY_LIMIT LEARN_GLOBAL_MONTHLY_LIMIT; do
+              if [ -n "${!v}" ]; then echo "$v=${!v}"; fi
+            done
           } > deploy/.env
           if ! ssh vps "mkdir -p '$APP_DIR' 2>/dev/null && test -w '$APP_DIR'"; then
             echo "::error::$APP_DIR fehlt auf dem VPS oder ist nicht beschreibbar. Einmalig als root anlegen: sudo install -d -m 750 -o $VPS_USER -g $VPS_USER $APP_DIR"

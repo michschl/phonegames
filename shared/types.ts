@@ -54,9 +54,96 @@ export interface PlayerGroup {
   deleted: boolean;
 }
 
+/* ------------------------------------------------------------ Lernstapel */
+
+/** translation = Wort/Übersetzung, definition = Begriff/Erklärung, qa = Frage/Antwort, number = Zahl/Jahr. */
+export type LearnCardKind = 'translation' | 'definition' | 'qa' | 'number';
+/** blitz = Blitzrunde (Teams), duell = Auswahl aus vier (zu zweit), kasten = Kartenkasten (allein). */
+export type LearnMode = 'blitz' | 'duell' | 'kasten';
+
+export interface LearnCard {
+  id: string;
+  kind: LearnCardKind;
+  /** Frage, Wort oder Begriff. */
+  prompt: string;
+  answer: string;
+  /** Further answers that count as correct («viel», «sehr»). */
+  accepted: string[];
+  /** Plausible wrong answers for multiple choice (at most 3). */
+  distractors: string[];
+}
+
+/** A learning card stack («Lernstapel»), synced like the player groups. */
+export interface LearnStack {
+  id: string;
+  title: string;
+  subject: string;
+  /** For vocabulary: [language of the prompt, language of the answer] as ISO codes, else empty. */
+  languages: string[];
+  cards: LearnCard[];
+  suggestedModes: LearnMode[];
+  source: 'photo' | 'text' | 'shared';
+  createdAt: number;
+  updatedAt: number;
+  deleted: boolean;
+}
+
+/** Leitner box (1–5) and when the card is due again. */
+export interface CardProgress {
+  box: number;
+  due: number;
+}
+
+/** What one person knows of one stack («Kartenkasten»). */
+export interface LearnProgress {
+  /** Derived from stack and person, see progressId() – the same on every device. */
+  id: string;
+  stackId: string;
+  /** Name of the person learning (from the player group). */
+  player: string;
+  cards: Record<string, CardProgress>;
+  updatedAt: number;
+  deleted: boolean;
+}
+
+/** A card as returned by the photo analysis – reviewed by the user before saving. */
+export interface LearnDraftCard extends Omit<LearnCard, 'id'> {
+  /** Why the card needs a second look (e.g. unclear handwriting), or empty. */
+  uncertain: string;
+}
+
+export interface LearnDraft {
+  title: string;
+  subject: string;
+  languages: string[];
+  cards: LearnDraftCard[];
+  suggestedModes: LearnMode[];
+  /** Names, grades or signatures were left out. */
+  removedPersonalData: boolean;
+}
+
+/** Photo analyses left this month. */
+export interface LearnUsage {
+  /** The server has an AI service configured. */
+  available: boolean;
+  used: number;
+  limit: number;
+  remaining: number;
+  /** First day of the next month (YYYY-MM-DD), when the counter starts again. */
+  resetsOn: string;
+  maxPhotos: number;
+}
+
+export interface LearnExtractResponse {
+  draft: LearnDraft;
+  usage: LearnUsage;
+}
+
 export interface SyncPayload {
   library: LibraryItem[];
   groups: PlayerGroup[];
+  stacks: LearnStack[];
+  progress: LearnProgress[];
 }
 
 export interface SyncResponse extends SyncPayload {
@@ -86,4 +173,9 @@ export const LIMITS = {
   library: 500,
   passwordMin: 8,
   passwordMax: 200,
+  stacks: 200,
+  cardsPerStack: 300,
+  cardText: 300,
+  stackTitleMax: 80,
+  learnPhotos: 6,
 } as const;

@@ -16,6 +16,7 @@ import { wahrheitOderPflicht } from './wahrheit-oder-pflicht/index.tsx';
 import { ichHabNochNie } from './ich-hab-noch-nie/index.tsx';
 import { zufallsfinger } from './zufallsfinger/index.tsx';
 import { flaschendrehen } from './flaschendrehen/index.tsx';
+import { spickzettel } from './spickzettel/index.tsx';
 
 /**
  * All games in catalogue order. To add a game, create a folder with an
@@ -39,6 +40,7 @@ export const GAMES: GameDefinition[] = [
   ichHabNochNie,
   zufallsfinger,
   flaschendrehen,
+  spickzettel,
 ];
 
 export function getGame(id: string | undefined): GameDefinition | undefined {

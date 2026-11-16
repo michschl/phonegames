@@ -13,6 +13,7 @@ import { accountRoutes } from './routes/account.ts';
 import { syncRoutes } from './routes/sync.ts';
 import { passkeyRoutes, type WebAuthnConfig } from './routes/passkeys.ts';
 import { TTS_VOICES, ttsRoutes, type TtsConfig } from './routes/tts.ts';
+import { learnRoutes, type LearnConfig } from './routes/learn.ts';
 
 export interface AppOptions {
   db: Database;
@@ -30,6 +31,8 @@ export interface AppOptions {
   webauthn?: WebAuthnConfig | null;
   /** Server narrator voice (Piper); null or missing = device voices only. */
   tts?: TtsConfig | null;
+  /** Photo analysis for learning stacks; null or missing = switched off (text import still works). */
+  learn?: LearnConfig | null;
 }
 
 declare module 'fastify' {
@@ -166,6 +169,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   });
   await app.register(accountRoutes, { prefix: '/api/account', rateLimit: options.rateLimit ?? true });
   await app.register(syncRoutes, { prefix: '/api' });
+  await app.register(learnRoutes, { prefix: '/api/learn', rateLimit: options.rateLimit ?? true, learn: options.learn ?? null });
 
   if (options.serveClient && options.clientDir) {
     registerClient(app, options.clientDir);

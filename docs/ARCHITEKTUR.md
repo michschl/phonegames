@@ -101,8 +101,10 @@ Spieleinstellungen (z. B. Zünddauer), Ton und Vibration sind **Geräteeinstellu
 
 ### Datenschutz
 
-Gespeichert werden nur Name, E-Mail, Passwort-Hash, Avatar, die Spieleliste und die Spielgruppen (Vornamen der
-Mitspielenden). Es gibt keine Tracker und keine externen Requests (Schriften sind eingebettet). Nutzer können
+Gespeichert werden nur Name, E-Mail, Passwort-Hash, Avatar, die Spieleliste, die Spielgruppen (Vornamen der
+Mitspielenden), die Lernstapel und der Lernstand pro Person. Es gibt keine Tracker und keine externen Requests aus dem
+Browser (Schriften sind eingebettet). Fotos für Lernstapel reicht der Server an die Infomaniak AI Tools weiter
+(Rechenzentren in der Schweiz); sie werden weder gespeichert noch protokolliert, nur die erkannten Karten bleiben. Nutzer können
 ihre Daten als JSON exportieren und ihr Konto samt allen Daten selbst löschen. Mit einem Infomaniak-VPS liegen
 die Daten in der Schweiz.
 
@@ -115,6 +117,9 @@ die Daten in der Schweiz.
 | `sessions` | `token_hash`, `user_id`, `expires_at`, `last_seen_at`, `user_agent` |
 | `library` | `user_id`, `game_id`, `added_at`, `updated_at`, `deleted` |
 | `player_groups` | `user_id`, `id`, `name`, `emoji`, `players` (JSON), `created_at`, `updated_at`, `deleted` |
+| `learn_stacks` | `user_id`, `id`, `data` (JSON: Titel, Fach, Sprachen, Karten, empfohlene Spielformen, Quelle), `created_at`, `updated_at`, `deleted` |
+| `learn_progress` | `user_id`, `id` (aus Stapel und Personenname abgeleitet), `stack_id`, `data` (JSON: Name, Fach und Fälligkeit pro Karte), `updated_at`, `deleted` |
+| `learn_usage` | `user_id`, `month` (Kalendermonat in der Schweiz, z. B. `2026-11`), `count` – für das Monatslimit der Foto-Auswertung |
 
 Migrationen stehen in [`server/src/db.ts`](../server/src/db.ts) und laufen beim Start automatisch. Neue
 Migrationen immer **anhängen**, nie bestehende ändern.
@@ -143,7 +148,9 @@ Alle Antworten sind JSON. Fehler haben die Form `{ "error": "code", "message": "
 | `POST /api/account/password` | ✅ | `{ currentPassword, newPassword }` | `204` |
 | `DELETE /api/account` | ✅ | `{ password }` | `204` |
 | `GET /api/account/export` | ✅ | – | JSON-Datei mit allen Daten |
-| `POST /api/sync` | ✅ | `{ library: LibraryItem[], groups: PlayerGroup[] }` | `{ library, groups, serverTime }` |
+| `POST /api/sync` | ✅ | `{ library, groups, stacks, progress }` (ältere Apps ohne `stacks`/`progress` gehen auch) | `{ library, groups, stacks, progress, serverTime }` |
+| `GET /api/learn/usage` | ✅ | – | `{ available, used, limit, remaining, resetsOn, maxPhotos }` |
+| `POST /api/learn/extract` | ✅ | `{ images: string[] }` (1–6 JPEG/PNG/WebP als Data-URL) | `{ draft, usage }` · `429 learn_limit` / `learn_running` · `422 learn_empty` · `502 learn_failed` · `503 learn_unavailable` / `learn_busy` |
 
 Die Typen stehen in [`shared/types.ts`](../shared/types.ts).
 
@@ -163,6 +170,12 @@ Die Typen stehen in [`shared/types.ts`](../shared/types.ts).
 | `INVITE_CODES` | – | Einladungscodes, mit Komma getrennt. Gesetzt = Registrierung nur mit Code; leer = offen |
 | `TTS_URL` | – | Piper-Dienst für die Erzählstimme (Docker: `http://tts:5000`). Ohne Wert gibt es nur Gerätestimmen |
 | `APP_ORIGIN` | Dev: `http://localhost:5173,http://localhost:3000` | Öffentliche Adresse der App (Docker: `https://${APP_DOMAIN}`). Passkeys sind an diese Domain gebunden; ohne Wert sind sie in Produktion ausgeschaltet |
+| `INFOMANIAK_AI_TOKEN` | – | API-Token der Infomaniak AI Tools für die Foto-Auswertung. Ohne Token ist sie ausgeschaltet (Abtippen geht weiterhin) |
+| `INFOMANIAK_AI_PRODUCT_ID` | – | Produkt-ID der AI Tools (`GET /1/ai`) |
+| `LEARN_AI_MODEL` | `Qwen/Qwen3.8-27B-FP8` | Modell mit Bildverständnis |
+| `LEARN_MONTHLY_LIMIT` | `5` | Foto-Auswertungen pro Person und Kalendermonat |
+| `LEARN_GLOBAL_MONTHLY_LIMIT` | `2000` | Notbremse: Auswertungen pro Monat über alle Konten |
+| `LEARN_AI_URL` | `https://api.infomaniak.com` | Basis-URL der KI-Schnittstelle (für Tests) |
 
 ## Sound, Grafik & Haptik
 
@@ -207,3 +220,27 @@ Die Typen stehen in [`shared/types.ts`](../shared/types.ts).
 - **Multi-Touch:** «Zufallsfinger» verfolgt bis zu zehn Finger gleichzeitig über Pointer Events.
 - **Zeichenfläche:** «Zeichnen & Raten» speichert Striche als normalisierte Punkte und zeichnet sie mit Quadratkurven
   geglättet neu – so bleibt die Zeichnung bei Grössenänderungen erhalten.
+
+## Lernstapel und Foto-Auswertung
+
+Das Lernspiel «Spickzettel» arbeitet mit **Lernstapeln** (Konzept: [KONZEPT-LERNSTAPEL.md](KONZEPT-LERNSTAPEL.md)).
+
+- **Erfassen:** Die App verkleinert Fotos im Browser auf höchstens 2000 px (JPEG) und schickt bis zu 6 an
+  `POST /api/learn/extract`. Der Server prüft Format und Magic Bytes, das Monatslimit pro Person und die globale
+  Notbremse und ruft dann die OpenAI-kompatible Schnittstelle der Infomaniak AI Tools auf
+  (`/2/ai/{product_id}/openai/v1/chat/completions`) – mit festem JSON-Schema (`response_format: json_schema`) und
+  **ohne «Nachdenken»** (`reasoning_effort: "none"`; mit Denken verbraucht das Modell sonst die ganze Ausgabe dafür).
+  Die Antwort wird nicht vertraut, sondern bereinigt ([`routes/learn.ts`](../server/src/routes/learn.ts), `toDraft`):
+  leere und doppelte Karten fallen weg, falsche Antworten dürfen nicht der richtigen entsprechen, Längen werden
+  begrenzt. Bei Fehlern wird einmal wiederholt; nur erfolgreiche Auswertungen zählen ans Limit.
+- **Prüfen:** Das Ergebnis ist ein Entwurf (`LearnDraft`), den die Person in der Prüfansicht korrigiert. Der Entwurf
+  liegt bis zum Speichern im Browser (`phonegames-learn-draft`), damit eine Auswertung nicht verloren geht.
+  Abtippen («le chien = der Hund», eine Zeile pro Karte) funktioniert ohne KI und offline
+  ([`lib/learn.ts`](../client/src/lib/learn.ts), `parseTextCards`).
+- **Speichern:** Stapel (`LearnStack`) und Lernstand (`LearnProgress`) werden wie Spielgruppen offline-first
+  gespeichert und synchronisiert. Der Lernstand hat pro Stapel und Person eine feste ID (`progressId`), damit alle
+  Geräte denselben Datensatz bearbeiten.
+- **Kartenkasten:** Lernkartei mit 5 Fächern. Gewusst → ein Fach weiter (fällig nach 0, 1, 3, 7, 14 Tagen; im
+  letzten Fach nach 30 Tagen), nicht gewusst → Fach 1 und in derselben Runde noch einmal. Fällig sind zuerst die
+  Karten aus den vorderen Fächern, neue zuletzt.
+

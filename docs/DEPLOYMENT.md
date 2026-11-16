@@ -132,6 +132,10 @@ Environment geladen ist.
 | `VPS_USER` | – | `deploy` | Standard: `deploy` |
 | `VPS_PORT` | – | `22` | Standard: `22` |
 | `APP_DIR` | – | `/opt/phonegames` | Standard: `/opt/phonegames` |
+| `INFOMANIAK_AI_PRODUCT_ID` | mit Token | `112859` | Produkt-ID der Infomaniak AI Tools (Foto-Auswertung für Lernstapel) |
+| `LEARN_MONTHLY_LIMIT` | – | `5` | Foto-Auswertungen pro Person und Kalendermonat (Standard: 5) |
+| `LEARN_GLOBAL_MONTHLY_LIMIT` | – | `2000` | Notbremse über alle Konten pro Monat (Standard: 2000) |
+| `LEARN_AI_MODEL` | – | `Qwen/Qwen3.8-27B-FP8` | Modell mit Bildverständnis (Standard: Qwen 3.8 27B) |
 
 ### Secrets (im Environment `production`)
 
@@ -142,6 +146,7 @@ Unter **Settings → Environments → production → «Add environment secret»*
 | `VPS_SSH_KEY` | ✅ | Kompletter Inhalt von `phonegames_deploy` (privater Schlüssel, inkl. `-----BEGIN …` / `-----END …`) |
 | `VPS_KNOWN_HOSTS` | empfohlen | Ausgabe von `ssh-keyscan -H <host>` aus Schritt 4 |
 | `INVITE_CODES` | empfohlen | Einladungscodes für die Registrierung, mit Komma getrennt, z. B. `PARTY-2026,FAMILIE`. Nicht gesetzt = jede und jeder kann sich registrieren |
+| `INFOMANIAK_AI_TOKEN` | – | API-Token der Infomaniak AI Tools für die Foto-Auswertung der Lernstapel. Nicht gesetzt = Foto-Auswertung aus, Abtippen geht |
 
 Mit der GitHub-CLI geht das auch so:
 
@@ -155,6 +160,14 @@ ssh-keyscan -H phonegames.example.ch | gh secret set VPS_KNOWN_HOSTS --env produ
 
 ```bash
 gh secret set INVITE_CODES --env production --body "PARTY-2026,FAMILIE"
+```
+
+```bash
+gh secret set INFOMANIAK_AI_TOKEN --env production
+```
+
+```bash
+gh variable set INFOMANIAK_AI_PRODUCT_ID --body "112859"
 ```
 
 ```bash
@@ -249,6 +262,23 @@ ganz normal an.
 
 Wähle Codes, die man nicht leicht errät. Die Registrierung ist zusätzlich auf 20 Versuche pro 15 Minuten und
 IP-Adresse begrenzt.
+
+### Foto-Auswertung (Lernstapel)
+
+Die Fotos für Lernstapel wertet ein Modell der **Infomaniak AI Tools** aus (Rechenzentren in der Schweiz). Der Server
+reicht die Fotos nur weiter und speichert sie nicht.
+
+1. Im [Infomaniak Manager](https://manager.infomaniak.com) die **AI Tools** bestellen bzw. öffnen.
+2. Unter **API-Token** einen eigenen Token für Phonegames erstellen, nur mit der Berechtigung für die AI Tools.
+   Einen eigenen Token pro Verwendung anlegen, damit er sich einzeln widerrufen lässt.
+3. Token als Secret `INFOMANIAK_AI_TOKEN` (Environment `production`) und die Produkt-ID als Variable
+   `INFOMANIAK_AI_PRODUCT_ID` hinterlegen. Die Produkt-ID zeigt `GET https://api.infomaniak.com/1/ai` mit dem Token.
+4. Neu ausrollen. Im Log steht danach «Foto-Auswertung mit Qwen/Qwen3.8-27B-FP8, 5 pro Person und Monat».
+
+**Kosten:** Eine Auswertung mit einem Foto kostet etwa CHF 0.003, mit sechs Fotos etwa CHF 0.02 (CHF 0.40 pro
+1 Mio. Eingabe- und CHF 3.00 pro 1 Mio. Ausgabe-Tokens, Stand November 2026). Den Verbrauch zeigt der Manager oder
+`GET /1/ai/{product_id}/consumptions`. Das Limit pro Person (`LEARN_MONTHLY_LIMIT`) und die Notbremse über alle
+Konten (`LEARN_GLOBAL_MONTHLY_LIMIT`) lassen sich als Variablen anpassen; danach neu ausrollen.
 
 ### Rollback
 

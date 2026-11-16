@@ -69,6 +69,36 @@ const MIGRATIONS: string[] = [
   );
   CREATE INDEX passkeys_user ON passkeys(user_id);
   `,
+  `
+  CREATE TABLE learn_stacks (
+    user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    id         TEXT NOT NULL,
+    data       TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    deleted    INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (user_id, id)
+  );
+
+  CREATE TABLE learn_progress (
+    user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    id         TEXT NOT NULL,
+    stack_id   TEXT NOT NULL,
+    data       TEXT NOT NULL,
+    updated_at INTEGER NOT NULL,
+    deleted    INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (user_id, id)
+  );
+
+  -- Photo analyses per person and calendar month (Europe/Zurich), for the monthly limit.
+  CREATE TABLE learn_usage (
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    month   TEXT NOT NULL,
+    count   INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (user_id, month)
+  );
+  CREATE INDEX learn_usage_month ON learn_usage(month);
+  `,
 ];
 
 export function openDatabase(file: string): Database {

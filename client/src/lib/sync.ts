@@ -33,6 +33,8 @@ export function syncNow(): Promise<boolean> {
       const response = await api.sync({
         library: Object.values(state.library),
         groups: Object.values(state.groups),
+        stacks: Object.values(state.stacks),
+        progress: Object.values(state.progress),
       });
       // The user might have logged out while the request was running.
       if (useAuth.getState().user?.id !== useData.getState().ownerId) return false;

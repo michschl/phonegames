@@ -5,6 +5,8 @@ import {
   deleteUser,
   findUserByEmail,
   getGroups,
+  getProgress,
+  getStacks,
   getLibrary,
   listPasskeys,
   toPasskeyInfo,
@@ -76,6 +78,8 @@ export const accountRoutes: FastifyPluginAsync<{ rateLimit: boolean }> = async (
       user: toPublicUser(user),
       library: getLibrary(app.db, user.id).filter((item) => !item.deleted),
       groups: getGroups(app.db, user.id).filter((group) => !group.deleted),
+      learnStacks: getStacks(app.db, user.id).filter((stack) => !stack.deleted),
+      learnProgress: getProgress(app.db, user.id).filter((entry) => !entry.deleted),
       passkeys: listPasskeys(app.db, user.id).map(toPasskeyInfo),
     };
     reply.header('Content-Disposition', 'attachment; filename="phonegames-export.json"');

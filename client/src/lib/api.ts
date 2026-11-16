@@ -4,7 +4,16 @@ import type {
   PublicKeyCredentialRequestOptionsJSON,
   RegistrationResponseJSON,
 } from '@simplewebauthn/browser';
-import type { ApiErrorBody, AuthOptions, PasskeyInfo, PublicUser, SyncPayload, SyncResponse } from '../../../shared/types.ts';
+import type {
+  ApiErrorBody,
+  AuthOptions,
+  LearnExtractResponse,
+  LearnUsage,
+  PasskeyInfo,
+  PublicUser,
+  SyncPayload,
+  SyncResponse,
+} from '../../../shared/types.ts';
 
 export class ApiError extends Error {
   readonly status: number;
@@ -81,6 +90,9 @@ export const api = {
   passkeyLoginOptions: () => request<PublicKeyCredentialRequestOptionsJSON>('POST', '/api/passkeys/login/options', {}),
   passkeyLoginVerify: (response: AuthenticationResponseJSON) =>
     request<{ user: PublicUser }>('POST', '/api/passkeys/login/verify', { response }),
+  learnUsage: () => request<LearnUsage>('GET', '/api/learn/usage'),
+  /** Photos as data URLs (downscaled JPEG). Can take a while – the AI reads every photo. */
+  learnExtract: (images: string[]) => request<LearnExtractResponse>('POST', '/api/learn/extract', { images }),
 };
 
 export function errorMessage(error: unknown): string {

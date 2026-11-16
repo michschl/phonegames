@@ -80,9 +80,49 @@ const libraryItemSchema = z.object({
   deleted: z.boolean(),
 });
 
+const cardText = z.string().trim().min(1).max(LIMITS.cardText);
+
+const learnCardSchema = z.object({
+  id,
+  kind: z.enum(['translation', 'definition', 'qa', 'number']),
+  prompt: cardText,
+  answer: cardText,
+  accepted: z.array(cardText).max(10),
+  distractors: z.array(cardText).max(3),
+});
+
+const learnModeSchema = z.enum(['blitz', 'duell', 'kasten']);
+
+const learnStackSchema = z.object({
+  id,
+  title: z.string().trim().min(1, 'Der Stapel braucht einen Titel.').max(LIMITS.stackTitleMax),
+  subject: z.string().trim().max(40),
+  languages: z.array(z.string().regex(/^[a-z]{2,3}$/)).max(2),
+  cards: z.array(learnCardSchema).max(LIMITS.cardsPerStack),
+  suggestedModes: z.array(learnModeSchema).max(3),
+  source: z.enum(['photo', 'text', 'shared']),
+  createdAt: timestamp,
+  updatedAt: timestamp,
+  deleted: z.boolean(),
+});
+
+const learnProgressSchema = z.object({
+  id: z.string().regex(/^[A-Za-z0-9_-]{6,100}$/, 'Ungültige ID.'),
+  stackId: id,
+  player: nameSchema,
+  cards: z
+    .record(id, z.object({ box: z.number().int().min(1).max(5), due: timestamp }))
+    .refine((cards) => Object.keys(cards).length <= LIMITS.cardsPerStack, 'Zu viele Karten.'),
+  updatedAt: timestamp,
+  deleted: z.boolean(),
+});
+
 export const syncSchema = z.object({
   library: z.array(libraryItemSchema).max(LIMITS.library * 2),
   groups: z.array(groupSchema).max(LIMITS.groups * 2),
+  // Older app versions do not send learning stacks yet.
+  stacks: z.array(learnStackSchema).max(LIMITS.stacks * 2).default([]),
+  progress: z.array(learnProgressSchema).max(LIMITS.stacks * 2 * LIMITS.playersPerGroup).default([]),
 });
 
 /* ---------------------------------------------------------------- passkeys */

@@ -1,0 +1,302 @@
+/* =============================================== Spickzettel: setup screen */
+
+.stack-picker {
+  display: grid;
+  gap: 10px;
+}
+
+.stack-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: var(--paper);
+  border: var(--border);
+  box-shadow: var(--shadow-sm);
+  text-align: left;
+  transition:
+    transform 0.12s,
+    box-shadow 0.12s,
+    background 0.2s;
+}
+
+.stack-option:active {
+  transform: translateY(3px);
+  box-shadow: none;
+}
+
+.stack-option.is-active {
+  background: var(--cyan-soft);
+}
+
+.stack-option__emoji {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  border: 2px solid var(--ink);
+  background: var(--yellow-soft);
+  font-size: 22px;
+  transform: rotate(-4deg);
+}
+
+.stack-option__body {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.stack-option__title {
+  font-weight: 800;
+  overflow-wrap: break-word;
+}
+
+.stack-option__meta {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.stack-option__radio {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2.5px solid var(--ink);
+  background: var(--paper);
+}
+
+.stack-option.is-active .stack-option__radio {
+  background: var(--yellow);
+}
+
+.stack-picker__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.stack-start {
+  justify-items: stretch;
+}
+
+.stack-start__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.stack-mode-hint {
+  margin-top: 10px;
+}
+
+/* ===================================================== Spickzettel: game */
+
+.learn-stage {
+  justify-content: flex-start;
+  gap: 18px;
+}
+
+.learn-progress {
+  width: min(100%, 520px);
+  height: 10px;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  overflow: hidden;
+}
+
+.learn-progress span {
+  display: block;
+  height: 100%;
+  background: var(--lime);
+  transition: width 0.4s var(--ease-out);
+}
+
+.learn-card {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  width: min(100%, 520px);
+  padding: 22px 20px 24px;
+  border-radius: var(--radius-xl);
+  background: var(--paper);
+  color: var(--ink);
+  border: 3px solid var(--ink);
+  box-shadow: 6px 8px 0 var(--ink);
+  text-align: center;
+  transform: rotate(-1deg);
+  animation: card-in 0.5s var(--ease-spring) both;
+}
+
+.learn-card__kind {
+  justify-self: center;
+  padding: 3px 12px;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  background: var(--cyan-soft);
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.learn-card__prompt {
+  font-family: var(--font-display);
+  font-size: clamp(22px, 7vw, 32px);
+  font-weight: 800;
+  line-height: 1.15;
+  overflow-wrap: break-word;
+}
+
+.learn-card__answer {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 2.5px dashed var(--ink);
+  background: var(--lime-soft);
+  animation: pop-in 0.35s var(--ease-spring) both;
+}
+
+.learn-card__answer > span {
+  font-size: 12.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.learn-card__answer p {
+  font-size: clamp(20px, 6vw, 26px);
+  font-weight: 800;
+  line-height: 1.2;
+  overflow-wrap: break-word;
+}
+
+.learn-card__answer small {
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.learn-card--quiz {
+  animation: none;
+}
+
+.learn-card--quiz .learn-card__answer {
+  background: var(--yellow-soft);
+  animation: none;
+}
+
+/* multiple choice */
+.choice-grid {
+  display: grid;
+  gap: 10px;
+  width: min(100%, 520px);
+}
+
+.choice-btn {
+  min-height: 58px;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow-sm);
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.2;
+  overflow-wrap: break-word;
+  transition:
+    transform 0.12s,
+    box-shadow 0.12s,
+    background 0.2s,
+    opacity 0.2s;
+}
+
+.choice-btn:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: none;
+}
+
+.choice-btn:disabled {
+  cursor: default;
+}
+
+.choice-btn.is-right {
+  background: var(--lime);
+  animation: pop-in 0.35s var(--ease-spring);
+}
+
+.choice-btn.is-wrong {
+  background: #ffc9cc;
+  animation: shake-x 0.4s;
+}
+
+.choice-btn.is-dim {
+  opacity: 0.55;
+}
+
+/* boxes of the Kartenkasten */
+.box-row {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+  width: min(100%, 520px);
+}
+
+.box-col {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: end;
+  gap: 2px;
+  min-height: 112px;
+  padding: 8px 2px;
+  border-radius: 14px;
+  border: 2.5px solid var(--ink);
+  background: var(--paper);
+  overflow: hidden;
+  text-align: center;
+}
+
+.box-col__bar {
+  position: absolute;
+  inset: auto 0 0;
+  height: var(--fill);
+  background: var(--cyan-soft);
+  transition: height 0.5s var(--ease-out);
+}
+
+.box-col:last-child .box-col__bar {
+  background: var(--yellow);
+}
+
+.box-col:first-child .box-col__bar {
+  background: var(--surface-2);
+}
+
+.box-col strong,
+.box-col small {
+  position: relative;
+}
+
+.box-col strong {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.box-col small {
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
