@@ -74,6 +74,11 @@ bearbeiten, Spiele zur Liste hinzufügen oder entfernen.
 - Gelegentlich blockiert der Browser den Wechsel, weil die alte Version noch eine Anfrage bearbeitet. Dann lädt die
   App nach 4 Sekunden trotzdem neu (höchstens einmal pro Minute, nur auf sicheren Seiten). Übernimmt die neue
   Version erst danach, merkt die App das am `index.html` des Service Workers (anderes Hauptskript) und lädt nochmals.
+- Hängt die alte Version an einer Anfrage, die nicht fertig wird (z. B. schlechtes Mobilnetz), hilft auch das
+  Neuladen nicht. Wartet die neue Version 8 Sekunden nach dem Neuladen immer noch, meldet die App die alte ab und
+  lädt die neue direkt vom Server; die Offline-Kopie wird im Hintergrund neu eingerichtet. Nur online, auf sicheren
+  Seiten und höchstens einmal pro Stunde. Nachgestellt mit einem Service Worker, der eine Anfrage nie beantwortet:
+  vorher blieb die alte Version stehen, jetzt läuft nach rund 12 Sekunden die neue.
 - Unter Konto gibt es «Nach Updates suchen».
 
 ### Synchronisation

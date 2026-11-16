@@ -23,6 +23,12 @@ test('Kartenkasten: selbst prüfen, Fächer und Erinnerung auf der Startseite', 
   await createGroup(page, ['Nora']);
   await startGame(page);
   await expect(page.locator('.box-row')).toBeVisible();
+  // The numbers of all boxes stand on one line – also on a small phone, where the labels wrap.
+  for (const width of [280, 412]) {
+    await page.setViewportSize({ width, height: 839 });
+    const tops = await page.locator('.box-col strong').evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
+    expect(new Set(tops).size, `${width} px`).toBe(1);
+  }
   // «7 × 8» is missed twice (asked again at the end of the round).
   expect(await learnRound(page, ['7 × 8'])).toBe('3 von 5 gewusst');
   await expect(page.getByText('Heute fällig: 1 Karte')).toBeVisible();
