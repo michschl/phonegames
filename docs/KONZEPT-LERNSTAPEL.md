@@ -270,13 +270,13 @@ direkt in die erste Runde, wenn klar ist, wer lernt – sonst auf die Stapelseit
 sich im Tab «Lernen» und nochmals auf dem Startbildschirm des Spiels wählen, und es hiess mal «Spickzettel», mal
 «Lernen». Jetzt:
 
-- Der Bereich heisst überall **«Lernen»** (Tab, Karte in «Spiele» und «Entdecken», Texte). Intern bleibt die ID
-  `spickzettel` – sie steht in Bibliotheken und Einstellungen der Nutzerinnen und Nutzer.
+- Der Bereich heisst überall **«Lernen»** und ist eine eigene Kategorie: ein Tab, kein Spiel in «Spiele»,
+  «Entdecken», «Meine Spiele» oder «Weiterspielen» (die Definition steht in `registry.ts` unter `SECTIONS`). Intern
+  bleibt die ID `spickzettel` – sie steht in Bibliotheken und Einstellungen der Nutzerinnen und Nutzer.
 - Zusammenspielen startet auf der Stapelseite: «Duell», «Blitzrunde» oder «Schätzrunde» führen zu
   `/lernen/<stapel>/<spielform>` – **«Wer spielt mit?»** mit Spielgruppe, Einstellungen und Start. Stapel und
   Spielform werden nicht nochmals gefragt. Nach dem Spiel geht es dorthin zurück, bereit für eine Revanche.
-- Den Startbildschirm `/spiel/spickzettel` gibt es nicht mehr; er leitet weiter (`GameDefinition.pathFor`), ebenso
-  «Weiterspielen» auf der Startseite.
+- Den Startbildschirm `/spiel/spickzettel` gibt es nicht mehr; er leitet weiter (`GameDefinition.pathFor`).
 - Die Stapelliste in «Lernen» zeigt zuerst Stapel mit fälligen Karten, dann die zuletzt gelernten oder bearbeiteten
   (`recommendStacks`), ab 7 Stapeln mit Suche nach Titel oder Fach.
 

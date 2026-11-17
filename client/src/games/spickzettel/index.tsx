@@ -84,8 +84,8 @@ export const spickzettel: GameDefinition<SpickzettelSettings> = {
   age: 'ab 7 J.',
   tags: ['Lernen', 'Schule', 'Allein', 'Teams'],
   status: 'available',
-  // Everything happens in the «Lernen» tab: stacks, learning alone and «Wer spielt mit?» for playing together.
-  href: '/lernen',
+  // Not in the catalogue: everything happens in the «Lernen» tab – stacks, learning alone and
+  // «Wer spielt mit?»; only the modes for playing together run on the game screen.
   pathFor,
   defaultSettings: {
     stackId: null,

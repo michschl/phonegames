@@ -1,7 +1,7 @@
 # 📱 Phonegames – Partyspiele fürs Handy
 
 **Ein Handy. Die ganze Runde.** Phonegames ist eine Progressive Web App (PWA) mit 17 lustigen Gesellschaftsspielen
-und einem Lernspiel für das Mobiltelefon. Konto erstellen, Spiele entdecken, Spielgruppe anlegen – und los geht’s. Nach der Anmeldung
+und einem eigenen Bereich zum Lernen für das Mobiltelefon. Konto erstellen, Spiele entdecken, Spielgruppe anlegen – und los geht’s. Nach der Anmeldung
 funktioniert alles **auch offline**.
 
 Mit dabei: vom tickenden Klassiker **💣 Bombe** über Bluff-Spiele wie **🕵️ Spion unter uns** und **🐺 Nachts im Dorf**
@@ -48,8 +48,8 @@ Im Tab **📝 Lernen** wird Schulstoff zum Spiel: Wörtliblatt fotografieren, ei
 | **Konto** | Registrieren mit Name, E-Mail und Passwort – vorerst nur mit Einladungscode (auch als Link `/registrieren?code=…`) · Anmelden/Abmelden · **Passkeys** (Face ID, Fingerabdruck, Geräte-PIN) einrichten, verwalten und damit anmelden – Hinweis auf dem Startbildschirm, der sich dauerhaft wegklicken lässt · Name, E-Mail, Avatar (Emoji + Farbe) und Passwort ändern · Datenexport (JSON) · Konto löschen |
 | **Entdecken** | «Spiel des Tages» · Filter «Wie viele seid ihr?» · Volltextsuche (umlaut-tolerant) und Kategorien · Spiele mit einem Tipp hinzufügen/entfernen |
 | **Spielgruppen** | Gruppen mit Namen, Symbol und Mitspielenden anlegen · beim Spielstart wird die Gruppe angezeigt und kann direkt angepasst werden (Personen hinzufügen/entfernen) |
-| **Spiele** | 17 Partyspiele mit über 2’500 Begriffen, Fragen und Karten und ein Lernspiel – siehe Tabelle unten |
-| **Lernen** | Eigener Tab: «Heute dran» (wer welche Karten wiederholen soll, ein Tipp startet die erste Karte) und alle Stapel · Stapelseite mit «Wer lernt?» (ohne Spielgruppe), Kartenkasten mit Fächern und Antwortart pro Person, Lückentext und den Spielformen zum Zusammenspielen · Lernstoff per Foto erfassen (bis 6 Seiten; Auswertung mit einem Qwen-Modell bei Infomaniak in der Schweiz, Fotos werden nicht gespeichert) oder abtippen · erkannte Karten prüfen und korrigieren · Monatslimit pro Person · Stapel und Lernstand werden synchronisiert · **per Link teilen** (der Link gilt als Einladung, Empfänger übernehmen eine eigene Kopie) |
+| **Spiele** | 17 Partyspiele mit über 2’500 Begriffen, Fragen und Karten – siehe Tabelle unten |
+| **Lernen** | Eigener Bereich (Tab), kein Spiel im Katalog · Spielformen: **Kartenkasten** (Lernkartei mit 5 Fächern, Lernstand und Lernserie pro Person, allein ohne Spielgruppe; aufdecken, Auswahl aus vier oder eintippen), **Lückentext** (Wortbank oder eintippen), **Duell** (zu zweit, geteilter Bildschirm), **Blitzrunde** (Teams, eine Person fragt ab), **Schätzrunde** (Zahlen und Jahreszahlen, alle schätzen geheim) · «Heute dran» (wer welche Karten wiederholen soll, ein Tipp startet die erste Karte) und alle Stapel · Stapelseite mit «Wer lernt?» (ohne Spielgruppe), Kartenkasten mit Fächern und Antwortart pro Person, Lückentext und den Spielformen zum Zusammenspielen · Lernstoff per Foto erfassen (bis 6 Seiten; Auswertung mit einem Qwen-Modell bei Infomaniak in der Schweiz, Fotos werden nicht gespeichert) oder abtippen · erkannte Karten prüfen und korrigieren · Monatslimit pro Person · Stapel und Lernstand werden synchronisiert · **per Link teilen** (der Link gilt als Einladung, Empfänger übernehmen eine eigene Kopie) |
 | **Sound & Stimme** | Eigenes Sounddesign pro Spiel (Trommelwirbel, Herzschlag, Fanfaren …, alles synthetisiert) · natürliche Erzählstimmen «Thorsten» und «Kerstin» vom eigenen Server (Piper) – auf jedem Gerät gleich, auch auf dem iPhone, Ansagen offline verfügbar; sonst die beste Stimme des Geräts · Stimmenauswahl mit Hörprobe unter Konto → Erzählstimme |
 | **PWA** | Installierbar (Android & iOS) · komplett offline spielbar · Offline-Änderungen werden automatisch synchronisiert · Update-Hinweis bei neuer Version · Bildschirm bleibt während des Spiels an |
 
@@ -74,7 +74,6 @@ Im Tab **📝 Lernen** wird Schulstoff zum Spiel: Wörtliblatt fotografieren, ei
 | 🙋 **Ich hab noch nie …** | 3–30 | Wer schon hat, steht auf – mit Strichliste. 168 Aussagen |
 | ☝️ **Zufallsfinger** | 2–10 | Alle Finger aufs Display: eine Person, zwei Teams oder eine Reihenfolge auslosen |
 | 🍾 **Flaschendrehen** | beliebig | Wischen und drehen lassen – auf Wunsch mit Wahrheit-oder-Pflicht-Karte |
-| 📝 **Lernen** | 1–30 | Eigener Tab mit Lernstapeln: **Kartenkasten** (Lernkartei mit 5 Fächern, Lernstand und Lernserie pro Person, allein ohne Spielgruppe; aufdecken, Auswahl aus vier oder eintippen), **Duell** (zu zweit, geteilter Bildschirm, wer zuerst richtig tippt), **Blitzrunde** (Teams, eine Person fragt ab), **Schätzrunde** (Zahlen und Jahreszahlen, alle schätzen geheim) und **Lückentext** (Wortbank oder eintippen) |
 
 Alle Inhalte sind in Schweizer Hochdeutsch geschrieben (ohne «ß») und funktionieren offline.
 
