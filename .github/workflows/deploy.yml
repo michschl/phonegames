@@ -209,8 +209,11 @@ jobs:
         run: |
           # The short-lived workflow token is passed via stdin and removed after the pull.
           printf '%s' "$GH_TOKEN" | ssh vps "docker login ghcr.io -u '$GH_ACTOR' --password-stdin"
+          # Our images must be pulled. Caddy comes from Docker Hub, which limits anonymous pulls per
+          # IP address (429 Too Many Requests) – then the image already on the server stays.
           ssh vps "cd '$APP_DIR' && chmod +x backup.sh && chmod 600 .env \
-            && docker compose pull \
+            && docker compose pull app tts \
+            && { docker compose pull caddy || echo '::warning::Caddy konnte nicht von Docker Hub geladen werden – das vorhandene Image bleibt.'; } \
             && docker compose up -d --remove-orphans --wait --wait-timeout 120; \
             status=\$?; docker logout ghcr.io >/dev/null; exit \$status"
           ssh vps "docker image prune -af --filter 'until=168h' >/dev/null || true"

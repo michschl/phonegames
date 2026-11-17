@@ -305,6 +305,7 @@ Die Container starten dank `restart: unless-stopped` automatisch wieder.
 | `/opt/phonegames fehlt … oder ist nicht beschreibbar` | Ordner wurde nicht von `setup-vps.sh` angelegt. Einmalig auf dem VPS: `sudo install -d -m 750 -o deploy -g deploy /opt/phonegames` |
 | `port is already allocated` | Ein anderer Container belegt Port 80/443. Mit `docker ps` prüfen und den alten Stack stoppen |
 | `denied` beim `docker compose pull` | Workflow-Berechtigung `packages: write` fehlt oder Package gehört zu einem anderen Repo. Unter GitHub → Packages → *Package settings* das Repository verknüpfen |
+| `429 Too Many Requests` von `registry-1.docker.io` | Docker Hub begrenzt anonyme Downloads pro IP-Adresse. Betrifft nur Caddy: Der Deploy lädt es nur noch «wenn möglich» und behält sonst das vorhandene Image (Warnung im Log). Fehlt Caddy ganz (erste Installation), später erneut ausführen |
 | Kein Zertifikat / Browser-Warnung | DNS zeigt noch nicht auf den VPS oder Port 80/443 ist in der Infomaniak-Firewall bzw. `ufw` gesperrt. `docker compose logs caddy` prüfen |
 | `502 Bad Gateway` | App-Container läuft nicht: `docker compose logs app` |
 | Offline-Modus funktioniert nicht | Nur über HTTPS möglich; nach einem Update die App einmal neu laden |
