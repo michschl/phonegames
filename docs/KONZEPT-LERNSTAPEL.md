@@ -282,7 +282,7 @@ sich im Tab «Lernen» und nochmals auf dem Startbildschirm des Spiels wählen, 
 - **Neuer Stapel dort, wo die Stapel sind:** Statt eines Plus-Symbols oben rechts (beim Scrollen weg und ohne
   Beschriftung) schliesst die Stapelliste mit der Kachel «Neuer Stapel – Foto aufnehmen oder Karten abtippen»; ab
   vier Stapeln steht zusätzlich «Neuer Stapel» neben der Überschrift «Stapel».
-- **«So geht’s»** oben im Tab «Lernen» (zugeklappt, fünf Schritte): Stapel erstellen, wer lernt, Kartenkasten mit
+- **«So geht’s»** im Tab «Lernen» unter «Heute dran» (zugeklappt, fünf Schritte): Stapel erstellen, wer lernt, Kartenkasten mit
   den Abständen, «Heute dran» und der Badge, zusammen lernen. Beim allerersten Besuch zeigt die Einführung drei
   Schritte.
 - Fällige Karten gehören zu «Lernen», nicht auf die Startseite der Spiele: Die Zeilen «Heute fällig» sind von der
