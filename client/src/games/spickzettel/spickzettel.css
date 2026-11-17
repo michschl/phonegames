@@ -782,3 +782,8 @@
   color: var(--ink-2);
 }
 
+
+/* «Abfragen» before playing vocabulary together. */
+.together__direction {
+  margin-top: 22px;
+}

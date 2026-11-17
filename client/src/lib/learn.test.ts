@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { LearnCard, LearnProgress, LearnStack } from '../../../shared/types.ts';
 import {
+  answerLanguage,
   boxCounts,
+  canPlayChoice,
   cardNumber,
   checkTypedAnswer,
   choicesFor,
@@ -12,10 +14,14 @@ import {
   estimateVerdict,
   formatCardNumber,
   kastenStatus,
+  languageName,
   nextProgress,
+  orientCard,
+  orientCards,
   parseTextCards,
   progressId,
   recommendStacks,
+  reverseCard,
   scoreEstimates,
   splitGap,
   suggestedModes,
@@ -117,6 +123,80 @@ describe('multiple choice', () => {
     expect(options).toContain('der Hund');
     expect(options).toContain('die Katze');
     expect(new Set(options).size).toBe(4);
+  });
+});
+
+describe('vocabulary direction', () => {
+  const vocab = () => ({
+    ...stack([
+      card('a', 'viel', { prompt: 'beaucoup', accepted: ['sehr viel'], distractors: ['wenig', 'oft', 'gross'] }),
+      card('b', 'viel', { prompt: 'très' }),
+      card('c', 'der Hund', { prompt: 'le chien' }),
+      card('d', 'das Haus', { prompt: 'la maison' }),
+      card('e', 'die Katze', { prompt: 'le chat' }),
+      card('q', 'Bern', { kind: 'qa', prompt: 'Hauptstadt der Schweiz?' }),
+    ]),
+    languages: ['fr', 'de'],
+  });
+
+  it('turns vocabulary round – same card, the other words with the same translation count too', () => {
+    const s = vocab();
+    expect(reverseCard(s.cards[0]!, s)).toEqual({
+      id: 'a',
+      kind: 'translation',
+      prompt: 'viel',
+      answer: 'beaucoup',
+      accepted: ['très'],
+      distractors: [],
+      reversed: true,
+    });
+    // Questions stay as they are.
+    expect(reverseCard(s.cards[5]!, s)).toBe(s.cards[5]);
+    expect(checkTypedAnswer('tres', reverseCard(s.cards[0]!, s)).verdict).toBe('almost');
+  });
+
+  it('asks a round as entered, the other way round or half and half', () => {
+    const s = vocab();
+    expect(orientCards(s.cards, s, 'forward')).toEqual(s.cards);
+    const reversed = orientCards(s.cards, s, 'reverse');
+    expect(reversed.map((c) => c.prompt)).toEqual(['viel', 'viel', 'der Hund', 'das Haus', 'die Katze', 'Hauptstadt der Schweiz?']);
+    expect(reversed.map((c) => c.id)).toEqual(['a', 'b', 'c', 'd', 'e', 'q']);
+    for (let i = 0; i < 20; i++) {
+      const mixed = orientCards(s.cards, s, 'mixed');
+      // Five vocabulary cards: two or three turned round, the question never.
+      expect([2, 3]).toContain(mixed.filter((c) => c.reversed).length);
+      expect(mixed[5]).toBe(s.cards[5]);
+    }
+    expect(orientCard(s.cards[2]!, s, 'mixed', () => 0.2).prompt).toBe('der Hund');
+    expect(orientCard(s.cards[2]!, s, 'mixed', () => 0.7).prompt).toBe('le chien');
+  });
+
+  it('offers wrong answers from the same side of the cards', () => {
+    const s = vocab();
+    const options = choicesFor(reverseCard(s.cards[2]!, s), s);
+    expect(options).toHaveLength(4);
+    expect(options).toContain('le chien');
+    // Only French – no German words, and not «Bern».
+    for (const option of options) expect(['beaucoup', 'très', 'le chien', 'la maison', 'le chat']).toContain(option);
+    // «beaucoup» and «très» both mean «viel»: never one of them right and the other wrong.
+    const viel = choicesFor(reverseCard(s.cards[0]!, s), s);
+    expect(viel).toContain('beaucoup');
+    expect(viel).not.toContain('très');
+  });
+
+  it('needs four cards for multiple choice the other way round', () => {
+    const small = stack([card('a', 'oui', { distractors: ['non', 'si', 'peut-être'] })]);
+    expect(canPlayChoice(small)).toBe(true);
+    expect(canPlayChoice(small, 'reverse')).toBe(false);
+    expect(canPlayChoice(small, 'mixed')).toBe(false);
+  });
+
+  it('knows the language of the answer and names it', () => {
+    const s = vocab();
+    expect(answerLanguage(s, s.cards[2]!)).toBe('de');
+    expect(answerLanguage(s, reverseCard(s.cards[2]!, s))).toBe('fr');
+    expect(languageName('fr')).toBe('Französisch');
+    expect(languageName('xy')).toBe('XY');
   });
 });
 

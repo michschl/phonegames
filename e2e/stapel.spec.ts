@@ -34,6 +34,16 @@ test('Fotos: Kamera und Galerie, genau übernehmen', async ({ page }) => {
   await expect(page).toHaveURL(/\/lernen\/[^/]+$/);
   await expect(page.locator('h1')).toHaveText('Unité 5 – Vocabulaire');
   await expect(page.getByRole('radiogroup', { name: 'Wer lernt?' })).toBeVisible();
+
+  // Vocabulary with known languages: which one is shown is chosen before the round.
+  const direction = page.getByRole('radiogroup', { name: 'Abfragen' });
+  await expect(direction.getByRole('radio', { name: 'FR → DE' })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByText('Französisch zeigen, auf Deutsch antworten: «le chien» → «der Hund»')).toBeVisible();
+  await direction.getByRole('radio', { name: 'DE → FR' }).click();
+  await expect(page.getByText('Deutsch zeigen, auf Französisch antworten: «der Hund» → «le chien»')).toBeVisible();
+  await page.locator('.start-bar a').click();
+  await expect(page.locator('.learn-card__kind')).toHaveText('Übersetze auf Französisch');
+  await expect(page.locator('.learn-card__prompt')).toHaveText(/^(der Hund|das Haus|die Schule|immer)$/);
 });
 
 test('Fotos: neue Aufgaben erfinden, auffällige Karten sind markiert', async ({ page }) => {
