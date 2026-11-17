@@ -2131,3 +2131,51 @@
   color: var(--muted);
 }
 
+/* «Lernen»: a new stack, right where the stacks are. */
+.stack-add {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border-radius: var(--radius-lg);
+  border: var(--border);
+  border-style: dashed;
+  background: color-mix(in srgb, var(--paper) 55%, transparent);
+  color: var(--ink);
+  text-decoration: none;
+  transition: transform 0.12s ease;
+}
+
+.stack-add:active {
+  transform: translateY(2px);
+}
+
+.stack-add__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  border: 2.5px solid var(--ink);
+  background: var(--orange);
+  box-shadow: 0 3px 0 var(--ink);
+}
+
+.stack-add__body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.stack-add__body strong {
+  font-family: var(--font-display);
+  font-size: 18px;
+}
+
+.stack-add__body small {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 650;
+}
+
