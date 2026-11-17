@@ -120,6 +120,7 @@ const learnProgressSchema = z.object({
     .array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ungültiges Datum.'))
     .max(LIMITS.learnDays)
     .default([]),
+  removed: z.boolean().optional(),
   updatedAt: timestamp,
   deleted: z.boolean(),
 });

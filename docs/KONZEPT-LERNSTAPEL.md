@@ -205,10 +205,11 @@ interface Karte {
   Spickzettel gewählten Gruppe, die angemeldete Person und hier hinzugefügte Namen (`collectLearners`). Vorausgewählt
   ist, wer den Stapel zuletzt auf diesem Gerät gelernt hat. Der Start führt direkt zur ersten Karte.
 - **Personen entfernen:** «Bearbeiten» neben «Wer lernt?» – ein Tipp auf eine Person entfernt sie aus diesem Stapel,
-  mit «Rückgängig». Ihr Kartenkasten für den Stapel wird gelöscht (synchronisiert), und sie wird dort nicht mehr
-  angeboten (auf diesem Gerät gemerkt, `hiddenLearners`). Ein nur hier hinzugefügter Name, der nirgends sonst
-  gelernt hat, verschwindet ganz. Wer wieder hinzugefügt wird oder den Stapel doch lernt (z. B. im Duell), ist
-  wieder dabei. In anderen Stapeln bleibt die Person.
+  auf allen Geräten, mit «Rückgängig». Der Lernstand der Person für den Stapel wird zur Markierung «entfernt»
+  (`LearnProgress.removed`, leerer Kartenkasten, keine Lerntage) und synchronisiert. Bewusst kein gelöschter
+  Eintrag: Die werden nach 180 Tagen aufgeräumt, die Person käme zurück. Ein nur auf diesem Gerät hinzugefügter
+  Name, der nirgends sonst gelernt hat, verschwindet ganz. Wer wieder hinzugefügt wird oder den Stapel doch lernt
+  (z. B. im Duell), ist wieder dabei – auch auf den anderen Geräten. In anderen Stapeln bleibt die Person.
 - **«Speichern & lernen»** nach dem Prüfen: Ist klar, wer lernt (wer den Stapel schon gelernt hat oder die einzige
   Person, die überhaupt lernt), startet gleich die erste Runde; sonst fragt «Wer lernt?».
 - **Spielformen nach Situation:** «Allein» (Kartenkasten, Lückentext), «Zu zweit» (Duell), «Mit mehreren»

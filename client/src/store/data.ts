@@ -59,7 +59,10 @@ interface DataState {
   restorePlayer(groupId: string, player: Player, index: number): void;
   /** Moves a card in the person's Kartenkasten after an answer. */
   recordAnswer(stackId: string, player: string, cardId: string, correct: boolean): void;
-  resetProgress(stackId: string, player: string): void;
+  /** Removes a person from «Wer lernt?» of a stack on every device – their Kartenkasten for it is emptied. */
+  removeLearner(stackId: string, player: string): void;
+  /** Offers a removed person again (added again or «Rückgängig»). */
+  unhideLearner(stackId: string, player: string): void;
   /** Brings back a Kartenkasten after «Rückgängig». */
   restoreProgress(entry: LearnProgress): void;
   applyRemote(payload: SyncPayload, sentRevision: number): void;
@@ -255,18 +258,35 @@ export const useData = create<DataState>()(
       },
 
       restoreProgress(entry) {
+        const { removed: _removed, ...rest } = entry;
         set((s) => ({
-          progress: { ...s.progress, [entry.id]: { ...entry, deleted: false, updatedAt: stamp() } },
+          progress: { ...s.progress, [entry.id]: { ...rest, deleted: false, updatedAt: stamp() } },
           revision: s.revision + 1,
         }));
       },
 
-      resetProgress(stackId, player) {
+      removeLearner(stackId, player) {
+        const id = progressId(stackId, player);
+        // Not a tombstone: those are cleaned up after a while, the person would come back.
+        const entry: LearnProgress = {
+          id,
+          stackId,
+          player: player.trim().slice(0, LIMITS.nameMax),
+          cards: {},
+          days: [],
+          removed: true,
+          updatedAt: stamp(),
+          deleted: false,
+        };
+        set((s) => ({ progress: { ...s.progress, [id]: entry }, revision: s.revision + 1 }));
+      },
+
+      unhideLearner(stackId, player) {
         const id = progressId(stackId, player);
         const current = get().progress[id];
-        if (!current || current.deleted) return;
+        if (!current || current.deleted || !current.removed) return;
         set((s) => ({
-          progress: { ...s.progress, [id]: { ...current, cards: {}, deleted: true, updatedAt: stamp() } },
+          progress: { ...s.progress, [id]: { ...current, removed: false, deleted: true, updatedAt: stamp() } },
           revision: s.revision + 1,
         }));
       },

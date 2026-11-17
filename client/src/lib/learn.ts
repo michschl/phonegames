@@ -611,7 +611,7 @@ export function recommendStacks(
   const lastActivity = new Map<string, number>();
   for (const stack of stacks) lastActivity.set(stack.id, stack.updatedAt);
   for (const entry of Object.values(progress)) {
-    if (entry.deleted || !lastActivity.has(entry.stackId)) continue;
+    if (entry.deleted || entry.removed || !lastActivity.has(entry.stackId)) continue;
     lastActivity.set(entry.stackId, Math.max(lastActivity.get(entry.stackId)!, entry.updatedAt));
   }
   const ranked = [...stacks].sort(

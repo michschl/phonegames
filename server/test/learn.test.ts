@@ -336,6 +336,18 @@ describe('syncing learning stacks', () => {
     expect(deleted.stacks[0]).toMatchObject({ deleted: true, cards: [] });
   });
 
+  it('keeps who was removed from a stack, with an empty Kartenkasten, until it is cleared', async () => {
+    const progress = { id: 'p-stack-0001-ben001', stackId: 'stack-0001', player: 'Ben', cards: { 'card-0001': { box: 3, due: T } }, days: ['2026-11-16'], updatedAt: T, deleted: false };
+    await sync({ library: [], groups: [], stacks: [stack()], progress: [progress] });
+    const removed = await sync({ library: [], groups: [], stacks: [], progress: [{ ...progress, removed: true, updatedAt: T + 1 }] });
+    expect(removed.progress.find((p) => p.id === progress.id)).toMatchObject({ removed: true, cards: {}, days: [], deleted: false });
+    // Added again: a deleted record removes nobody.
+    const back = await sync({ library: [], groups: [], stacks: [], progress: [{ ...progress, cards: {}, removed: false, deleted: true, updatedAt: T + 2 }] });
+    const entry = back.progress.find((p) => p.id === progress.id)!;
+    expect(entry.deleted).toBe(true);
+    expect(entry.removed).toBeUndefined();
+  });
+
   it('still accepts the payload of older app versions', async () => {
     const res = await sync({ library: [], groups: [] });
     expect(res.stacks).toEqual([]);

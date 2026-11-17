@@ -158,8 +158,8 @@ test('Wörtli: vor der Runde wählen, was gezeigt wird – wie erfasst, umgekehr
   await expect(page.getByRole('radiogroup', { name: 'Abfragen' }).getByRole('radio', { name: 'Gemischt' })).toHaveAttribute('aria-checked', 'true');
 });
 
-test('Wer lernt? Personen entfernen, mit «Rückgängig» zurückholen und wieder hinzufügen', async ({ page }) => {
-  await register(page, 'Lea');
+test('Wer lernt? Personen entfernen, mit «Rückgängig» zurückholen und wieder hinzufügen – auf allen Geräten', async ({ page, browser }) => {
+  const email = await register(page, 'Lea');
   await createStack(page, 'Entfernen', TIMES);
   await addLearner(page, 'Ben');
   await startLearning(page);
@@ -170,7 +170,7 @@ test('Wer lernt? Personen entfernen, mit «Rückgängig» zurückholen und wiede
   await expect(tile('Ben').locator('.due-badge')).toHaveText('1');
 
   await page.getByRole('button', { name: 'Bearbeiten', exact: true }).click();
-  await expect(page.getByText('Tippe eine Person an, um sie aus diesem Stapel zu entfernen.')).toBeVisible();
+  await expect(page.getByText('Tippe eine Person an, um sie aus diesem Stapel zu entfernen – auf allen Geräten.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Person hinzufügen' })).toHaveCount(0);
   await expectAccessible(page);
   await page.getByRole('button', { name: 'Ben entfernen' }).click();
@@ -201,6 +201,44 @@ test('Wer lernt? Personen entfernen, mit «Rückgängig» zurückholen und wiede
   await page.locator('.group-card', { hasText: 'Entfernen' }).click();
   await addLearner(page, 'Ben');
   await expect(tile('Ben').locator('.learner-tile__status')).toHaveText('Noch nicht begonnen');
+
+  // Removing holds on every device: Lea (the account) is removed here and missing on a second phone.
+  await page.getByRole('button', { name: 'Bearbeiten', exact: true }).click();
+  await page.getByRole('button', { name: 'Lea entfernen' }).click();
+  await page.getByRole('button', { name: 'Fertig', exact: true }).click();
+  await expect(tile('Lea')).toHaveCount(0);
+  await expect
+    .poll(async () => {
+      const data = await (await page.request.get('/api/account/export')).json();
+      return data.learnProgress.filter((p: { removed?: boolean }) => p.removed).map((p: { player: string }) => p.player);
+    })
+    .toEqual(['Lea']);
+  const other = await browser.newContext();
+  const phone = await other.newPage();
+  await phone.goto('/anmelden');
+  await phone.getByLabel('E-Mail').fill(email);
+  await phone.getByLabel('Passwort', { exact: true }).fill('passwort123');
+  await phone.getByRole('button', { name: 'Anmelden', exact: true }).click();
+  await expect(phone).toHaveURL('/');
+  await phone.goto('/lernen');
+  await phone.locator('.group-card', { hasText: 'Entfernen' }).click();
+  // Ben and Mia were only added on the first phone: nobody is left here, the name field is open.
+  await expect(phone.locator('h1')).toHaveText('Entfernen');
+  await expect(phone.getByLabel('Wer lernt? Name')).toBeVisible();
+  await expect(phone.getByRole('radio', { name: /^Lea/ })).toHaveCount(0);
+  // Added again on the second phone – back on the first one too.
+  await phone.getByLabel('Wer lernt? Name').fill('Lea');
+  await phone.getByLabel('Wer lernt? Name').press('Enter');
+  await expect(phone.getByRole('radio', { name: /^Lea/ })).toBeVisible();
+  await expect
+    .poll(async () => {
+      const data = await (await page.request.get('/api/account/export')).json();
+      return data.learnProgress.filter((p: { removed?: boolean }) => p.removed).length;
+    })
+    .toBe(0);
+  await other.close();
+  await page.reload();
+  await expect(tile('Lea')).toBeVisible();
 });
 
 test('Wer lernt? Namenstafeln zeigen, wer wie viele Karten fällig hat', async ({ page }) => {

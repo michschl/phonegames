@@ -24,11 +24,6 @@ interface SettingsState {
   learnerNames: string[];
   /** Spickzettel: how each person answers in the Kartenkasten (normalised name → mode). */
   learnCheck: Record<string, 'self' | 'choice' | 'type'>;
-  /**
-   * Lernen: people removed from «Wer lernt?» of a stack (stack id → normalised names). They come back
-   * when they are added again or learn the stack after all (e.g. in a Duell).
-   */
-  hiddenLearners: Record<string, string[]>;
   /** Lernen: which way the vocabulary of a stack is asked (stack id → direction), «forward» if missing. */
   learnDirection: Record<string, LearnDirection>;
   setSound(on: boolean): void;
@@ -43,8 +38,6 @@ interface SettingsState {
   setLearnCheck(name: string, check: 'self' | 'choice' | 'type'): void;
   setLearnDirection(stackId: string, direction: LearnDirection): void;
   removeLearnerName(name: string): void;
-  hideLearner(stackId: string, name: string): void;
-  showLearner(stackId: string, name: string): void;
 }
 
 export const useSettings = create<SettingsState>()(
@@ -61,7 +54,6 @@ export const useSettings = create<SettingsState>()(
       lastLearner: null,
       learnerNames: [],
       learnCheck: {},
-      hiddenLearners: {},
       learnDirection: {},
       setSound: (sound) => set({ sound }),
       setHaptics: (haptics) => set({ haptics }),
@@ -75,18 +67,6 @@ export const useSettings = create<SettingsState>()(
       setLearnCheck: (name, check) => set((s) => ({ learnCheck: { ...s.learnCheck, [normalize(name)]: check } })),
       setLearnDirection: (stackId, direction) => set((s) => ({ learnDirection: { ...s.learnDirection, [stackId]: direction } })),
       removeLearnerName: (name) => set((s) => ({ learnerNames: s.learnerNames.filter((n) => normalize(n) !== normalize(name)) })),
-      hideLearner: (stackId, name) =>
-        set((s) => {
-          const list = s.hiddenLearners[stackId] ?? [];
-          const key = normalize(name);
-          return list.includes(key) ? {} : { hiddenLearners: { ...s.hiddenLearners, [stackId]: [...list, key].slice(-50) } };
-        }),
-      showLearner: (stackId, name) =>
-        set((s) => {
-          const list = s.hiddenLearners[stackId];
-          const key = normalize(name);
-          return list?.includes(key) ? { hiddenLearners: { ...s.hiddenLearners, [stackId]: list.filter((n) => n !== key) } } : {};
-        }),
       addLearnerName: (name) =>
         set((s) => ({ learnerNames: s.learnerNames.includes(name) ? s.learnerNames : [...s.learnerNames, name].slice(-30) })),
     }),
