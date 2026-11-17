@@ -3,10 +3,9 @@ import { Logo } from '../components/Brand.tsx';
 import { GameHero, GameMini, GameTile } from '../components/GameCard.tsx';
 import { Icon } from '../components/Icon.tsx';
 import { OfflinePill } from '../components/Layout.tsx';
-import { LearnDue } from '../components/LearnDue.tsx';
 import { PasskeyHint } from '../components/PasskeyHint.tsx';
 import { Avatar, EmptyState } from '../components/ui.tsx';
-import { GAMES, getGame } from '../games/registry.ts';
+import { GAMES, getCatalogGame } from '../games/registry.ts';
 import type { GameDefinition } from '../games/types.ts';
 import { sound } from '../lib/audio.ts';
 import { confetti } from '../lib/confetti.ts';
@@ -34,13 +33,12 @@ export function HomePage() {
   const lastGroup = useGroup(lastPlayed?.groupId);
   const installEvent = usePwa((s) => s.installEvent);
 
+  // Only catalogue games – «Lernen» once was one and may still be in older libraries.
   const games = ids
-    .map((id) => getGame(id))
+    .map((id) => getCatalogGame(id))
     .filter((g): g is GameDefinition => g !== undefined && g.status === 'available');
   const suggestions = GAMES.filter((g) => g.status === 'available' && !ids.includes(g.id));
-  const continueGame = lastPlayed ? getGame(lastPlayed.gameId) : undefined;
-  const storedSettings = useSettings((s) => (continueGame ? s.gameSettings[continueGame.id] : undefined));
-  const continueSettings = { ...(continueGame?.defaultSettings ?? {}), ...(storedSettings as object | undefined) };
+  const continueGame = lastPlayed ? getCatalogGame(lastPlayed.gameId) : undefined;
   const firstName = user.name.split(' ')[0];
 
   const quickAdd = (gameId: string, name: string, button: HTMLElement) => {
@@ -76,8 +74,6 @@ export function HomePage() {
           <div className="home-hero">
             <GameHero
               game={continueGame}
-              // Back to where it was played: Lernen → the stack and «Wer spielt mit?», others → their setup screen.
-              to={continueGame.pathFor ? continueGame.pathFor(continueSettings) : undefined}
               eyebrow="Weiterspielen"
               text={
                 lastGroup
@@ -92,7 +88,6 @@ export function HomePage() {
           </div>
         ) : null}
 
-        <LearnDue />
 
         <PasskeyHint />
 

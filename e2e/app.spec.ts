@@ -50,8 +50,10 @@ test('Jedes Spiel hat eine Startseite mit Weg zurück', async ({ page }) => {
   await page.goto('/entdecken');
   const links = await page.locator('a[href^="/spiel/"]').evaluateAll((els) => [...new Set(els.map((e) => e.getAttribute('href')!))]);
   expect(links.length).toBeGreaterThanOrEqual(17);
-  // Lernen has its own tab: its card in the catalogue leads there.
-  await expect(page.locator('a[href="/lernen"]', { hasText: 'Schulstoff spielend repetieren' }).first()).toBeVisible();
+  // Lernen is a section of its own (tab), not a game of the catalogue.
+  expect(links).not.toContain('/spiel/spickzettel');
+  await expect(page.getByText('Schulstoff spielend repetieren')).toHaveCount(0);
+  await expect(page.locator('.page__subtitle')).toHaveText('17 Spiele für jede Runde');
   await page.setViewportSize({ width: 320, height: 720 });
   for (const href of links) {
     await page.goto(href);

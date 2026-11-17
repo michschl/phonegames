@@ -60,8 +60,6 @@ export interface GameDefinition<S extends object = any> {
   status: 'available' | 'soon';
   /** The game needs no player group (e.g. tools like «Zufallsfinger»). */
   noGroup?: boolean;
-  /** Where the game cards lead instead of the setup screen (Lernen: the «Lernen» tab). */
-  href?: string;
   /**
    * The game has its own pages instead of the setup screen: where it lives with these settings
    * (Lernen: the stack, or «Wer spielt mit?» of a mode). Used after a game, for «Weiterspielen»

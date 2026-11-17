@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { NavLink, useLocation, useNavigate } from 'react-router';
 import { Icon, type IconName } from './Icon.tsx';
 import { haptic } from '../lib/device.ts';
+import { useDueTotal } from '../store/learners.ts';
 import { dismissToast, useUi } from '../store/ui.ts';
 
 type ShapeKind = 'star' | 'squiggle' | 'ring' | 'triangle' | 'plus' | 'dot';
@@ -55,6 +56,8 @@ const TABS: { to: string; label: string; icon: IconName; color: string }[] = [
 
 export function TabBar() {
   const { pathname } = useLocation();
+  // Cards to repeat today – shown as a red badge on «Lernen».
+  const due = useDueTotal();
   const active = Math.max(
     0,
     TABS.findIndex((tab) => (tab.to === '/' ? pathname === '/' : pathname.startsWith(tab.to))),
@@ -71,11 +74,19 @@ export function TabBar() {
           key={tab.to}
           to={tab.to}
           end={tab.to === '/'}
+          aria-label={tab.to === '/lernen' && due > 0 ? `${tab.label}, ${due} ${due === 1 ? 'Karte' : 'Karten'} fällig` : undefined}
           className="tabbar__item"
           onClick={() => haptic(6)}
           viewTransition
         >
-          <Icon name={tab.icon} size={23} />
+          <span className="tabbar__icon">
+            <Icon name={tab.icon} size={23} />
+            {tab.to === '/lernen' && due > 0 && (
+              <span className="tabbar__badge" aria-hidden="true">
+                {due > 99 ? '99+' : due}
+              </span>
+            )}
+          </span>
           <span>{tab.label}</span>
         </NavLink>
       ))}

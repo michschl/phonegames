@@ -3,7 +3,7 @@ import type { LearnStack, Player } from '../../../shared/types.ts';
 import { kastenStatus, learnStreak } from '../lib/learn.ts';
 import { collectLearners, defaultLearner, learnerColor, learnerId, sameName } from '../lib/learners.ts';
 import { useAuth } from './auth.ts';
-import { useData } from './data.ts';
+import { useData, useDueByStack } from './data.ts';
 import { useSettings } from './settings.ts';
 
 /** Everyone who can learn this stack (see collectLearners). */
@@ -81,4 +81,10 @@ export function useStreaks(): (name: string) => number {
       return cache.get(name)!;
     };
   }, [progress]);
+}
+
+/** All cards due again today, over everyone and every stack – the badge on the «Lernen» tab. */
+export function useDueTotal(): number {
+  const due = useDueByStack();
+  return Object.values(due).reduce((sum, n) => sum + n, 0);
 }

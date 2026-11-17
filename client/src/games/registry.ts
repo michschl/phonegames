@@ -19,8 +19,8 @@ import { flaschendrehen } from './flaschendrehen/index.tsx';
 import { spickzettel } from './spickzettel/index.tsx';
 
 /**
- * All games in catalogue order. To add a game, create a folder with an
- * index.tsx exporting its GameDefinition and add it here (see docs/SPIELE.md).
+ * The games of the catalogue («Spiele», «Entdecken»), in catalogue order. To add a game, create a
+ * folder with an index.tsx exporting its GameDefinition and add it here (see docs/SPIELE.md).
  */
 export const GAMES: GameDefinition[] = [
   bombe,
@@ -40,9 +40,20 @@ export const GAMES: GameDefinition[] = [
   ichHabNochNie,
   zufallsfinger,
   flaschendrehen,
-  spickzettel,
 ];
 
+/**
+ * Not in the catalogue: «Lernen» is a section of its own (tab /lernen). Its modes for playing
+ * together still run on the game screen (/spiel/spickzettel/los), so it can be looked up.
+ */
+const SECTIONS: GameDefinition[] = [spickzettel];
+
+/** Any game by id – catalogue games and the ones behind sections like «Lernen». */
 export function getGame(id: string | undefined): GameDefinition | undefined {
+  return GAMES.find((game) => game.id === id) ?? SECTIONS.find((game) => game.id === id);
+}
+
+/** A game of the catalogue – what «Meine Spiele», «Weiterspielen» and «Entdecken» show. */
+export function getCatalogGame(id: string | undefined): GameDefinition | undefined {
   return GAMES.find((game) => game.id === id);
 }

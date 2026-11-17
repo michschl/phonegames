@@ -199,8 +199,8 @@ interface Karte {
   Person, die überhaupt lernt), startet gleich die erste Runde; sonst fragt «Wer lernt?».
 - **Spielformen nach Situation:** «Allein» (Kartenkasten, Lückentext), «Zu zweit» (Duell), «Mit mehreren»
   (Blitzrunde, Schätzrunde). Was der Stapel nicht hergibt (`modeFits`), wird nicht angeboten.
-- **«Heute fällig» auf der Startseite:** Sobald jemand Karten gelernt hat und welche wieder fällig sind, zeigt die
-  Startseite eine Zeile pro Person und Stapel («Lea · 7 Karten · «Unité 5»», höchstens drei). Ein Tipp startet
+- **«Heute fällig»** (zuerst auf der Startseite, heute «Heute dran» im Tab «Lernen»): Sobald jemand Karten gelernt
+  hat und welche wieder fällig sind, erscheint eine Zeile pro Person und Stapel («Lea · 7 Karten · «Unité 5»»). Ein Tipp startet
   direkt die erste fällige Karte (`/lernen/<stapel>/kasten?person=Lea`). Neue, noch nie gelernte Karten zählen
   nicht – die Erinnerung soll ans Repetieren erinnern, nicht drängen.
 - **Stand pro Person auf einen Blick:**
@@ -264,21 +264,25 @@ direkt in die erste Runde, wenn klar ist, wer lernt – sonst auf die Stapelseit
 | Ablauf | Vorher | Jetzt |
 |---|---|---|
 | Neues Blatt → erste Karte | 10 Tipps + Name eintippen | 6 Tipps; ein neuer Name nur einmal |
-| Fällige Karten lernen | 3 Tipps | 1 Tipp («Heute fällig» auf der Startseite oder «Heute dran») |
+| Fällige Karten lernen | 3 Tipps | 2 Tipps (Tab «Lernen» mit Badge, dann die Zeile in «Heute dran») |
 
 **Ein Ort, ein Name:** Nach Etappe 2 gab es zwei Wege zu denselben Entscheidungen – Stapel und Spielform liessen
 sich im Tab «Lernen» und nochmals auf dem Startbildschirm des Spiels wählen, und es hiess mal «Spickzettel», mal
 «Lernen». Jetzt:
 
-- Der Bereich heisst überall **«Lernen»** (Tab, Karte in «Spiele» und «Entdecken», Texte). Intern bleibt die ID
-  `spickzettel` – sie steht in Bibliotheken und Einstellungen der Nutzerinnen und Nutzer.
+- Der Bereich heisst überall **«Lernen»** und ist eine eigene Kategorie: ein Tab, kein Spiel in «Spiele»,
+  «Entdecken», «Meine Spiele» oder «Weiterspielen» (die Definition steht in `registry.ts` unter `SECTIONS`). Intern
+  bleibt die ID `spickzettel` – sie steht in Bibliotheken und Einstellungen der Nutzerinnen und Nutzer.
 - Zusammenspielen startet auf der Stapelseite: «Duell», «Blitzrunde» oder «Schätzrunde» führen zu
   `/lernen/<stapel>/<spielform>` – **«Wer spielt mit?»** mit Spielgruppe, Einstellungen und Start. Stapel und
   Spielform werden nicht nochmals gefragt. Nach dem Spiel geht es dorthin zurück, bereit für eine Revanche.
-- Den Startbildschirm `/spiel/spickzettel` gibt es nicht mehr; er leitet weiter (`GameDefinition.pathFor`), ebenso
-  «Weiterspielen» auf der Startseite.
+- Den Startbildschirm `/spiel/spickzettel` gibt es nicht mehr; er leitet weiter (`GameDefinition.pathFor`).
 - Die Stapelliste in «Lernen» zeigt zuerst Stapel mit fälligen Karten, dann die zuletzt gelernten oder bearbeiteten
   (`recommendStacks`), ab 7 Stapeln mit Suche nach Titel oder Fach.
+- Fällige Karten gehören zu «Lernen», nicht auf die Startseite der Spiele: Die Zeilen «Heute fällig» sind von der
+  Startseite in «Heute dran» umgezogen. Dafür trägt das Symbol des Tabs «Lernen» einen roten Badge mit der Zahl
+  aller fälligen Karten (alle Personen, alle Stapel, `useDueTotal`; Screenreader: «Lernen, 7 Karten fällig»). Neue,
+  noch nie gelernte Karten zählen nicht mit.
 
 ## Offene Punkte
 

@@ -23,7 +23,7 @@ async function learnRound(page: Page, wrong: string[] = []): Promise<string> {
   return result;
 }
 
-test('Lernen: Einführung, Stapelseite, allein ohne Gruppe und ein Tipp von der Startseite', async ({ page }) => {
+test('Lernen: Einführung, Stapelseite, allein ohne Gruppe, Badge auf dem Tab und ein Tipp bis zur Karte', async ({ page }) => {
   await register(page, 'Nora');
   await page.locator('.tabbar a[href="/lernen"]').click();
   await expect(page.locator('.learn-intro__steps li')).toHaveCount(3);
@@ -51,21 +51,30 @@ test('Lernen: Einführung, Stapelseite, allein ohne Gruppe und ein Tipp von der 
   await expect(page).toHaveURL(/\/lernen\/[^/]+$/);
   await expect(page.locator('.learn-panel__status')).toHaveText('Heute fällig: 1 Karte');
 
-  // The start page and the «Lernen» tab: one tap to the card that is due.
+  // The start page has no learning rows – the «Lernen» tab shows the cards due as a badge.
   await page.goto('/');
+  await expect(page.locator('.learn-due__row')).toHaveCount(0);
+  const tab = page.locator('.tabbar a[href="/lernen"]');
+  await expect(tab.locator('.tabbar__badge')).toHaveText('1');
+  await expect(tab).toHaveAccessibleName('Lernen, 1 Karte fällig');
+  await expectAccessible(page);
+  // In «Lernen»: one tap to the card that is due.
+  await tab.click();
   const row = page.locator('.learn-due__row');
   await expect(row).toHaveCount(1);
   await expect(row).toContainText('Nora');
   await expect(row).toContainText('1 Karte · «Einmaleins»');
+  await expect(page.locator('.group-card', { hasText: 'Einmaleins' }).locator('.due-pill')).toHaveText('1 fällig');
   await expectAccessible(page);
   await row.click();
   await expect(page.locator('.learn-card__prompt')).toHaveText('7 × 8');
-  await endGame(page);
-  await expect(page).toHaveURL('/');
-  await page.goto('/lernen');
-  await expect(page.locator('.learn-due__row')).toContainText('Nora');
-  await expect(page.locator('.group-card', { hasText: 'Einmaleins' }).locator('.due-pill')).toHaveText('1 fällig');
-  await expectAccessible(page);
+  await page.getByRole('button', { name: 'Antwort zeigen' }).click();
+  await page.getByRole('button', { name: 'Gewusst', exact: true }).click();
+  await expect(page.locator('.result-banner__title')).toHaveText('1 von 1 gewusst');
+  await page.getByRole('button', { name: 'Fertig' }).click();
+  await expect(page).toHaveURL(/\/lernen$/);
+  // Nothing due any more: no badge.
+  await expect(tab.locator('.tabbar__badge')).toHaveCount(0);
 });
 
 test('Kartenkasten: Antwortart pro Person, Eintippen wird grosszügig geprüft', async ({ page }) => {

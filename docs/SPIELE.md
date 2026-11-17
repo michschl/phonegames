@@ -1,7 +1,7 @@
 # Spiele entwickeln
 
 Jedes Spiel ist ein eigener Ordner in [`client/src/games/`](../client/src/games/) und wird in
-[`registry.ts`](../client/src/games/registry.ts) eingetragen. Aktuell sind es 18 Spiele (17 Partyspiele und «Lernen»). Katalog, Suche, «Meine Spiele», Spielgruppen,
+[`registry.ts`](../client/src/games/registry.ts) eingetragen. Aktuell sind es 17 Partyspiele; «Lernen» ist ein eigener Bereich (siehe «Bereiche mit eigenen Seiten»). Katalog, Suche, «Meine Spiele», Spielgruppen,
 Einstellungen und der Vollbild-Spielmodus funktionieren danach automatisch.
 Regeln («So geht’s») und Einstellungen erscheinen auf dem Startbildschirm des Spiels zugeklappt; bei den
 Einstellungen zeigt ein Etikett, ob sie angepasst wurden.
@@ -129,15 +129,17 @@ Die meisten Spiele bestehen nur aus Inhalten, ein bisschen Logik und diesen Baus
 Werkzeuge wie «Zufallsfinger» oder «Flaschendrehen» brauchen keine Namen. Mit `noGroup: true` in der
 Definition entfällt die Gruppenauswahl auf dem Startbildschirm, und `players` ist leer.
 
-### Spiele mit eigenen Seiten
+### Bereiche mit eigenen Seiten
 
-Die meisten Spiele starten über den gemeinsamen Startbildschirm (`/spiel/<id>`). «Lernen» hat stattdessen einen
-eigenen Tab mit Stapeln, Stapelseite und dem Schritt «Wer spielt mit?». Dafür gibt es in der Definition:
+Die Spiele starten über den gemeinsamen Startbildschirm (`/spiel/<id>`). «Lernen» ist kein Spiel im Katalog,
+sondern ein eigener Bereich (Tab `/lernen`) mit Stapeln, Stapelseite und dem Schritt «Wer spielt mit?». Seine
+Definition steht in `registry.ts` unter `SECTIONS` statt in `GAMES`: `getGame()` findet sie, damit die Spielformen
+zum Zusammenspielen den Spielbildschirm (`/spiel/spickzettel/los`) nutzen können; «Spiele», «Entdecken», «Meine
+Spiele» und «Weiterspielen» zeigen nur `GAMES` (`getCatalogGame()`). Dazu gibt es in der Definition:
 
 | Feld | Wirkung |
 | --- | --- |
-| `href` | Wohin die Spielkarten in «Spiele» und «Entdecken» führen statt zum Startbildschirm, z. B. `/lernen` |
-| `pathFor(settings)` | Wo das Spiel mit diesen Einstellungen zu Hause ist – nach dem Spiel, für «Weiterspielen» und wenn `/spiel/<id>` trotzdem aufgerufen wird (Lernen: «Wer spielt mit?» der letzten Spielform zum Zusammenspielen, sonst der Tab) |
+| `pathFor(settings)` | Wo das Spiel mit diesen Einstellungen zu Hause ist – nach dem Spiel und wenn `/spiel/<id>` trotzdem aufgerufen wird (Lernen: «Wer spielt mit?» der letzten Spielform zum Zusammenspielen, sonst der Tab) |
 | `playersNeeded(settings)` | Mindestzahl Personen je nach Einstellung (sonst `minPlayers`), z. B. 2 für das Duell, 4 für die Blitzrunde |
 
 ### Ein Teamspiel in wenigen Zeilen

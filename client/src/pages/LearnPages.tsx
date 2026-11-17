@@ -408,7 +408,6 @@ function TogetherPage({ stack, mode }: { stack: LearnStack; mode: LearnMode }) {
   const { selectedId, select } = useSelectedGroup(spickzettel.id);
   const group = useGroup(selectedId);
   const setLastGroup = useSettings((s) => s.setLastGroup);
-  const setLastPlayed = useSettings((s) => s.setLastPlayed);
   const info = MODES.find((m) => m.value === mode)!;
   const situation = SITUATIONS.find((s) => s.value === info.situation)!;
   const fits = modeFits(mode, stack);
@@ -423,7 +422,6 @@ function TogetherPage({ stack, mode }: { stack: LearnStack; mode: LearnMode }) {
     haptic(20);
     setSettings(settings);
     setLastGroup(spickzettel.id, group.id);
-    setLastPlayed(spickzettel.id, group.id);
     navigate(`/spiel/${spickzettel.id}/los`, { viewTransition: true });
   };
 

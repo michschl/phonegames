@@ -899,6 +899,32 @@
   transition: transform 0.35s var(--ease-spring);
 }
 
+.tabbar__icon {
+  position: relative;
+  display: grid;
+}
+
+/* Cards due today on «Lernen»: a small red sticker on the icon. */
+.tabbar__badge {
+  position: absolute;
+  top: -7px;
+  left: calc(100% - 9px);
+  display: grid;
+  place-items: center;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  background: var(--due-red);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  animation: badge-in 0.45s var(--ease-spring) both;
+}
+
 .tabbar__item.active {
   color: var(--ink);
 }
