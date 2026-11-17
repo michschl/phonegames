@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { addLearner, createStack, endGame, expectAccessible, register, startLearning } from './helpers.ts';
+import { addLearner, createStack, endGame, expectAccessible, openMode, register, startLearning } from './helpers.ts';
 
 const TIMES = ['7 × 8 = 56', '6 × 7 = 42', '9 × 9 = 81', '12 × 12 = 144'];
 
@@ -107,6 +107,55 @@ test('Kartenkasten: Antwortart pro Person, Eintippen wird grosszügig geprüft',
   await expect(page.getByRole('radio', { name: 'Tippen' })).toHaveAttribute('aria-checked', 'true');
   await addLearner(page, 'Ben');
   await expect(page.getByRole('radio', { name: 'Aufdecken' })).toHaveAttribute('aria-checked', 'true');
+});
+
+test('Wörtli: vor der Runde wählen, was gezeigt wird – wie erfasst, umgekehrt oder gemischt', async ({ page }) => {
+  const cards: Record<string, string> = { 'le chien': 'der Hund', 'la maison': 'das Haus', 'le chat': 'die Katze', manger: 'essen' };
+  const french = Object.keys(cards);
+  const back = Object.fromEntries(Object.entries(cards).map(([fr, de]) => [de, fr]));
+  await register(page);
+  await createStack(page, 'Richtung', Object.entries(cards).map(([q, a]) => `${q} = ${a}`));
+
+  // Typed cards do not know their languages: «Normal» is as entered, explained with a card of the stack.
+  const direction = page.getByRole('radiogroup', { name: 'Abfragen' });
+  await expect(direction.getByRole('radio', { name: 'Normal' })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByText('Wie erfasst: «le chien» → «der Hund»')).toBeVisible();
+  await direction.getByRole('radio', { name: 'Umgekehrt' }).click();
+  await expect(page.getByText('Umgekehrt: «der Hund» → «le chien»')).toBeVisible();
+  await expectAccessible(page);
+
+  // The other way round: the German word is shown, the French one is typed.
+  await page.getByRole('radio', { name: 'Tippen' }).click();
+  await startLearning(page);
+  for (let i = 0; i < 4; i++) {
+    const prompt = (await page.locator('.learn-card__prompt').innerText()).trim();
+    expect(Object.keys(back)).toContain(prompt);
+    await page.getByLabel('Deine Antwort').fill(back[prompt]!);
+    await page.getByLabel('Deine Antwort').press('Enter');
+    await expect(page.locator('.typed-result')).toHaveClass(/is-right/);
+    await page.getByRole('button', { name: 'Weiter', exact: true }).click();
+  }
+  await expect(page.locator('.result-banner__title')).toHaveText('4 von 4 gewusst');
+  await endGame(page);
+
+  // Mixed: half of the cards each way. Nothing is due any more – a practice round.
+  await expect(direction.getByRole('radio', { name: 'Umgekehrt' })).toHaveAttribute('aria-checked', 'true');
+  await direction.getByRole('radio', { name: 'Gemischt' }).click();
+  await page.getByRole('radio', { name: 'Aufdecken' }).click();
+  await startLearning(page);
+  const prompts: string[] = [];
+  for (let i = 0; i < 4; i++) {
+    prompts.push((await page.locator('.learn-card__prompt').innerText()).trim());
+    await page.getByRole('button', { name: 'Antwort zeigen' }).click();
+    await page.getByRole('button', { name: 'Gewusst', exact: true }).click();
+  }
+  expect(prompts.filter((p) => french.includes(p))).toHaveLength(2);
+  expect(prompts.filter((p) => p in back)).toHaveLength(2);
+  await endGame(page);
+
+  // Playing together uses the same choice, and it can be changed right there.
+  await openMode(page, /Duell/);
+  await expect(page.getByRole('radiogroup', { name: 'Abfragen' }).getByRole('radio', { name: 'Gemischt' })).toHaveAttribute('aria-checked', 'true');
 });
 
 test('Wer lernt? Namenstafeln zeigen, wer wie viele Karten fällig hat', async ({ page }) => {

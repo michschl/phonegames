@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { LearnStack, Player } from '../../../shared/types.ts';
-import { kastenStatus, learnStreak } from '../lib/learn.ts';
+import { kastenStatus, learnStreak, LEARN_DIRECTIONS, type LearnDirection } from '../lib/learn.ts';
 import { collectLearners, defaultLearner, learnerColor, learnerId, sameName } from '../lib/learners.ts';
 import { useAuth } from './auth.ts';
 import { useData, useDueByStack } from './data.ts';
@@ -87,4 +87,10 @@ export function useStreaks(): (name: string) => number {
 export function useDueTotal(): number {
   const due = useDueByStack();
   return Object.values(due).reduce((sum, n) => sum + n, 0);
+}
+
+/** Which way the vocabulary of a stack is asked – «forward» (as entered) until chosen otherwise. */
+export function useLearnDirection(stackId: string | null | undefined): LearnDirection {
+  const stored = useSettings((s) => (stackId ? s.learnDirection[stackId] : undefined));
+  return stored && LEARN_DIRECTIONS.includes(stored) ? stored : 'forward';
 }

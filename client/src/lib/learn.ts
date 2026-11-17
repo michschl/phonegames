@@ -163,8 +163,11 @@ export function progressId(stackId: string, player: string): string {
 
 /* ------------------------------------------------------------ answers */
 
-/** Up to four options for multiple choice: the answer, the card's own wrong answers, then answers of other cards. */
-export function choicesFor(card: LearnCard, stack: LearnStack): string[] {
+/**
+ * Up to four options for multiple choice: the answer, the card's own wrong answers, then answers of
+ * other cards. Vocabulary asked the other way round takes them from the other side of the cards.
+ */
+export function choicesFor(card: AskedCard, stack: LearnStack): string[] {
   const taken = new Set([card.answer, ...card.accepted].map((a) => normalize(a)));
   const wrong: string[] = [];
   const add = (option: string) => {
@@ -174,15 +177,117 @@ export function choicesFor(card: LearnCard, stack: LearnStack): string[] {
     wrong.push(option);
   };
   card.distractors.forEach(add);
-  const others = shuffle(stack.cards.filter((c) => c.id !== card.id));
+  const pool = card.reversed ? stack.cards.map(swapSides) : stack.cards;
+  const others = shuffle(pool.filter((c) => c.id !== card.id));
   others.filter((c) => c.kind === card.kind).forEach((c) => add(c.answer));
   others.forEach((c) => add(c.answer));
   return shuffle([card.answer, ...wrong]);
 }
 
-/** Multiple choice works when every card can get three wrong answers. */
-export function canPlayChoice(stack: LearnStack): boolean {
-  return stack.cards.length >= 4 || stack.cards.every((c) => c.distractors.length >= 3);
+/**
+ * Multiple choice works when every card can get three wrong answers. Vocabulary asked the other way
+ * round has no wrong answers of its own, so it needs four cards to draw them from.
+ */
+export function canPlayChoice(stack: LearnStack, direction: LearnDirection = 'forward'): boolean {
+  return (
+    stack.cards.length >= 4 || stack.cards.every((c) => c.distractors.length >= 3 && (direction === 'forward' || !isVocabulary(c)))
+  );
+}
+
+/* ------------------------------------------------- vocabulary direction */
+
+/**
+ * Which way vocabulary is asked: forward = as entered (French shown, German answered),
+ * reverse = the other way round, mixed = half the cards each way, at random.
+ */
+export type LearnDirection = 'forward' | 'reverse' | 'mixed';
+
+export const LEARN_DIRECTIONS: readonly LearnDirection[] = ['forward', 'reverse', 'mixed'];
+
+/** A card as asked in a round. */
+export interface AskedCard extends LearnCard {
+  /** Vocabulary asked the other way round: the translation is shown, the word is the answer. */
+  reversed?: boolean;
+}
+
+const LANGUAGE_NAMES: Record<string, string> = {
+  de: 'Deutsch',
+  gsw: 'Schweizerdeutsch',
+  fr: 'Französisch',
+  it: 'Italienisch',
+  rm: 'Rätoromanisch',
+  en: 'Englisch',
+  es: 'Spanisch',
+  pt: 'Portugiesisch',
+  la: 'Latein',
+  grc: 'Altgriechisch',
+  el: 'Griechisch',
+  nl: 'Niederländisch',
+  sv: 'Schwedisch',
+  ru: 'Russisch',
+  zh: 'Chinesisch',
+  ja: 'Japanisch',
+  tr: 'Türkisch',
+  sq: 'Albanisch',
+  hr: 'Kroatisch',
+  sr: 'Serbisch',
+};
+
+/** «Französisch» for «fr» – unknown codes stay as they are, in capitals. */
+export function languageName(code: string): string {
+  return LANGUAGE_NAMES[code.toLowerCase()] ?? code.toUpperCase();
+}
+
+/** Only vocabulary (word and translation) can be asked both ways. */
+export function isVocabulary(card: LearnCard): boolean {
+  return card.kind === 'translation';
+}
+
+export function hasVocabulary(stack: LearnStack): boolean {
+  return stack.cards.some(isVocabulary);
+}
+
+function swapSides(card: LearnCard): AskedCard {
+  if (!isVocabulary(card)) return card;
+  return { ...card, prompt: card.answer, answer: card.prompt, accepted: [], distractors: [], reversed: true };
+}
+
+/**
+ * The card the other way round – the same card (same id) for the Kartenkasten. Other cards with the
+ * same translation count as right too: «viel» → «beaucoup», but «très» is not wrong either.
+ */
+export function reverseCard(card: LearnCard, stack: LearnStack): AskedCard {
+  const reversed = swapSides(card);
+  if (!reversed.reversed) return reversed;
+  const key = normalize(card.answer);
+  const synonyms = stack.cards.filter((c) => c.id !== card.id && isVocabulary(c) && normalize(c.answer) === key).map((c) => c.prompt);
+  return { ...reversed, accepted: [...new Set(synonyms)] };
+}
+
+/** One card in the chosen direction – «mixed» decides at random (for the Blitzrunde, card by card). */
+export function orientCard(card: LearnCard, stack: LearnStack, direction: LearnDirection, random = Math.random): AskedCard {
+  const reverse = direction === 'reverse' || (direction === 'mixed' && random() < 0.5);
+  return reverse ? reverseCard(card, stack) : card;
+}
+
+/** The cards of a round in the chosen direction – «mixed» turns half of the vocabulary round, at random. */
+export function orientCards(cards: LearnCard[], stack: LearnStack, direction: LearnDirection, random = Math.random): AskedCard[] {
+  if (direction !== 'mixed') return cards.map((card) => orientCard(card, stack, direction));
+  const vocabulary = cards.filter(isVocabulary);
+  const half = Math.floor(vocabulary.length / 2) + (vocabulary.length % 2 === 1 && random() < 0.5 ? 1 : 0);
+  const turned = new Set(
+    vocabulary
+      .map((card) => ({ card, key: random() }))
+      .sort((a, b) => a.key - b.key)
+      .slice(0, half)
+      .map(({ card }) => card.id),
+  );
+  return cards.map((card) => (turned.has(card.id) ? reverseCard(card, stack) : card));
+}
+
+/** Language of the answer (ISO code) – for the keyboard and the spell checker when typing. */
+export function answerLanguage(stack: LearnStack, card: AskedCard): string {
+  return (card.reversed ? stack.languages[0] : stack.languages[1]) || 'de';
 }
 
 /* -------------------------------------------------------------- import */

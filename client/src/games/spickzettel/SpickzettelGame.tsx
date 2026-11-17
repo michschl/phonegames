@@ -1,6 +1,8 @@
 import type { LearnCard } from '../../../../shared/types.ts';
 import { Button, EmptyState } from '../../components/ui.tsx';
+import { orientCard } from '../../lib/learn.ts';
 import { useStack } from '../../store/data.ts';
+import { useLearnDirection } from '../../store/learners.ts';
 import { drawFresh } from '../shared/deck.ts';
 import { GameShell, Stage } from '../shared/GameShell.tsx';
 import { TeamTurnGame } from '../shared/TeamTurnGame.tsx';
@@ -15,6 +17,7 @@ import './spickzettel.css';
 
 export default function SpickzettelGame({ players, settings, onExit }: GameProps<SpickzettelSettings>) {
   const stack = useStack(settings.stackId);
+  const direction = useLearnDirection(settings.stackId);
 
   if (!stack || stack.cards.length === 0) {
     return (
@@ -50,7 +53,7 @@ export default function SpickzettelGame({ players, settings, onExit }: GameProps
       verb="fragt ab"
       turnSeconds={settings.seconds}
       targetScore={settings.target}
-      draw={(used) => drawFresh(`spickzettel-${stack.id}`, stack.cards, (c) => c.id, { exclude: used })}
+      draw={(used) => orientCard(drawFresh(`spickzettel-${stack.id}`, stack.cards, (c) => c.id, { exclude: used }), stack, direction)}
       cardLabel={cardLine}
       correctLabel="Gewusst"
       skipLabel="Nicht gewusst"

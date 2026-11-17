@@ -47,6 +47,15 @@ Alle Spielformen arbeiten mit demselben Kartenformat.
   betreffenden Person in Fach 1.
 - **Antwort prüfen** in drei Stufen, je nach Spielform vorgewählt: Selbstkontrolle (aufdecken, «gewusst?»),
   Auswahl aus vier, Eintippen (tolerant: Gross-/Kleinschreibung egal, Akzente und Artikel wahlweise egal).
+- **Abfragerichtung bei Wörtli:** Vor der Runde wählt man pro Stapel, was gezeigt wird – wie erfasst
+  («FR → DE»), umgekehrt («DE → FR») oder gemischt (die Hälfte der Wörtli in die andere Richtung, zufällig).
+  Kennt der Stapel seine Sprachen nicht (abgetippt), heissen die Knöpfe «Normal», «Umgekehrt», «Gemischt»;
+  ein Satz mit einer Karte des Stapels erklärt die Wahl («Umgekehrt: «der Hund» → «le chien»»). Gilt für
+  Kartenkasten, Duell und Blitzrunde; nur Karten der Art «Übersetzung» drehen, Fragen und Lücken bleiben.
+  Umgedreht zählen alle Wörter mit derselben Übersetzung als richtig («viel» → «beaucoup» oder «très»), die
+  falschen Antworten der Auswahl stammen aus derselben Sprache. Der Kartenkasten ist derselbe für beide
+  Richtungen: eine Karte rückt ein Fach weiter, egal in welcher Richtung sie gewusst wurde. Die Wahl wird auf
+  dem Gerät gemerkt.
 - **Schätzrunde – wann ist es «nah»?** Jahreszahlen: genau, ±5 Jahre, ±25 Jahre. Andere Zahlen: genau (Rundung),
   innerhalb 5 % (bei ganzen Zahlen mindestens ±1), innerhalb 20 % (mindestens ±3). Weit daneben → Fach 1.
 - **Lückentext – Karten:** ein Satz mit genau einer Lücke `___`, die Antwort ist das fehlende Wort. Die Karten
@@ -243,7 +252,7 @@ direkte Route `/lernen/<stapel>/<kasten|luecke>?person=…`, «Heute fällig» m
 | Seite | Inhalt |
 |---|---|
 | `/lernen` (Tab) | «Heute dran»: eine Zeile pro Person und Stapel, ein Tipp startet die erste fällige Karte · «Alles erledigt» mit dem nächsten Termin · alle Stapel mit «fällig»-Zahl und Menü (Lernen, Bearbeiten, Löschen) · beim ersten Mal eine Einführung in drei Schritten mit «Foto aufnehmen» und «Karten abtippen» |
-| `/lernen/<stapel>` | «Wer lernt?» · Kartenkasten der gewählten Person mit Fächern, Stand und Antwortart (Aufdecken, Auswahl, Tippen – pro Person gemerkt) · «Weitere Spielformen» mit je einem Satz: Lückentext (allein, direkt), Duell, Blitzrunde, Schätzrunde (führen zum Startbildschirm mit Gruppe) · Karten pro Runde und Lückentext-Eingabe unter «Weitere Einstellungen» · unten der grosse Knopf «12 Karten lernen · Lina» |
+| `/lernen/<stapel>` | «Wer lernt?» · Kartenkasten der gewählten Person mit Fächern, Stand, Abfragerichtung bei Wörtli (pro Stapel gemerkt) und Antwortart (Aufdecken, Auswahl, Tippen – pro Person gemerkt) · «Weitere Spielformen» mit je einem Satz: Lückentext (allein, direkt), Duell, Blitzrunde, Schätzrunde (führen zum Startbildschirm mit Gruppe) · Karten pro Runde und Lückentext-Eingabe unter «Weitere Einstellungen» · unten der grosse Knopf «12 Karten lernen · Lina» |
 | `/spiel/spickzettel` | Nur noch zum Zusammenspielen: Stapel, Spielform (zu zweit, mit mehreren), Spielgruppe, Einstellungen; vier kurze Regeln statt sieben – später ersetzt durch «Wer spielt mit?» (siehe unten) |
 
 Die Spickzettel-Karten in «Spiele» und «Entdecken» führen zu `/lernen` (`GameDefinition.href`), `/stapel` leitet

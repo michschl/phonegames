@@ -4,9 +4,10 @@ import { Avatar, Button } from '../../components/ui.tsx';
 import { sound } from '../../lib/audio.ts';
 import { confetti } from '../../lib/confetti.ts';
 import { haptic } from '../../lib/device.ts';
-import { choicesFor } from '../../lib/learn.ts';
+import { choicesFor, orientCards, type AskedCard } from '../../lib/learn.ts';
 import { normalize, shuffle } from '../../lib/util.ts';
 import { useData } from '../../store/data.ts';
+import { useLearnDirection } from '../../store/learners.ts';
 import { Actions, GameShell, Headline, Stage } from '../shared/GameShell.tsx';
 import { PlayerPicker } from '../shared/players.tsx';
 import { CountdownOverlay, useStartCountdown } from '../shared/Timer.tsx';
@@ -22,7 +23,7 @@ const LOCK_MS = 1500;
 const REVEAL_MS = 1400;
 
 interface Round {
-  card: LearnCard;
+  card: AskedCard;
   /** The same four answers, shuffled separately for each side. */
   options: [string[], string[]];
 }
@@ -56,6 +57,7 @@ export function Duell({
   const [locked, setLocked] = useState<[boolean, boolean]>([false, false]);
   const [missed, setMissed] = useState<LearnCard[]>([]);
   const recordAnswer = useData((s) => s.recordAnswer);
+  const direction = useLearnDirection(stack.id);
   const timers = useRef<number[]>([]);
   const resolved = useRef(false);
 
@@ -66,7 +68,7 @@ export function Duell({
   const round = rounds[index];
 
   const prepare = () => {
-    const cards = shuffle(stack.cards).slice(0, total);
+    const cards = orientCards(shuffle(stack.cards).slice(0, total), stack, direction);
     setRounds(
       cards.map((card) => {
         const options = choicesFor(card, stack);

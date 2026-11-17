@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { LearnDirection } from '../lib/learn.ts';
 import { normalize } from '../lib/util.ts';
 
 /** Device-local preferences (not synchronised). */
@@ -23,6 +24,8 @@ interface SettingsState {
   learnerNames: string[];
   /** Spickzettel: how each person answers in the Kartenkasten (normalised name → mode). */
   learnCheck: Record<string, 'self' | 'choice' | 'type'>;
+  /** Lernen: which way the vocabulary of a stack is asked (stack id → direction), «forward» if missing. */
+  learnDirection: Record<string, LearnDirection>;
   setSound(on: boolean): void;
   setHaptics(on: boolean): void;
   setGameSettings(gameId: string, value: unknown): void;
@@ -33,6 +36,7 @@ interface SettingsState {
   setLastLearner(stackId: string, name: string): void;
   addLearnerName(name: string): void;
   setLearnCheck(name: string, check: 'self' | 'choice' | 'type'): void;
+  setLearnDirection(stackId: string, direction: LearnDirection): void;
 }
 
 export const useSettings = create<SettingsState>()(
@@ -49,6 +53,7 @@ export const useSettings = create<SettingsState>()(
       lastLearner: null,
       learnerNames: [],
       learnCheck: {},
+      learnDirection: {},
       setSound: (sound) => set({ sound }),
       setHaptics: (haptics) => set({ haptics }),
       setGameSettings: (gameId, value) => set((s) => ({ gameSettings: { ...s.gameSettings, [gameId]: value } })),
@@ -59,6 +64,7 @@ export const useSettings = create<SettingsState>()(
       setLastLearner: (stackId, name) =>
         set((s) => ({ lastLearnerByStack: { ...s.lastLearnerByStack, [stackId]: name }, lastLearner: name })),
       setLearnCheck: (name, check) => set((s) => ({ learnCheck: { ...s.learnCheck, [normalize(name)]: check } })),
+      setLearnDirection: (stackId, direction) => set((s) => ({ learnDirection: { ...s.learnDirection, [stackId]: direction } })),
       addLearnerName: (name) =>
         set((s) => ({ learnerNames: s.learnerNames.includes(name) ? s.learnerNames : [...s.learnerNames, name].slice(-30) })),
     }),

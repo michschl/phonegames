@@ -6,6 +6,7 @@ import { confetti } from '../../lib/confetti.ts';
 import { haptic } from '../../lib/device.ts';
 import { Link } from 'react-router';
 import {
+  answerLanguage,
   boxCounts,
   canPlayChoice,
   checkTypedAnswer,
@@ -13,13 +14,16 @@ import {
   dueCards,
   dueDayLabel,
   kastenStatus,
+  languageName,
   nextRepetition,
+  orientCards,
+  type AskedCard,
   type TypedVerdict,
 } from '../../lib/learn.ts';
 import { sameName } from '../../lib/learners.ts';
 import { normalize, shuffle } from '../../lib/util.ts';
 import { useData, useGroups, useProgress } from '../../store/data.ts';
-import { useLearners, useStreak } from '../../store/learners.ts';
+import { useLearnDirection, useLearners, useStreak } from '../../store/learners.ts';
 import { Actions, GameShell, Headline, Stage } from '../shared/GameShell.tsx';
 import { PlayerPicker } from '../shared/players.tsx';
 import type { SpickzettelSettings } from './index.tsx';
@@ -36,6 +40,12 @@ const KIND_LABEL: Record<LearnCard['kind'], string> = {
   number: 'Wie viel? Wann?',
   cloze: 'Fülle die Lücke',
 };
+
+/** «Übersetze auf Deutsch» – which language to answer in, when the stack knows its languages. */
+function kindLabel(card: AskedCard, stack: LearnStack): string {
+  if (card.kind !== 'translation' || stack.languages.length !== 2) return KIND_LABEL[card.kind];
+  return `Übersetze auf ${languageName(answerLanguage(stack, card))}`;
+}
 
 /** «Leas», «Jonas’» – Swiss German possessive for the headline. */
 function possessive(name: string): string {
@@ -69,8 +79,9 @@ export function Kartenkasten({
   const streak = useStreak(learner?.name);
   const learners = useLearners(stack.id);
   const groups = useGroups();
+  const direction = useLearnDirection(stack.id);
 
-  const [queue, setQueue] = useState<LearnCard[]>([]);
+  const [queue, setQueue] = useState<AskedCard[]>([]);
   const [index, setIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
   const [picked, setPicked] = useState<string | null>(null);
@@ -88,7 +99,7 @@ export function Kartenkasten({
   const dueTotal = dueCards(stack, progress, stack.cards.length).length;
   const status = kastenStatus(stack, progress);
   const card = queue[index];
-  const choice = settings.check === 'choice' && canPlayChoice(stack);
+  const choice = settings.check === 'choice' && canPlayChoice(stack, direction);
   const typing = settings.check === 'type';
   const options = useMemo(() => (card && choice ? choicesFor(card, stack) : []), [card?.id, index, choice]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -103,7 +114,8 @@ export function Kartenkasten({
     sound.swirl();
     asked.current = new Set();
     setPractice(practiceRound);
-    setQueue(cards);
+    // Vocabulary in the direction chosen on the stack page – a card asked again keeps its direction.
+    setQueue(orientCards(cards, stack, direction));
     setIndex(0);
     setResults([]);
     setRevealed(false);
@@ -113,7 +125,7 @@ export function Kartenkasten({
     setPhase('card');
   };
 
-  const next = (nextQueue: LearnCard[]) => {
+  const next = (nextQueue: AskedCard[]) => {
     window.clearTimeout(advance.current);
     setRevealed(false);
     setPicked(null);
@@ -138,7 +150,7 @@ export function Kartenkasten({
   };
 
   /** Records the answer; a missed card is asked once more at the end of the round. */
-  const answer = (correct: boolean, silent = false): LearnCard[] => {
+  const answer = (correct: boolean, silent = false): AskedCard[] => {
     if (!card || !learner) return queue;
     if (!practice) recordAnswer(stack.id, learner.name, card.id, correct);
     setResults((r) => [...r, { cardId: card.id, correct }]);
@@ -312,7 +324,7 @@ export function Kartenkasten({
             <span style={{ width: `${(index / queue.length) * 100}%` }} />
           </div>
           <div key={`${card.id}-${index}`} className={`learn-card ${revealed || picked ? 'is-revealed' : ''}`}>
-            <span className="learn-card__kind">{KIND_LABEL[card.kind]}</span>
+            <span className="learn-card__kind">{kindLabel(card, stack)}</span>
             <p className="learn-card__prompt">
               <CardPrompt card={card} fill={revealed || !!picked} />
             </p>
@@ -387,7 +399,7 @@ export function Kartenkasten({
                   autoCapitalize="off"
                   spellCheck={false}
                   enterKeyHint="done"
-                  lang={stack.languages[1] || 'de'}
+                  lang={answerLanguage(stack, card)}
                   maxLength={300}
                 />
                 <Button type="submit" size="lg" block icon="check">

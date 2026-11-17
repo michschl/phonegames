@@ -8,17 +8,29 @@ import { DueRows } from '../components/LearnDue.tsx';
 import { LearnerPicker } from '../components/LearnerPicker.tsx';
 import { BottomBar, Page, Section } from '../components/Layout.tsx';
 import { ActionSheet, Button, EmptyState, IconButton, Segmented } from '../components/ui.tsx';
+import { OptionRow } from '../games/shared/settings.tsx';
 import { BoxRow } from '../games/spickzettel/BoxRow.tsx';
+import { DirectionPicker } from '../games/spickzettel/Direction.tsx';
 import { spickzettel, type SpickzettelSettings } from '../games/spickzettel/index.tsx';
 import { isSoloMode, MODES, SITUATIONS, soloLearnPath } from '../games/spickzettel/modes.ts';
 import '../games/spickzettel/spickzettel.css';
 import { sound } from '../lib/audio.ts';
 import { haptic } from '../lib/device.ts';
-import { boxCounts, canPlayChoice, dueCards, dueDayLabel, kastenStatus, modeFits, recommendStacks, subjectEmoji } from '../lib/learn.ts';
+import {
+  boxCounts,
+  canPlayChoice,
+  dueCards,
+  dueDayLabel,
+  hasVocabulary,
+  kastenStatus,
+  modeFits,
+  recommendStacks,
+  subjectEmoji,
+} from '../lib/learn.ts';
 import { learnerColor, learnerId, sameName } from '../lib/learners.ts';
 import { normalize } from '../lib/util.ts';
 import { useData, useDueByStack, useGroup, useProgress, useStack, useStacks } from '../store/data.ts';
-import { useDefaultLearner, useDueList, useLearners } from '../store/learners.ts';
+import { useDefaultLearner, useDueList, useLearnDirection, useLearners } from '../store/learners.ts';
 import { useGameSettings, useSettings } from '../store/settings.ts';
 import { deleteStackWithUndo } from '../store/undo.ts';
 import { GroupSection, PlayLoading, usePlayScreen, useSelectedGroup } from './GamePages.tsx';
@@ -227,6 +239,7 @@ export function StackLearnPage() {
   const setLearnCheck = useSettings((s) => s.setLearnCheck);
   const [settings, setSettings] = useGameSettings<SpickzettelSettings>(spickzettel.id, spickzettel.defaultSettings!);
   const progress = useProgress(stackId, learner);
+  const direction = useLearnDirection(stackId);
 
   if (!stack) {
     return (
@@ -238,7 +251,7 @@ export function StackLearnPage() {
 
   const status = kastenStatus(stack, progress);
   const round = dueCards(stack, progress, settings.sessionSize).length;
-  const choiceOk = canPlayChoice(stack);
+  const choiceOk = canPlayChoice(stack, direction);
   const stored = learner ? checks[normalize(learner)] : undefined;
   const check = stored === 'choice' && !choiceOk ? 'self' : (stored ?? settings.check);
   const cloze = modeFits('luecke', stack);
@@ -278,7 +291,8 @@ export function StackLearnPage() {
                   ? `Alle Karten in Fach 5 ★ – wieder dran ${status.nextDue ? dueDayLabel(status.nextDue) : 'bald'}.`
                   : `Alles erledigt 🎉 – wieder dran ${status.nextDue ? dueDayLabel(status.nextDue) : 'bald'}.`}
           </p>
-          <Segmented
+          <DirectionPicker stack={stack} />
+          <OptionRow
             label="Antworten"
             value={check}
             options={CHECK_OPTIONS.filter((o) => o.value !== 'choice' || choiceOk).map((o) => ({ ...o }))}
@@ -286,8 +300,8 @@ export function StackLearnPage() {
               haptic(6);
               setLearnCheck(learner, value);
             }}
+            hint={CHECK_HINT[check]}
           />
-          <p className="settings-panel__hint">{CHECK_HINT[check]}</p>
         </section>
       )}
 
@@ -456,6 +470,11 @@ function TogetherPage({ stack, mode }: { stack: LearnStack; mode: LearnMode }) {
       <p className="together__text">{info.text}</p>
       {!fits && <p className="notice notice--info">Dieser Stapel hat zu wenige passende Karten für {info.label === 'Duell' ? 'ein Duell' : `die ${info.label}`}.</p>}
       <GroupSection title="Wer spielt mit?" selectedId={selectedId} onSelect={select} />
+      {mode !== 'schaetzen' && hasVocabulary(stack) && (
+        <div className="settings-panel together__direction">
+          <DirectionPicker stack={stack} />
+        </div>
+      )}
       <Fold title="Einstellungen" icon="settings" className="fold--settings">
         <Settings value={settings} onChange={setSettings} />
       </Fold>
