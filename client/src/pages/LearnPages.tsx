@@ -133,13 +133,15 @@ export function LearnHubPage() {
               </p>
             )}
           </Section>
-          <Fold title="So geht’s" icon="sparkles" meta={`${HOW_TO.length} Schritte`}>
-            <ol className="rules">
-              {HOW_TO.map((step) => (
-                <li key={step}>{step}</li>
-              ))}
-            </ol>
-          </Fold>
+          <Section title="So geht’s">
+            <Fold title="In fünf Schritten" icon="sparkles">
+              <ol className="rules">
+                {HOW_TO.map((step) => (
+                  <li key={step}>{step}</li>
+                ))}
+              </ol>
+            </Fold>
+          </Section>
           <Section
             title="Stapel"
             action={
@@ -240,6 +242,9 @@ export function StackLearnPage() {
   const [settings, setSettings] = useGameSettings<SpickzettelSettings>(spickzettel.id, spickzettel.defaultSettings!);
   const progress = useProgress(stackId, learner);
   const direction = useLearnDirection(stackId);
+  const [edit, setEdit] = useState(false);
+  // Nobody left: nothing to edit, «Person hinzufügen» is back.
+  const editing = edit && learners.length > 0;
 
   if (!stack) {
     return (
@@ -272,8 +277,23 @@ export function StackLearnPage() {
         </Link>
       }
     >
-      <Section title="Wer lernt?">
-        <LearnerPicker stackId={stack.id} learners={learners} selected={learner} onSelect={(name) => setLastLearner(stack.id, name)} />
+      <Section
+        title="Wer lernt?"
+        action={
+          learners.length > 0 && (
+            <Button variant="secondary" size="sm" icon={editing ? 'check' : 'edit'} onClick={() => setEdit(!editing)}>
+              {editing ? 'Fertig' : 'Bearbeiten'}
+            </Button>
+          )
+        }
+      >
+        <LearnerPicker
+          stackId={stack.id}
+          learners={learners}
+          selected={learner}
+          onSelect={(name) => setLastLearner(stack.id, name)}
+          editing={editing}
+        />
       </Section>
 
       {learner && (

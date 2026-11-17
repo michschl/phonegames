@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { addLearner, createStack, endGame, expectAccessible, openMode, register, startLearning } from './helpers.ts';
+import { addLearner, createStack, endGame, expectAccessible, openMode, register, startLearning, undo } from './helpers.ts';
 
 const TIMES = ['7 × 8 = 56', '6 × 7 = 42', '9 × 9 = 81', '12 × 12 = 144'];
 
@@ -158,6 +158,51 @@ test('Wörtli: vor der Runde wählen, was gezeigt wird – wie erfasst, umgekehr
   await expect(page.getByRole('radiogroup', { name: 'Abfragen' }).getByRole('radio', { name: 'Gemischt' })).toHaveAttribute('aria-checked', 'true');
 });
 
+test('Wer lernt? Personen entfernen, mit «Rückgängig» zurückholen und wieder hinzufügen', async ({ page }) => {
+  await register(page, 'Lea');
+  await createStack(page, 'Entfernen', TIMES);
+  await addLearner(page, 'Ben');
+  await startLearning(page);
+  await learnRound(page, ['7 × 8']);
+  await endGame(page);
+  await addLearner(page, 'Mia');
+  const tile = (name: string) => page.getByRole('radio', { name: new RegExp(`^${name}`) });
+  await expect(tile('Ben').locator('.due-badge')).toHaveText('1');
+
+  await page.getByRole('button', { name: 'Bearbeiten', exact: true }).click();
+  await expect(page.getByText('Tippe eine Person an, um sie aus diesem Stapel zu entfernen.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Person hinzufügen' })).toHaveCount(0);
+  await expectAccessible(page);
+  await page.getByRole('button', { name: 'Ben entfernen' }).click();
+  await expect(page.locator('.toast', { hasText: 'Ben entfernt.' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Ben entfernen' })).toHaveCount(0);
+  await undo(page);
+  await expect(page.getByRole('button', { name: 'Ben entfernen' })).toBeVisible();
+  await page.getByRole('button', { name: 'Mia entfernen' }).click();
+  await page.getByRole('button', { name: 'Fertig', exact: true }).click();
+  await expect(tile('Mia')).toHaveCount(0);
+  // «Rückgängig» brought back the Kartenkasten too.
+  await expect(tile('Ben').locator('.due-badge')).toHaveText('1');
+
+  // Gone for good on this stack, and back as soon as the name is added again.
+  await page.reload();
+  await expect(tile('Lea')).toBeVisible();
+  await expect(tile('Mia')).toHaveCount(0);
+  await addLearner(page, 'Mia');
+  await expect(tile('Mia').locator('.learner-tile__status')).toHaveText('Noch nicht begonnen');
+
+  // Removing deletes the Kartenkasten for this stack: no more cards due, a fresh start when added again.
+  await page.getByRole('button', { name: 'Bearbeiten', exact: true }).click();
+  await page.getByRole('button', { name: 'Ben entfernen' }).click();
+  await page.getByRole('button', { name: 'Fertig', exact: true }).click();
+  await page.goto('/lernen');
+  await expect(page.locator('.tabbar a[href="/lernen"] .tabbar__badge')).toHaveCount(0);
+  await expect(page.locator('.group-card', { hasText: 'Entfernen' }).locator('.due-pill')).toHaveCount(0);
+  await page.locator('.group-card', { hasText: 'Entfernen' }).click();
+  await addLearner(page, 'Ben');
+  await expect(tile('Ben').locator('.learner-tile__status')).toHaveText('Noch nicht begonnen');
+});
+
 test('Wer lernt? Namenstafeln zeigen, wer wie viele Karten fällig hat', async ({ page }) => {
   await register(page, 'Lea');
   await createStack(page, 'Einmaleins', TIMES);
@@ -208,8 +253,9 @@ test('Lernen: fällige Stapel zuerst, Suche ab sieben Stapeln, der alte Startbil
   await expect(page.locator('.group-card__name').nth(1)).toHaveText('Englisch');
   await page.getByLabel('Stapel oder Fach suchen').fill('unite');
   await expect(page.locator('.group-card__name')).toHaveText(['Unité 6', 'Unité 5']);
-  // «So geht’s» explains Lernen in five steps.
-  await page.locator('summary', { hasText: 'So geht’s' }).click();
+  // «So geht’s» explains Lernen in five steps – a section of its own, like «Heute dran» and «Stapel».
+  await expect(page.locator('.section__title')).toContainText(['Heute dran', 'So geht’s', 'Stapel']);
+  await page.locator('summary', { hasText: 'In fünf Schritten' }).click();
   await expect(page.locator('.rules li')).toHaveCount(5);
   await expectAccessible(page);
   // A new stack is always where the stacks are: next to the heading of a long list and at its end.

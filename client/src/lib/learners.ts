@@ -32,28 +32,32 @@ export interface LearnerSources {
   self?: string;
   /** Names added as learners on this device. */
   extra: string[];
+  /** Normalised names removed from «Wer lernt?» of this stack – unless they learn it after all. */
+  hidden?: string[];
 }
 
 /**
  * Everyone who can learn: who learned this stack, the members of the Spickzettel group, the
  * account holder, names added on this device and who learned other stacks. Party groups are
  * not offered as a whole – the friends from the games evening do not learn French vocabulary.
+ * People removed from this stack are left out – but whoever has a Kartenkasten for it is shown.
  */
-export function collectLearners({ stackId, progress, groups, learnGroupId, self, extra }: LearnerSources): Player[] {
+export function collectLearners({ stackId, progress, groups, learnGroupId, self, extra, hidden = [] }: LearnerSources): Player[] {
   const colors = new Map<string, string>();
   for (const group of groups) {
     if (group.deleted) continue;
     for (const player of group.players) if (!colors.has(normalize(player.name))) colors.set(normalize(player.name), player.color);
   }
   const found = new Map<string, Player>();
-  const add = (raw: string) => {
+  const left = new Set(stackId ? hidden : []);
+  const add = (raw: string, learnsThis = false) => {
     const name = raw.trim();
     const key = normalize(name);
-    if (!key || found.has(key)) return;
+    if (!key || found.has(key) || (left.has(key) && !learnsThis)) return;
     found.set(key, { id: learnerId(name), name, color: colors.get(key) ?? learnerColor(name) });
   };
   const live = progress.filter((entry) => !entry.deleted && Object.keys(entry.cards).length > 0).sort((a, b) => b.updatedAt - a.updatedAt);
-  if (stackId) for (const entry of live) if (entry.stackId === stackId) add(entry.player);
+  if (stackId) for (const entry of live) if (entry.stackId === stackId) add(entry.player, true);
   const learnGroup = groups.find((group) => group.id === learnGroupId && !group.deleted);
   for (const player of learnGroup?.players ?? []) add(player.name);
   if (self) add(self);

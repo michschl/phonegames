@@ -204,6 +204,11 @@ interface Karte {
   gehört einem Namen; «Wer lernt?» bietet an, wer den Stapel schon gelernt hat, die Personen der zuletzt für
   Spickzettel gewählten Gruppe, die angemeldete Person und hier hinzugefügte Namen (`collectLearners`). Vorausgewählt
   ist, wer den Stapel zuletzt auf diesem Gerät gelernt hat. Der Start führt direkt zur ersten Karte.
+- **Personen entfernen:** «Bearbeiten» neben «Wer lernt?» – ein Tipp auf eine Person entfernt sie aus diesem Stapel,
+  mit «Rückgängig». Ihr Kartenkasten für den Stapel wird gelöscht (synchronisiert), und sie wird dort nicht mehr
+  angeboten (auf diesem Gerät gemerkt, `hiddenLearners`). Ein nur hier hinzugefügter Name, der nirgends sonst
+  gelernt hat, verschwindet ganz. Wer wieder hinzugefügt wird oder den Stapel doch lernt (z. B. im Duell), ist
+  wieder dabei. In anderen Stapeln bleibt die Person.
 - **«Speichern & lernen»** nach dem Prüfen: Ist klar, wer lernt (wer den Stapel schon gelernt hat oder die einzige
   Person, die überhaupt lernt), startet gleich die erste Runde; sonst fragt «Wer lernt?».
 - **Spielformen nach Situation:** «Allein» (Kartenkasten, Lückentext), «Zu zweit» (Duell), «Mit mehreren»
@@ -291,7 +296,8 @@ sich im Tab «Lernen» und nochmals auf dem Startbildschirm des Spiels wählen, 
 - **Neuer Stapel dort, wo die Stapel sind:** Statt eines Plus-Symbols oben rechts (beim Scrollen weg und ohne
   Beschriftung) schliesst die Stapelliste mit der Kachel «Neuer Stapel – Foto aufnehmen oder Karten abtippen»; ab
   vier Stapeln steht zusätzlich «Neuer Stapel» neben der Überschrift «Stapel».
-- **«So geht’s»** im Tab «Lernen» unter «Heute dran» (zugeklappt, fünf Schritte): Stapel erstellen, wer lernt, Kartenkasten mit
+- **«So geht’s»** im Tab «Lernen» unter «Heute dran» – ein eigener Abschnitt wie «Heute dran» und «Stapel», darin
+  zugeklappt «In fünf Schritten»: Stapel erstellen, wer lernt, Kartenkasten mit
   den Abständen, «Heute dran» und der Badge, zusammen lernen. Beim allerersten Besuch zeigt die Einführung drei
   Schritte.
 - Fällige Karten gehören zu «Lernen», nicht auf die Startseite der Spiele: Die Zeilen «Heute fällig» sind von der

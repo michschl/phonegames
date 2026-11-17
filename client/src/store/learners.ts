@@ -13,6 +13,7 @@ export function useLearners(stackId?: string | null): Player[] {
   const self = useAuth((s) => s.user?.name);
   const extra = useSettings((s) => s.learnerNames);
   const learnGroupId = useSettings((s) => s.lastGroupByGame.spickzettel);
+  const hidden = useSettings((s) => (stackId ? s.hiddenLearners[stackId] : undefined));
   return useMemo(
     () =>
       collectLearners({
@@ -22,8 +23,9 @@ export function useLearners(stackId?: string | null): Player[] {
         learnGroupId,
         self,
         extra,
+        hidden,
       }),
-    [stackId, progress, groups, learnGroupId, self, extra],
+    [stackId, progress, groups, learnGroupId, self, extra, hidden],
   );
 }
 

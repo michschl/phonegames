@@ -7,27 +7,32 @@ import { sameName } from '../lib/learners.ts';
 import { sound } from '../lib/audio.ts';
 import { useStreaks } from '../store/learners.ts';
 import { useSettings } from '../store/settings.ts';
+import { removeLearnerWithUndo } from '../store/undo.ts';
 import { Icon } from './Icon.tsx';
 import { Avatar } from './ui.tsx';
 
 /**
  * «Wer lernt?»: one tile per person, coloured by the state of their Kartenkasten for the stack,
- * with the red number of cards due. A new name is added right here – no group needed.
+ * with the red number of cards due. A new name is added right here – no group needed. While
+ * editing, a tap removes the person from this stack (with «Rückgängig»).
  */
 export function LearnerPicker({
   stackId,
   learners,
   selected,
   onSelect,
+  editing = false,
 }: {
   stackId: string;
   learners: Player[];
   selected: string | null;
   onSelect: (name: string) => void;
+  editing?: boolean;
 }) {
   const tiles = useKastenTiles(stackId);
   const streak = useStreaks();
   const addLearnerName = useSettings((s) => s.addLearnerName);
+  const showLearner = useSettings((s) => s.showLearner);
   const [adding, setAdding] = useState(learners.length === 0);
   const [name, setName] = useState('');
 
@@ -37,12 +42,51 @@ export function LearnerPicker({
     if (!trimmed) return;
     const existing = learners.find((p) => sameName(p.name, trimmed));
     if (!existing) addLearnerName(trimmed);
+    // Removed from this stack before: added again, so back in the list.
+    showLearner(stackId, trimmed);
     sound.pop();
     haptic(10);
     onSelect(existing?.name ?? trimmed);
     setName('');
     setAdding(false);
   };
+
+  if (editing) {
+    return (
+      <div className="learner-picker">
+        <p className="learner-picker__hint">
+          Tippe eine Person an, um sie aus diesem Stapel zu entfernen. Ihr Kartenkasten für diesen Stapel wird dabei gelöscht.
+        </p>
+        <div className="learner-grid" role="group" aria-label="Personen entfernen">
+          {learners.map((player) => {
+            const info = tiles?.(player);
+            return (
+              <button
+                key={player.id}
+                type="button"
+                className={`learner-tile is-editing ${info ? `tone-${info.tone}` : ''}`}
+                style={{ '--c': player.color } as CSSProperties}
+                aria-label={`${player.name} entfernen`}
+                onClick={() => {
+                  haptic(12);
+                  removeLearnerWithUndo(stackId, player.name);
+                }}
+              >
+                <Avatar name={player.name} color={player.color} size={34} />
+                <span className="learner-tile__text">
+                  <span className="learner-tile__name">{player.name}</span>
+                  {info && <span className="learner-tile__status">{info.label}</span>}
+                </span>
+                <span className="learner-tile__remove" aria-hidden="true">
+                  <Icon name="x" size={16} strokeWidth={3.2} />
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="learner-picker">

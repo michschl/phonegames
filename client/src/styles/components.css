@@ -2225,6 +2225,30 @@ button.list__item:active {
   right: -6px;
 }
 
+.learner-tile.is-editing {
+  border-style: dashed;
+}
+
+/* While editing «Wer lernt?»: the round red cross that removes the person. */
+.learner-tile__remove {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2.5px solid var(--ink);
+  background: var(--red);
+  color: var(--paper);
+}
+
+.learner-picker__hint {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
 .learner-tile--add {
   justify-content: center;
   border-style: dashed;
