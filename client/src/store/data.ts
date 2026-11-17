@@ -60,6 +60,8 @@ interface DataState {
   /** Moves a card in the person's Kartenkasten after an answer. */
   recordAnswer(stackId: string, player: string, cardId: string, correct: boolean): void;
   resetProgress(stackId: string, player: string): void;
+  /** Brings back a Kartenkasten after «Rückgängig». */
+  restoreProgress(entry: LearnProgress): void;
   applyRemote(payload: SyncPayload, sentRevision: number): void;
   resetFor(ownerId: string | null): void;
 }
@@ -250,6 +252,13 @@ export const useData = create<DataState>()(
         const players = [...group.players];
         players.splice(Math.min(index, players.length), 0, player);
         get().updateGroup(groupId, { players });
+      },
+
+      restoreProgress(entry) {
+        set((s) => ({
+          progress: { ...s.progress, [entry.id]: { ...entry, deleted: false, updatedAt: stamp() } },
+          revision: s.revision + 1,
+        }));
       },
 
       resetProgress(stackId, player) {

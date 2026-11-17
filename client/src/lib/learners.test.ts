@@ -53,6 +53,20 @@ describe('collectLearners', () => {
     expect(names(list)).toEqual(['Mama']);
   });
 
+  it('leaves out people removed from the stack – unless they have a Kartenkasten for it', () => {
+    const sources = {
+      progress: [progress('s1', 'Lina', 20), progress('s2', 'Noah', 30)],
+      groups: [group('familie', ['Mia', 'Ben'])],
+      learnGroupId: 'familie',
+      self: 'Mama',
+      extra: ['Elia'],
+      hidden: ['mia', 'mama', 'elia', 'noah', 'lina'],
+    };
+    expect(names(collectLearners({ ...sources, stackId: 's1' }))).toEqual(['Lina', 'Ben']);
+    // The list belongs to a stack: without one, everyone is offered.
+    expect(names(collectLearners({ ...sources, stackId: null }))).toEqual(['Mia', 'Ben', 'Mama', 'Elia', 'Noah', 'Lina']);
+  });
+
   it('gives names without a group a stable colour', () => {
     expect(learnerColor('Lina')).toBe(learnerColor(' lina '));
     expect(learnerColor('Lina')).toMatch(/^#[0-9a-f]{6}$/);
