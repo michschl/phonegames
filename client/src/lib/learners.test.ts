@@ -26,7 +26,7 @@ const group = (id: string, names: string[], color = '#5b8cff'): PlayerGroup => (
 const names = (list: { name: string }[]) => list.map((p) => p.name);
 
 describe('collectLearners', () => {
-  it('lists who learned the stack first (latest first), then the Spickzettel group, oneself, added names and others', () => {
+  it('lists who learned the stack first (latest first), then the group last used for Lernen, oneself, added names and others', () => {
     const list = collectLearners({
       stackId: 's1',
       progress: [progress('s1', 'Ben', 10), progress('s1', 'Lina', 20), progress('s2', 'Noah', 30)],

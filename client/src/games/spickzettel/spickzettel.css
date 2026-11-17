@@ -1,123 +1,3 @@
-/* =============================================== Spickzettel: setup screen */
-
-.stack-picker {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 10px;
-}
-
-.stack-option {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: var(--radius);
-  background: var(--paper);
-  border: var(--border);
-  box-shadow: var(--shadow-sm);
-  text-align: left;
-  transition:
-    transform 0.12s,
-    box-shadow 0.12s,
-    background 0.2s;
-}
-
-.stack-option:active {
-  transform: translateY(3px);
-  box-shadow: none;
-}
-
-.stack-option.is-active {
-  background: var(--cyan-soft);
-}
-
-.stack-option__emoji {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-  border: 2px solid var(--ink);
-  background: var(--yellow-soft);
-  font-size: 22px;
-  transform: rotate(-4deg);
-}
-
-.stack-option__body {
-  display: grid;
-  flex: 1;
-  min-width: 0;
-}
-
-.stack-option__title {
-  font-weight: 800;
-  overflow-wrap: break-word;
-}
-
-.stack-option__meta {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--muted);
-}
-
-.stack-option__radio {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  border: 2.5px solid var(--ink);
-  background: var(--paper);
-}
-
-.stack-option.is-active .stack-option__radio {
-  background: var(--yellow);
-}
-
-.stack-picker__caption {
-  margin: -4px 0 10px;
-  font-size: 13.5px;
-  font-weight: 700;
-  color: var(--muted);
-}
-
-.stack-chooser__search {
-  width: 100%;
-  min-height: 48px;
-  margin-bottom: 12px;
-  padding: 0 14px;
-  border-radius: var(--radius);
-  border: var(--border);
-  background: var(--paper);
-  color: var(--ink);
-  font: inherit;
-  font-weight: 600;
-}
-
-.stack-picker__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 12px;
-}
-
-.stack-start {
-  justify-items: stretch;
-}
-
-.stack-start__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.stack-mode-hint {
-  margin-top: 10px;
-}
-
 /* ----------------------------------------------------- Lückentext gap */
 
 .cloze-blank {
@@ -863,20 +743,6 @@
   border-style: dashed;
 }
 
-/* Setup screen: modes grouped by who plays. */
-.mode-group + .mode-group {
-  margin-top: 12px;
-}
-
-.mode-group__title {
-  margin: 0 0 6px;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
 /* End of a Kartenkasten round. */
 .streak-note {
   margin: 0;
@@ -892,5 +758,27 @@
   display: block;
   color: var(--ink);
   font-size: 1.1em;
+}
+
+/* «Lernen»: search in a long stack list. */
+.stack-search {
+  width: 100%;
+  min-height: 48px;
+  margin-bottom: 12px;
+  padding: 0 14px;
+  border-radius: var(--radius);
+  border: var(--border);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+}
+
+/* «Wer spielt mit?»: what the mode is about, in one sentence. */
+.together__text {
+  margin: 4px 0 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink-2);
 }
 

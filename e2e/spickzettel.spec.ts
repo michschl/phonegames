@@ -134,25 +134,27 @@ test('Wer lernt? Namenstafeln zeigen, wer wie viele Karten fällig hat', async (
   await expect(page.locator('.group-card', { hasText: 'Einmaleins' }).locator('.due-pill')).toHaveText('2 fällig');
 });
 
-test('Stapelwahl: drei Vorschläge und «Anderer Stapel» mit Suche', async ({ page }) => {
-  await register(page);
+test('Lernen: fällige Stapel zuerst, Suche ab sieben Stapeln, der alte Startbildschirm führt hierher', async ({ page }) => {
+  await register(page, 'Lea');
   for (const title of ['Unité 5', 'Kantone', 'Planeten', 'Bruchrechnen', 'Unité 6', 'Geschichte', 'Englisch']) {
     await createStack(page, title, ['eins = 1', 'zwei = 2', 'drei = 3', 'vier = 4']);
   }
-  // Playing together: the setup screen suggests stacks.
-  await page.goto('/spiel/spickzettel');
-  const suggested = page.locator('.stack-picker:not(.stack-chooser) .stack-option');
-  await expect(suggested).toHaveCount(3);
-  await page.getByRole('button', { name: 'Anderer Stapel (7)' }).click();
-  await expect(page.locator('.stack-chooser .stack-option')).toHaveCount(7);
-  await expectAccessible(page);
+  // «Planeten» has a card due again – it comes first, then the most recent stacks.
+  await page.goto('/lernen');
+  await page.locator('.group-card', { hasText: 'Planeten' }).click();
+  await startLearning(page);
+  await learnRound(page, ['eins']);
+  await endGame(page);
+  await page.goto('/lernen');
+  await expect(page.locator('.group-card__name').first()).toHaveText('Planeten');
+  await expect(page.locator('.group-card__name').nth(1)).toHaveText('Englisch');
   await page.getByLabel('Stapel oder Fach suchen').fill('unite');
-  await expect(page.locator('.stack-chooser .stack-option__title')).toHaveText(['Unité 5', 'Unité 6']);
-  await page.getByLabel('Stapel oder Fach suchen').fill('');
-  await page.locator('.stack-chooser .stack-option', { hasText: 'Kantone' }).click();
-  await expect(page.locator('.sheet')).toHaveCount(0);
-  await expect(suggested).toHaveCount(3);
-  await expect(page.locator('.stack-option.is-active')).toContainText('Kantone');
+  await expect(page.locator('.group-card__name')).toHaveText(['Unité 6', 'Unité 5']);
+  await expectAccessible(page);
+  // The setup screen of the game is gone: it leads to «Lernen».
+  await page.goto('/spiel/spickzettel');
+  await expect(page).toHaveURL(/\/lernen$/);
+  await expect(page.locator('h1')).toHaveText('Lernen');
 });
 
 /** progressId() of the app: FNV-1a over the normalised name. */
@@ -220,9 +222,8 @@ test('Lernserie: Tage in Folge auf der Namenstafel und nach der Runde, Duell geg
   await expect(page.locator('.streak-note')).toHaveText('🔥 3 Tage in Folge gelernt – weiter so!');
   // Ben learns the same stack and is in the same group: the Duell is suggested against him.
   await page.getByRole('link', { name: 'Duell gegen Ben' }).click();
-  await expect(page).toHaveURL(/\/spiel\/spickzettel/);
-  await expect(page.getByRole('radio', { name: /Duell/ })).toHaveAttribute('aria-checked', 'true');
+  await expect(page).toHaveURL(/\/lernen\/[^/]+\/duell\?gruppe=/);
   await expect(page.locator('.group-pill.is-active')).toContainText('Familie');
-  await expect(page.locator('.start-bar .btn')).toHaveText('Spiel starten · 2 Personen');
+  await expect(page.locator('.start-bar .btn')).toHaveText('Duell starten · 2 Personen');
 });
 

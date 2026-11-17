@@ -3,10 +3,7 @@ import type { LearnMode } from '../../../../shared/types.ts';
 import type { GameDefinition, GameSettingsProps } from '../types.ts';
 import { OptionRow, SettingsPanel } from '../shared/settings.tsx';
 import { TurnSettingsRows } from '../shared/turnSettings.tsx';
-import { modeFits } from '../../lib/learn.ts';
-import { useStack } from '../../store/data.ts';
 import { isSoloMode } from './modes.ts';
-import { Prepare } from './Prepare.tsx';
 
 export interface SpickzettelSettings {
   stackId: string | null;
@@ -67,20 +64,18 @@ function Settings({ value, onChange }: GameSettingsProps<SpickzettelSettings>) {
   return null;
 }
 
-function useBlocker(settings: SpickzettelSettings): string | null {
-  const stack = useStack(settings.stackId);
-  if (!stack) return 'Wähle zuerst einen Lernstapel';
-  // Prepare offers only the modes that fit – none fits when the stack is too small.
-  if (isSoloMode(settings.mode) || !modeFits(settings.mode, stack)) return 'Zu wenige Karten zum Zusammenspielen';
-  return null;
+/** Where Lernen lives for these settings: «Wer spielt mit?» of a mode played together, else the stack. */
+function pathFor(settings: SpickzettelSettings): string {
+  if (!settings.stackId) return '/lernen';
+  return isSoloMode(settings.mode) ? `/lernen/${settings.stackId}` : `/lernen/${settings.stackId}/${settings.mode}`;
 }
 
 export const spickzettel: GameDefinition<SpickzettelSettings> = {
   id: 'spickzettel',
-  name: 'Spickzettel',
+  name: 'Lernen',
   tagline: 'Schulstoff spielend repetieren',
   description:
-    'Fotografiere ein Wörtliblatt, einen Lückentext oder eine Heftseite – Phoni macht Lernkarten daraus. Lerne allein mit dem Kartenkasten oder dem Lückentext, zu zweit im Duell, im Team in der Blitzrunde oder schätzt gemeinsam Zahlen und Jahreszahlen.',
+    'Fotografiere ein Wörtliblatt, einen Lückentext oder eine Heftseite – Phoni macht Lernkarten daraus. Lerne allein mit dem Kartenkasten oder dem Lückentext, zu zweit im Duell, im Team in der Blitzrunde oder schätzt gemeinsam Zahlen und Jahreszahlen. Alles im Tab «Lernen».',
   emoji: '📝',
   colors: ['#4d7cff', '#2ec5ff'],
   minPlayers: 1,
@@ -89,14 +84,9 @@ export const spickzettel: GameDefinition<SpickzettelSettings> = {
   age: 'ab 7 J.',
   tags: ['Lernen', 'Schule', 'Allein', 'Teams'],
   status: 'available',
-  // Learning alone, the stacks and who has cards due live in the «Lernen» tab.
+  // Everything happens in the «Lernen» tab: stacks, learning alone and «Wer spielt mit?» for playing together.
   href: '/lernen',
-  rules: [
-    'Wähle einen Lernstapel. Neue Stapel erstellst du – und allein lernst du – unter «Lernen».',
-    'Duell: Das Handy liegt zwischen zwei Personen. Wer zuerst richtig tippt, holt den Punkt – falsch getippt sperrt kurz.',
-    'Blitzrunde: Zwei Teams. Eine Person liest vor und sieht die Antwort, ihr Team antwortet gegen die Zeit.',
-    'Schätzrunde: Alle schätzen Zahlen und Jahreszahlen geheim. Wer am nächsten liegt, punktet.',
-  ],
+  pathFor,
   defaultSettings: {
     stackId: null,
     mode: 'duell',
@@ -108,10 +98,7 @@ export const spickzettel: GameDefinition<SpickzettelSettings> = {
     estimateQuestions: 10,
     clozeInput: 'bank',
   },
-  prepareKeys: ['stackId', 'mode'],
-  Prepare,
   Settings,
   playersNeeded: (settings) => (settings.mode === 'blitz' ? 4 : settings.mode === 'duell' ? 2 : 1),
-  useBlocker,
   Play: lazy(() => import('./SpickzettelGame.tsx')),
 };

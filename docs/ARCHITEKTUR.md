@@ -250,7 +250,7 @@ Die Typen stehen in [`shared/types.ts`](../shared/types.ts).
 
 ## Lernstapel und Foto-Auswertung
 
-Das Lernspiel «Spickzettel» arbeitet mit **Lernstapeln** (Konzept: [KONZEPT-LERNSTAPEL.md](KONZEPT-LERNSTAPEL.md)).
+«Lernen» (früher «Spickzettel») arbeitet mit **Lernstapeln** (Konzept: [KONZEPT-LERNSTAPEL.md](KONZEPT-LERNSTAPEL.md)).
 
 - **Erfassen:** Die App verkleinert Fotos im Browser auf höchstens 2000 px (JPEG) und schickt bis zu 6 an
   `POST /api/learn/extract`. Der Server prüft Format und Magic Bytes, das Monatslimit pro Person und die globale

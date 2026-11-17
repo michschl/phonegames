@@ -493,8 +493,8 @@ export function suggestedModes(stack: LearnStack): Set<LearnMode> {
 /* -------------------------------------------------------- stack choice */
 
 /**
- * The stacks suggested on the setup screen: due cards first (most first), then the ones learned
- * or edited most recently. The chosen stack is always among them.
+ * Stacks in the order they are most likely wanted: due cards first (most first), then the ones
+ * learned or edited most recently. The chosen stack is always among the first `count`.
  */
 export function recommendStacks(
   stacks: LearnStack[],

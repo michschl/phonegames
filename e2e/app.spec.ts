@@ -50,8 +50,8 @@ test('Jedes Spiel hat eine Startseite mit Weg zurück', async ({ page }) => {
   await page.goto('/entdecken');
   const links = await page.locator('a[href^="/spiel/"]').evaluateAll((els) => [...new Set(els.map((e) => e.getAttribute('href')!))]);
   expect(links.length).toBeGreaterThanOrEqual(17);
-  // Spickzettel has its own tab: the card leads to «Lernen».
-  await expect(page.locator('a[href="/lernen"]').filter({ hasText: 'Spickzettel' }).first()).toBeVisible();
+  // Lernen has its own tab: its card in the catalogue leads there.
+  await expect(page.locator('a[href="/lernen"]', { hasText: 'Schulstoff spielend repetieren' }).first()).toBeVisible();
   await page.setViewportSize({ width: 320, height: 720 });
   for (const href of links) {
     await page.goto(href);

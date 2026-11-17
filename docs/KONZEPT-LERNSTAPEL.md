@@ -1,4 +1,4 @@
-# Konzept: Lernspiel «Spickzettel» (Arbeitstitel)
+# Konzept: Lernen (früher «Spickzettel»)
 
 Schulstoff spielerisch repetieren – im selben Look wie die Partyspiele. Lerninhalte werden mit ein paar Fotos
 erfasst, eine KI in der Schweiz macht daraus Lernkarten, und derselbe Kartenstapel lässt sich danach in
@@ -244,7 +244,7 @@ direkte Route `/lernen/<stapel>/<kasten|luecke>?person=…`, «Heute fällig» m
 |---|---|
 | `/lernen` (Tab) | «Heute dran»: eine Zeile pro Person und Stapel, ein Tipp startet die erste fällige Karte · «Alles erledigt» mit dem nächsten Termin · alle Stapel mit «fällig»-Zahl und Menü (Lernen, Bearbeiten, Löschen) · beim ersten Mal eine Einführung in drei Schritten mit «Foto aufnehmen» und «Karten abtippen» |
 | `/lernen/<stapel>` | «Wer lernt?» · Kartenkasten der gewählten Person mit Fächern, Stand und Antwortart (Aufdecken, Auswahl, Tippen – pro Person gemerkt) · «Weitere Spielformen» mit je einem Satz: Lückentext (allein, direkt), Duell, Blitzrunde, Schätzrunde (führen zum Startbildschirm mit Gruppe) · Karten pro Runde und Lückentext-Eingabe unter «Weitere Einstellungen» · unten der grosse Knopf «12 Karten lernen · Lina» |
-| `/spiel/spickzettel` | Nur noch zum Zusammenspielen: Stapel, Spielform (zu zweit, mit mehreren), Spielgruppe, Einstellungen; vier kurze Regeln statt sieben |
+| `/spiel/spickzettel` | Nur noch zum Zusammenspielen: Stapel, Spielform (zu zweit, mit mehreren), Spielgruppe, Einstellungen; vier kurze Regeln statt sieben – später ersetzt durch «Wer spielt mit?» (siehe unten) |
 
 Die Spickzettel-Karten in «Spiele» und «Entdecken» führen zu `/lernen` (`GameDefinition.href`), `/stapel` leitet
 dorthin um, Bearbeiten (`/stapel/<id>`) kehrt zur Stapelseite zurück. Nach dem Speichern eines neuen Stapels geht es
@@ -265,6 +265,20 @@ direkt in die erste Runde, wenn klar ist, wer lernt – sonst auf die Stapelseit
 |---|---|---|
 | Neues Blatt → erste Karte | 10 Tipps + Name eintippen | 6 Tipps; ein neuer Name nur einmal |
 | Fällige Karten lernen | 3 Tipps | 1 Tipp («Heute fällig» auf der Startseite oder «Heute dran») |
+
+**Ein Ort, ein Name:** Nach Etappe 2 gab es zwei Wege zu denselben Entscheidungen – Stapel und Spielform liessen
+sich im Tab «Lernen» und nochmals auf dem Startbildschirm des Spiels wählen, und es hiess mal «Spickzettel», mal
+«Lernen». Jetzt:
+
+- Der Bereich heisst überall **«Lernen»** (Tab, Karte in «Spiele» und «Entdecken», Texte). Intern bleibt die ID
+  `spickzettel` – sie steht in Bibliotheken und Einstellungen der Nutzerinnen und Nutzer.
+- Zusammenspielen startet auf der Stapelseite: «Duell», «Blitzrunde» oder «Schätzrunde» führen zu
+  `/lernen/<stapel>/<spielform>` – **«Wer spielt mit?»** mit Spielgruppe, Einstellungen und Start. Stapel und
+  Spielform werden nicht nochmals gefragt. Nach dem Spiel geht es dorthin zurück, bereit für eine Revanche.
+- Den Startbildschirm `/spiel/spickzettel` gibt es nicht mehr; er leitet weiter (`GameDefinition.pathFor`), ebenso
+  «Weiterspielen» auf der Startseite.
+- Die Stapelliste in «Lernen» zeigt zuerst Stapel mit fälligen Karten, dann die zuletzt gelernten oder bearbeiteten
+  (`recommendStacks`), ab 7 Stapeln mit Suche nach Titel oder Fach.
 
 ## Offene Punkte
 
