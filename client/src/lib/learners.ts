@@ -23,7 +23,12 @@ export function sameName(a: string | null | undefined, b: string | null | undefi
 
 /** A Kartenkasten someone actually learns with – not deleted, not removed, with cards. */
 function isLive(entry: LearnProgress): boolean {
-  return !entry.deleted && !entry.removed && Object.keys(entry.cards).length > 0;
+  return isOffered(entry) && Object.keys(entry.cards).length > 0;
+}
+
+/** Who has a Kartenkasten for a stack – also an empty one: the name was added in «Wer lernt?». */
+function isOffered(entry: LearnProgress): boolean {
+  return !entry.deleted && !entry.removed;
 }
 
 export interface LearnerSources {
@@ -40,8 +45,9 @@ export interface LearnerSources {
 }
 
 /**
- * Everyone who can learn: who learned this stack, the members of the Spickzettel group, the
- * account holder, names added on this device and who learned other stacks. Party groups are
+ * Everyone who can learn: who has a Kartenkasten for this stack (also an empty one – added in «Wer
+ * lernt?»), the members of the Spickzettel group, the account holder, names older versions kept on
+ * this device and who learns other stacks. Party groups are
  * not offered as a whole – the friends from the games evening do not learn French vocabulary.
  * People removed from this stack are left out – but whoever has a Kartenkasten for it is shown.
  */
@@ -62,7 +68,7 @@ export function collectLearners({ stackId, progress, groups, learnGroupId, self,
     if (!key || found.has(key) || (left.has(key) && !learnsThis)) return;
     found.set(key, { id: learnerId(name), name, color: colors.get(key) ?? learnerColor(name) });
   };
-  const live = progress.filter(isLive).sort((a, b) => b.updatedAt - a.updatedAt);
+  const live = progress.filter(isOffered).sort((a, b) => b.updatedAt - a.updatedAt);
   if (stackId) for (const entry of live) if (entry.stackId === stackId) add(entry.player, true);
   const learnGroup = groups.find((group) => group.id === learnGroupId && !group.deleted);
   for (const player of learnGroup?.players ?? []) add(player.name);

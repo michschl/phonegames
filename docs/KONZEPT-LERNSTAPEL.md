@@ -202,14 +202,18 @@ interface Karte {
 - **Antworten eintippen** als dritte Antwortprüfung im Kartenkasten (siehe Etappe 2).
 - **Allein lernen ohne Spielgruppe:** Kartenkasten und Lückentext brauchen keine Gruppe mehr. Der Kartenkasten
   gehört einem Namen; «Wer lernt?» bietet an, wer den Stapel schon gelernt hat, die Personen der zuletzt für
-  Spickzettel gewählten Gruppe, die angemeldete Person und hier hinzugefügte Namen (`collectLearners`). Vorausgewählt
+  Spickzettel gewählten Gruppe, die angemeldete Person und hinzugefügte Namen (`collectLearners`). Vorausgewählt
   ist, wer den Stapel zuletzt auf diesem Gerät gelernt hat. Der Start führt direkt zur ersten Karte.
+- **Personen hinzufügen** («Person hinzufügen» in «Wer lernt?»): Der Name bekommt gleich einen leeren Kartenkasten
+  für den Stapel. Der wird synchronisiert – so steht der Name auf allen Geräten, samt Lernstand, und wird auch bei
+  den anderen Stapeln angeboten. Namen, die ältere Versionen nur auf dem Gerät gemerkt hatten (`learnerNames`),
+  wandern beim Öffnen einer Stapelseite so in die synchronisierten Daten.
 - **Personen entfernen:** «Bearbeiten» neben «Wer lernt?» – ein Tipp auf eine Person entfernt sie aus diesem Stapel,
   auf allen Geräten, mit «Rückgängig». Der Lernstand der Person für den Stapel wird zur Markierung «entfernt»
   (`LearnProgress.removed`, leerer Kartenkasten, keine Lerntage) und synchronisiert. Bewusst kein gelöschter
-  Eintrag: Die werden nach 180 Tagen aufgeräumt, die Person käme zurück. Ein nur auf diesem Gerät hinzugefügter
-  Name, der nirgends sonst gelernt hat, verschwindet ganz. Wer wieder hinzugefügt wird oder den Stapel doch lernt
-  (z. B. im Duell), ist wieder dabei – auch auf den anderen Geräten. In anderen Stapeln bleibt die Person.
+  Eintrag: Die werden nach 180 Tagen aufgeräumt, die Person käme zurück. Ein Name, der nur für diesen Stapel
+  hinzugefügt wurde, verschwindet damit ganz. Wer wieder hinzugefügt wird oder den Stapel doch lernt (z. B. im
+  Duell), ist wieder dabei – auch auf den anderen Geräten. In anderen Stapeln bleibt die Person.
 - **«Speichern & lernen»** nach dem Prüfen: Ist klar, wer lernt (wer den Stapel schon gelernt hat oder die einzige
   Person, die überhaupt lernt), startet gleich die erste Runde; sonst fragt «Wer lernt?».
 - **Spielformen nach Situation:** «Allein» (Kartenkasten, Lückentext), «Zu zweit» (Duell), «Mit mehreren»

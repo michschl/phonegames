@@ -1,8 +1,6 @@
 import type { LearnStack, Player, PlayerGroup } from '../../../shared/types.ts';
 import { progressId } from '../lib/learn.ts';
-import { sameName } from '../lib/learners.ts';
 import { useData } from './data.ts';
-import { useSettings } from './settings.ts';
 import { toast } from './ui.ts';
 
 /*
@@ -47,27 +45,18 @@ export function removePlayerWithUndo(group: PlayerGroup, player: Player) {
 
 /**
  * Removes a person from «Wer lernt?» of a stack, on every device: the Kartenkasten for it is emptied and
- * the person is no longer offered there. A name only added on this device and learned nowhere else goes
- * altogether.
+ * the person is no longer offered there. A name added only for this stack goes altogether.
  */
 export function removeLearnerWithUndo(stackId: string, name: string) {
   const data = useData.getState();
-  const settings = useSettings.getState();
   const entry = data.progress[progressId(stackId, name)];
   const kept = entry && !entry.deleted && !entry.removed ? entry : null;
-  const added = settings.learnerNames.find((n) => sameName(n, name));
-  const learnsElsewhere = Object.values(data.progress).some(
-    (e) => !e.deleted && e.stackId !== stackId && sameName(e.player, name) && Object.keys(e.cards).length > 0,
-  );
-  const forget = !!added && !learnsElsewhere;
   data.removeLearner(stackId, name);
-  if (forget) settings.removeLearnerName(added);
   undoToast(
     `${name} entfernt.`,
     () => {
       if (kept) useData.getState().restoreProgress(kept);
       else useData.getState().unhideLearner(stackId, name);
-      if (forget) useSettings.getState().addLearnerName(added);
     },
     `${name} ist wieder dabei.`,
   );

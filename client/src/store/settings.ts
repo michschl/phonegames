@@ -20,7 +20,10 @@ interface SettingsState {
   /** Spickzettel: who learned a stack last on this device (stack id → name), and who learned last at all. */
   lastLearnerByStack: Record<string, string>;
   lastLearner: string | null;
-  /** Spickzettel: names added as learners on this device that are in no group yet. */
+  /**
+   * Lernen: names older versions added as learners only on this device. Since then a name added in «Wer
+   * lernt?» is synchronised (an empty Kartenkasten); these move there when a stack page opens.
+   */
   learnerNames: string[];
   /** Spickzettel: how each person answers in the Kartenkasten (normalised name → mode). */
   learnCheck: Record<string, 'self' | 'choice' | 'type'>;
@@ -34,10 +37,9 @@ interface SettingsState {
   setVoiceId(voiceId: string | null): void;
   dismissHint(key: string): void;
   setLastLearner(stackId: string, name: string): void;
-  addLearnerName(name: string): void;
   setLearnCheck(name: string, check: 'self' | 'choice' | 'type'): void;
   setLearnDirection(stackId: string, direction: LearnDirection): void;
-  removeLearnerName(name: string): void;
+  clearLearnerNames(): void;
 }
 
 export const useSettings = create<SettingsState>()(
@@ -66,9 +68,7 @@ export const useSettings = create<SettingsState>()(
         set((s) => ({ lastLearnerByStack: { ...s.lastLearnerByStack, [stackId]: name }, lastLearner: name })),
       setLearnCheck: (name, check) => set((s) => ({ learnCheck: { ...s.learnCheck, [normalize(name)]: check } })),
       setLearnDirection: (stackId, direction) => set((s) => ({ learnDirection: { ...s.learnDirection, [stackId]: direction } })),
-      removeLearnerName: (name) => set((s) => ({ learnerNames: s.learnerNames.filter((n) => normalize(n) !== normalize(name)) })),
-      addLearnerName: (name) =>
-        set((s) => ({ learnerNames: s.learnerNames.includes(name) ? s.learnerNames : [...s.learnerNames, name].slice(-30) })),
+      clearLearnerNames: () => set({ learnerNames: [] }),
     }),
     { name: 'phonegames-settings', version: 1 },
   ),

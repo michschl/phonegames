@@ -59,6 +59,11 @@ interface DataState {
   restorePlayer(groupId: string, player: Player, index: number): void;
   /** Moves a card in the person's Kartenkasten after an answer. */
   recordAnswer(stackId: string, player: string, cardId: string, correct: boolean): void;
+  /**
+   * Adds a person to «Wer lernt?» of a stack: an empty Kartenkasten, synchronised – so the name shows on
+   * every device, together with what the person learns. Also brings back someone removed from the stack.
+   */
+  addLearner(stackId: string, player: string): void;
   /** Removes a person from «Wer lernt?» of a stack on every device – their Kartenkasten for it is emptied. */
   removeLearner(stackId: string, player: string): void;
   /** Offers a removed person again (added again or «Rückgängig»). */
@@ -263,6 +268,22 @@ export const useData = create<DataState>()(
           progress: { ...s.progress, [entry.id]: { ...rest, deleted: false, updatedAt: stamp() } },
           revision: s.revision + 1,
         }));
+      },
+
+      addLearner(stackId, player) {
+        const id = progressId(stackId, player);
+        const current = get().progress[id];
+        if (current && !current.deleted && !current.removed) return;
+        const entry: LearnProgress = {
+          id,
+          stackId,
+          player: player.trim().slice(0, LIMITS.nameMax),
+          cards: {},
+          days: [],
+          updatedAt: stamp(),
+          deleted: false,
+        };
+        set((s) => ({ progress: { ...s.progress, [id]: entry }, revision: s.revision + 1 }));
       },
 
       removeLearner(stackId, player) {

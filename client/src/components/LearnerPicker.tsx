@@ -7,7 +7,6 @@ import { sameName } from '../lib/learners.ts';
 import { sound } from '../lib/audio.ts';
 import { useData } from '../store/data.ts';
 import { useStreaks } from '../store/learners.ts';
-import { useSettings } from '../store/settings.ts';
 import { removeLearnerWithUndo } from '../store/undo.ts';
 import { Icon } from './Icon.tsx';
 import { Avatar } from './ui.tsx';
@@ -32,8 +31,7 @@ export function LearnerPicker({
 }) {
   const tiles = useKastenTiles(stackId);
   const streak = useStreaks();
-  const addLearnerName = useSettings((s) => s.addLearnerName);
-  const unhideLearner = useData((s) => s.unhideLearner);
+  const addLearner = useData((s) => s.addLearner);
   const [adding, setAdding] = useState(learners.length === 0);
   const [name, setName] = useState('');
 
@@ -42,9 +40,8 @@ export function LearnerPicker({
     const trimmed = name.trim().slice(0, LIMITS.nameMax);
     if (!trimmed) return;
     const existing = learners.find((p) => sameName(p.name, trimmed));
-    if (!existing) addLearnerName(trimmed);
-    // Removed from this stack before: added again, so back in the list.
-    unhideLearner(stackId, trimmed);
+    // New here (or removed from this stack before): saved with the stack, so every device shows the name.
+    if (!existing) addLearner(stackId, trimmed);
     sound.pop();
     haptic(10);
     onSelect(existing?.name ?? trimmed);

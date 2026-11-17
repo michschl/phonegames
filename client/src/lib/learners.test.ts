@@ -43,14 +43,15 @@ describe('collectLearners', () => {
     expect(list).toEqual([{ id: 'learner-lina', name: 'LINA', color: '#ff3d8b' }]);
   });
 
-  it('ignores deleted and empty progress', () => {
-    const list = collectLearners({
-      progress: [progress('s1', 'Weg', 1, { deleted: true }), progress('s1', 'Leer', 2, { cards: {} })],
+  it('ignores deleted progress, but offers names added without learning yet – on every stack', () => {
+    const sources = {
+      progress: [progress('s1', 'Weg', 1, { deleted: true }), progress('s1', 'Neu', 2, { cards: {} })],
       groups: [],
       self: 'Mama',
       extra: [],
-    });
-    expect(names(list)).toEqual(['Mama']);
+    };
+    expect(names(collectLearners({ ...sources, stackId: 's1' }))).toEqual(['Neu', 'Mama']);
+    expect(names(collectLearners({ ...sources, stackId: 's2' }))).toEqual(['Mama', 'Neu']);
   });
 
   it('leaves out people removed from the stack on any device – until they learn it again', () => {
