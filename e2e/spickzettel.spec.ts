@@ -159,7 +159,19 @@ test('Lernen: fällige Stapel zuerst, Suche ab sieben Stapeln, der alte Startbil
   await expect(page.locator('.group-card__name').nth(1)).toHaveText('Englisch');
   await page.getByLabel('Stapel oder Fach suchen').fill('unite');
   await expect(page.locator('.group-card__name')).toHaveText(['Unité 6', 'Unité 5']);
+  // «So geht’s» explains Lernen in five steps.
+  await page.locator('summary', { hasText: 'So geht’s' }).click();
+  await expect(page.locator('.rules li')).toHaveCount(5);
   await expectAccessible(page);
+  // A new stack is always where the stacks are: next to the heading of a long list and at its end.
+  await expect(page.locator('.section__head', { hasText: 'Stapel' }).getByRole('link', { name: 'Neuer Stapel' })).toBeVisible();
+  await page.getByLabel('Stapel oder Fach suchen').fill('');
+  const add = page.locator('.stack-add');
+  await add.scrollIntoViewIfNeeded();
+  await expect(add).toContainText('Foto aufnehmen oder Karten abtippen');
+  await add.click();
+  await expect(page).toHaveURL(/\/stapel\/neu$/);
+  await page.goBack();
   // The setup screen of the game is gone: it leads to «Lernen».
   await page.goto('/spiel/spickzettel');
   await expect(page).toHaveURL(/\/lernen$/);

@@ -67,6 +67,15 @@ function LearnIntro() {
   );
 }
 
+/** «So geht’s» in «Lernen»: the whole idea in five steps. */
+const HOW_TO = [
+  '«Neuer Stapel»: Wörtliblatt, Heftseite oder Lückentext fotografieren – oder die Karten abtippen. Phoni macht Lernkarten daraus, du prüfst sie kurz.',
+  'Stapel antippen und wählen, wer lernt. Jede Person hat ihren eigenen Kartenkasten – eine Spielgruppe braucht es dafür nicht.',
+  'Im Kartenkasten: gewusst → ein Fach weiter, nicht gewusst → zurück ins erste Fach. Gewusste Karten kommen nach 1, 3, 7 und 14 Tagen wieder.',
+  '«Heute dran» zeigt, wer welche Karten wiederholen soll – die rote Zahl auf dem Tab «Lernen» zählt sie. Ein Tipp, und es geht los.',
+  'Zusammen lernen: auf der Stapelseite unter «Weitere Spielformen» – das Duell zu zweit, Blitzrunde und Schätzrunde in der Gruppe.',
+];
+
 /** From this many stacks the list gets a search field. */
 const SEARCH_FROM = 7;
 
@@ -96,21 +105,18 @@ export function LearnHubPage() {
   const learned = Object.values(progress).some((entry) => !entry.deleted && Object.keys(entry.cards).length > 0);
 
   return (
-    <Page
-      title="Lernen"
-      subtitle={all.length > 0 ? 'Schulstoff als Karten – allein oder zusammen.' : undefined}
-      actions={
-        all.length > 0 && (
-          <Link to="/stapel/neu" className="icon-btn icon-btn--accent" aria-label="Neuer Stapel" viewTransition>
-            <Icon name="plus" />
-          </Link>
-        )
-      }
-    >
+    <Page title="Lernen" subtitle={all.length > 0 ? 'Schulstoff als Karten – allein oder zusammen.' : undefined}>
       {all.length === 0 ? (
         <LearnIntro />
       ) : (
         <>
+          <Fold title="So geht’s" icon="sparkles" meta={`${HOW_TO.length} Schritte`}>
+            <ol className="rules">
+              {HOW_TO.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ol>
+          </Fold>
           <Section title="Heute dran">
             {due.length > 0 ? (
               <DueRows entries={due} />
@@ -122,7 +128,18 @@ export function LearnHubPage() {
               </p>
             )}
           </Section>
-          <Section title="Stapel">
+          <Section
+            title="Stapel"
+            action={
+              // With a longer list the tile at its end is out of sight – the way to a new stack is right here.
+              all.length > 3 && (
+                <Link to="/stapel/neu" className="btn btn--secondary btn--sm" viewTransition>
+                  <Icon name="plus" size={18} />
+                  <span>Neuer Stapel</span>
+                </Link>
+              )
+            }
+          >
             {all.length >= SEARCH_FROM && (
               <input
                 className="stack-search"
@@ -154,6 +171,15 @@ export function LearnHubPage() {
                   <IconButton icon="more" label={`Aktionen für «${stack.title}»`} className="list-row__more" onClick={() => setMenu(stack)} />
                 </div>
               ))}
+              <Link to="/stapel/neu" className="stack-add" viewTransition>
+                <span className="stack-add__icon" aria-hidden="true">
+                  <Icon name="plus" size={26} strokeWidth={2.8} />
+                </span>
+                <span className="stack-add__body">
+                  <strong>Neuer Stapel</strong>
+                  <small>Foto aufnehmen oder Karten abtippen</small>
+                </span>
+              </Link>
             </div>
           </Section>
         </>
