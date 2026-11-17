@@ -110,13 +110,6 @@ export function LearnHubPage() {
         <LearnIntro />
       ) : (
         <>
-          <Fold title="So geht’s" icon="sparkles" meta={`${HOW_TO.length} Schritte`}>
-            <ol className="rules">
-              {HOW_TO.map((step) => (
-                <li key={step}>{step}</li>
-              ))}
-            </ol>
-          </Fold>
           <Section title="Heute dran">
             {due.length > 0 ? (
               <DueRows entries={due} />
@@ -128,6 +121,13 @@ export function LearnHubPage() {
               </p>
             )}
           </Section>
+          <Fold title="So geht’s" icon="sparkles" meta={`${HOW_TO.length} Schritte`}>
+            <ol className="rules">
+              {HOW_TO.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ol>
+          </Fold>
           <Section
             title="Stapel"
             action={
