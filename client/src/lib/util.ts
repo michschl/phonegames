@@ -91,7 +91,6 @@ const NAME_JOINTS: Record<string, string> = {
   Schätzmeister: 'Schätz­meister',
   Zufallsfinger: 'Zufalls­finger',
   Hutspiel: 'Hut­spiel',
-  Spickzettel: 'Spick­zettel',
 };
 
 /**

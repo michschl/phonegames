@@ -6,11 +6,13 @@ const WORDS: Record<string, string> = { 'le chien': 'der Hund', 'la maison': 'da
 test('Duell: falscher Tipp sperrt, wer zuerst richtig tippt, punktet', async ({ page }) => {
   await register(page);
   await createStack(page, 'Wörtli', Object.entries(WORDS).map(([q, a]) => `${q} = ${a}`));
-  // From the stack page to the setup screen of the Duell.
+  // From the stack page straight to «Wer spielt mit?» – stack and mode are already chosen.
   await openMode(page, /Duell/);
-  await expect(page.getByRole('radio', { name: /Duell/ })).toHaveAttribute('aria-checked', 'true');
-  await expect(page.getByRole('radio', { name: /Kartenkasten/ })).toHaveCount(0);
+  await expect(page).toHaveURL(/\/lernen\/[^/]+\/duell$/);
+  await expect(page.locator('h1')).toHaveText('⚔️ Duell');
+  await expect(page.locator('.page__subtitle')).toHaveText('«Wörtli» · zu zweit');
   await createGroup(page, ['Lea', 'Ben', 'Carla']);
+  await expectAccessible(page);
   await page.locator('.start-bar .btn').click();
   await expect(page.getByText('Wer spielt gegeneinander?')).toBeVisible();
   await page.locator('.pick-chip', { hasText: 'Lea' }).click();
@@ -107,9 +109,11 @@ test('Schätzrunde: Volltreffer punkten, weit daneben landet im Kartenkasten', a
   await expect(page.locator('.turn-list li')).toHaveCount(4);
   await page.getByRole('button', { name: 'Beenden', exact: true }).click();
 
-  // Ben's far-off guesses are now due in his Kartenkasten – on the stack page in «Lernen».
-  await page.getByRole('link', { name: 'Alle Stapel' }).click();
-  await page.locator('.group-card', { hasText: 'Schweizer Geschichte' }).click();
+  // After the game «Wer spielt mit?» is ready for another round; back to the stack page:
+  // Ben's far-off guesses are now due in his Kartenkasten.
+  await expect(page).toHaveURL(/\/lernen\/[^/]+\/schaetzen$/);
+  await page.getByRole('button', { name: 'Zurück' }).first().click();
+  await expect(page.locator('h1')).toHaveText('Schweizer Geschichte');
   await expect(page.getByRole('radio', { name: /^Ben/ }).locator('.due-badge')).toHaveText('4');
 });
 

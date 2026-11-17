@@ -1,7 +1,7 @@
 # Spiele entwickeln
 
 Jedes Spiel ist ein eigener Ordner in [`client/src/games/`](../client/src/games/) und wird in
-[`registry.ts`](../client/src/games/registry.ts) eingetragen. Aktuell sind es 18 Spiele (17 Partyspiele und das Lernspiel «Spickzettel»). Katalog, Suche, «Meine Spiele», Spielgruppen,
+[`registry.ts`](../client/src/games/registry.ts) eingetragen. Aktuell sind es 18 Spiele (17 Partyspiele und «Lernen»). Katalog, Suche, «Meine Spiele», Spielgruppen,
 Einstellungen und der Vollbild-Spielmodus funktionieren danach automatisch.
 Regeln («So geht’s») und Einstellungen erscheinen auf dem Startbildschirm des Spiels zugeklappt; bei den
 Einstellungen zeigt ein Etikett, ob sie angepasst wurden.
@@ -114,7 +114,7 @@ Die meisten Spiele bestehen nur aus Inhalten, ein bisschen Logik und diesen Baus
 | `useCountdown`, `TimerRing`, `useStartCountdown`, `CountdownOverlay` | `shared/Timer.tsx` | Zeitlimit mit Ring, Piepsen in den letzten Sekunden, Buzzer am Ende, «3 – 2 – 1»-Start |
 | `TeamTurnGame` | `shared/TeamTurnGame.tsx` | Komplette Engine für Teamspiele (Teams, Weitergeben, Zug mit Zeitlimit, Auswertung mit Korrektur, Sieger) – Pantomime, Verbotene Wörter und Summ-Raten sind damit je ~50 Zeilen |
 | `makeTeams`, `TeamCards`, `ScoreList`, `PlayerPicker`, `fillPerson` | `shared/players.tsx` | Teams einteilen, Ranglisten mit Medaillen, Personen antippen (Abstimmungen; mit `status` farbige Tafeln mit Badges), `{person}` in Karten ersetzen |
-| `EstimateForm`, `CountUp` | `shared/estimate.tsx` | Geheime Zahl-Eingabe («4'478», «1,5») und hochzählende Auflösung mit Ticken – Schätzmeister und Spickzettel-Schätzrunde |
+| `EstimateForm`, `CountUp` | `shared/estimate.tsx` | Geheime Zahl-Eingabe («4'478», «1,5») und hochzählende Auflösung mit Ticken – Schätzmeister und die Schätzrunde in «Lernen» |
 | `drawFresh` | `shared/deck.ts` | Zufällige Karte ziehen, ohne kürzlich gezeigte Karten zu wiederholen (merkt sich das pro Gerät) |
 | `OptionRow`, `ChipSelect`, `SettingsPanel` | `shared/settings.tsx` | Bausteine für die Einstellungen auf dem Startbildschirm |
 | `PackSettingsPanel`, `filterPacks` | `shared/packs.tsx` | Kartenpakete «Familie / Freunde / Party» |
@@ -129,18 +129,16 @@ Die meisten Spiele bestehen nur aus Inhalten, ein bisschen Logik und diesen Baus
 Werkzeuge wie «Zufallsfinger» oder «Flaschendrehen» brauchen keine Namen. Mit `noGroup: true` in der
 Definition entfällt die Gruppenauswahl auf dem Startbildschirm, und `players` ist leer.
 
-### Vorbereitung, die nicht zugeklappt sein darf
+### Spiele mit eigenen Seiten
 
-Manche Spiele brauchen vor dem Start eine Wahl, ohne die es nicht geht – «Spickzettel» etwa den Lernstapel und die
-Spielform. Dafür gibt es in der Definition:
+Die meisten Spiele starten über den gemeinsamen Startbildschirm (`/spiel/<id>`). «Lernen» hat stattdessen einen
+eigenen Tab mit Stapeln, Stapelseite und dem Schritt «Wer spielt mit?». Dafür gibt es in der Definition:
 
 | Feld | Wirkung |
 | --- | --- |
-| `Prepare` | Bereich, der offen über der Spielgruppe steht (bekommt wie `Settings` `value` und `onChange`) |
-| `prepareKeys` | Einstellungen aus `Prepare` – sie setzen das Etikett der Einstellungen nicht auf «Angepasst» |
-| `playersNeeded(settings)` | Mindestzahl Personen je nach Einstellung (sonst `minPlayers`), z. B. 1 für den Kartenkasten, 4 für die Blitzrunde |
-| `useBlocker(settings)` | Hook: Grund, warum noch nicht gestartet werden kann – erscheint auf dem Start-Knopf, z. B. «Wähle zuerst einen Lernstapel» |
-| `href` | Wohin die Spielkarten führen statt zum Startbildschirm – «Spickzettel» hat mit `/lernen` einen eigenen Tab; der Startbildschirm dient dort nur noch den Spielformen zum Zusammenspielen |
+| `href` | Wohin die Spielkarten in «Spiele» und «Entdecken» führen statt zum Startbildschirm, z. B. `/lernen` |
+| `pathFor(settings)` | Wo das Spiel mit diesen Einstellungen zu Hause ist – nach dem Spiel, für «Weiterspielen» und wenn `/spiel/<id>` trotzdem aufgerufen wird (Lernen: «Wer spielt mit?» der letzten Spielform zum Zusammenspielen, sonst der Tab) |
+| `playersNeeded(settings)` | Mindestzahl Personen je nach Einstellung (sonst `minPlayers`), z. B. 2 für das Duell, 4 für die Blitzrunde |
 
 ### Ein Teamspiel in wenigen Zeilen
 

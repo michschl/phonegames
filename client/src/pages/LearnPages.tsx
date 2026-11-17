@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
-import { LIMITS, type LearnStack, type Player } from '../../../shared/types.ts';
+import { LIMITS, type LearnMode, type LearnStack, type Player } from '../../../shared/types.ts';
 import { Mascot } from '../components/Brand.tsx';
 import { Fold } from '../components/Fold.tsx';
 import { Icon } from '../components/Icon.tsx';
@@ -12,15 +12,16 @@ import { BoxRow } from '../games/spickzettel/BoxRow.tsx';
 import { spickzettel, type SpickzettelSettings } from '../games/spickzettel/index.tsx';
 import { isSoloMode, MODES, SITUATIONS, soloLearnPath } from '../games/spickzettel/modes.ts';
 import '../games/spickzettel/spickzettel.css';
+import { sound } from '../lib/audio.ts';
 import { haptic } from '../lib/device.ts';
-import { boxCounts, canPlayChoice, dueCards, dueDayLabel, kastenStatus, modeFits, subjectEmoji } from '../lib/learn.ts';
+import { boxCounts, canPlayChoice, dueCards, dueDayLabel, kastenStatus, modeFits, recommendStacks, subjectEmoji } from '../lib/learn.ts';
 import { learnerColor, learnerId, sameName } from '../lib/learners.ts';
 import { normalize } from '../lib/util.ts';
-import { useData, useDueByStack, useProgress, useStack, useStacks } from '../store/data.ts';
+import { useData, useDueByStack, useGroup, useProgress, useStack, useStacks } from '../store/data.ts';
 import { useDefaultLearner, useDueList, useLearners } from '../store/learners.ts';
 import { useGameSettings, useSettings } from '../store/settings.ts';
 import { deleteStackWithUndo } from '../store/undo.ts';
-import { PlayLoading, usePlayScreen } from './GamePages.tsx';
+import { GroupSection, PlayLoading, usePlayScreen, useSelectedGroup } from './GamePages.tsx';
 
 const SoloLearn = lazy(() => import('../games/spickzettel/SoloLearn.tsx'));
 
@@ -66,14 +67,22 @@ function LearnIntro() {
   );
 }
 
+/** From this many stacks the list gets a search field. */
+const SEARCH_FROM = 7;
+
 /** «Lernen» tab: who has cards due today, and all stacks. */
 export function LearnHubPage() {
-  const stacks = useStacks();
+  const all = useStacks();
   const due = useDueList();
   const dueByStack = useDueByStack();
   const progress = useData((s) => s.progress);
   const navigate = useNavigate();
   const [menu, setMenu] = useState<LearnStack | null>(null);
+  const [query, setQuery] = useState('');
+  // Due first, then what was learned or edited last – and a search field for long lists.
+  const ranked = useMemo(() => recommendStacks(all, progress, dueByStack, null, all.length), [all, progress, dueByStack]);
+  const q = normalize(query);
+  const stacks = q ? ranked.filter((stack) => normalize(`${stack.title} ${stack.subject}`).includes(q)) : ranked;
   // When is something due again – for a calm «Alles erledigt» instead of an empty list.
   const next = useMemo(() => {
     const now = Date.now();
@@ -89,16 +98,16 @@ export function LearnHubPage() {
   return (
     <Page
       title="Lernen"
-      subtitle={stacks.length > 0 ? 'Schulstoff als Karten – allein oder zusammen.' : undefined}
+      subtitle={all.length > 0 ? 'Schulstoff als Karten – allein oder zusammen.' : undefined}
       actions={
-        stacks.length > 0 && (
+        all.length > 0 && (
           <Link to="/stapel/neu" className="icon-btn icon-btn--accent" aria-label="Neuer Stapel" viewTransition>
             <Icon name="plus" />
           </Link>
         )
       }
     >
-      {stacks.length === 0 ? (
+      {all.length === 0 ? (
         <LearnIntro />
       ) : (
         <>
@@ -114,6 +123,18 @@ export function LearnHubPage() {
             )}
           </Section>
           <Section title="Stapel">
+            {all.length >= SEARCH_FROM && (
+              <input
+                className="stack-search"
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Stapel oder Fach suchen"
+                aria-label="Stapel oder Fach suchen"
+                enterKeyHint="search"
+              />
+            )}
+            {stacks.length === 0 && <p className="settings-panel__hint">Kein Stapel gefunden.</p>}
             <div className="group-list">
               {stacks.map((stack, i) => (
                 <div key={stack.id} className="list-row" style={{ animationDelay: `${i * 60}ms` }}>
@@ -254,7 +275,7 @@ export function StackLearnPage() {
               modes.map((mode) => (
                 <ModeRow
                   key={mode.value}
-                  to={`/spiel/spickzettel?stapel=${stack.id}&modus=${mode.value}`}
+                  to={`/lernen/${stack.id}/${mode.value}`}
                   emoji={mode.emoji}
                   label={mode.label}
                   meta={situation.label.toLowerCase()}
@@ -331,6 +352,16 @@ function ModeRow({ to, emoji, label, meta, text }: { to: string; emoji: string; 
  */
 export function LearnPlayPage() {
   const { stackId, mode } = useParams();
+  const stack = useStack(stackId);
+  if (stack && GROUP_MODES.includes(mode as LearnMode)) return <TogetherPage key={`${stack.id}-${mode}`} stack={stack} mode={mode as LearnMode} />;
+  return <SoloPlay />;
+}
+
+/** Modes played together with a group – «Wer spielt mit?» first. */
+const GROUP_MODES: LearnMode[] = ['duell', 'blitz', 'schaetzen'];
+
+function SoloPlay() {
+  const { stackId, mode } = useParams();
   const [params] = useSearchParams();
   const person = (params.get('person') ?? '').trim().slice(0, LIMITS.nameMax);
   const stack = useStack(stackId);
@@ -363,5 +394,56 @@ export function LearnPlayPage() {
         <SoloLearn stack={stack} mode={mode} learner={learner} onExit={exit} />
       </Suspense>
     </div>
+  );
+}
+
+/**
+ * /lernen/:stackId/duell (blitz, schaetzen) – playing a stack together: stack and mode are already
+ * chosen on the stack page, here only who plays and the settings of the mode.
+ */
+function TogetherPage({ stack, mode }: { stack: LearnStack; mode: LearnMode }) {
+  const navigate = useNavigate();
+  const [stored, setSettings] = useGameSettings<SpickzettelSettings>(spickzettel.id, spickzettel.defaultSettings!);
+  const settings = { ...stored, stackId: stack.id, mode };
+  const { selectedId, select } = useSelectedGroup(spickzettel.id);
+  const group = useGroup(selectedId);
+  const setLastGroup = useSettings((s) => s.setLastGroup);
+  const setLastPlayed = useSettings((s) => s.setLastPlayed);
+  const info = MODES.find((m) => m.value === mode)!;
+  const situation = SITUATIONS.find((s) => s.value === info.situation)!;
+  const fits = modeFits(mode, stack);
+  const count = group?.players.length ?? 0;
+  const missing = Math.max(0, spickzettel.playersNeeded!(settings) - count);
+  const canStart = fits && !!group && missing === 0;
+  const Settings = spickzettel.Settings!;
+
+  const start = () => {
+    if (!canStart || !group) return;
+    sound.unlock(); // must happen inside the tap for iOS
+    haptic(20);
+    setSettings(settings);
+    setLastGroup(spickzettel.id, group.id);
+    setLastPlayed(spickzettel.id, group.id);
+    navigate(`/spiel/${spickzettel.id}/los`, { viewTransition: true });
+  };
+
+  return (
+    <Page title={`${info.emoji} ${info.label}`} subtitle={`«${stack.title}» · ${situation.label.toLowerCase()}`} back={`/lernen/${stack.id}`} className="setup">
+      <p className="together__text">{info.text}</p>
+      {!fits && <p className="notice notice--info">Dieser Stapel hat zu wenige passende Karten für {info.label === 'Duell' ? 'ein Duell' : `die ${info.label}`}.</p>}
+      <GroupSection title="Wer spielt mit?" selectedId={selectedId} onSelect={select} />
+      <Fold title="Einstellungen" icon="settings" className="fold--settings">
+        <Settings value={settings} onChange={setSettings} />
+      </Fold>
+      <BottomBar>
+        <Button size="lg" block icon="play" onClick={start} disabled={!canStart}>
+          {!fits
+            ? 'Zu wenige Karten'
+            : missing > 0
+                ? `Noch ${missing} ${missing === 1 ? 'Person' : 'Personen'} hinzufügen`
+                : `${info.label} starten · ${count} ${count === 1 ? 'Person' : 'Personen'}`}
+        </Button>
+      </BottomBar>
+    </Page>
   );
 }

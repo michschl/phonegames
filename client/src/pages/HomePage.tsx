@@ -39,6 +39,8 @@ export function HomePage() {
     .filter((g): g is GameDefinition => g !== undefined && g.status === 'available');
   const suggestions = GAMES.filter((g) => g.status === 'available' && !ids.includes(g.id));
   const continueGame = lastPlayed ? getGame(lastPlayed.gameId) : undefined;
+  const storedSettings = useSettings((s) => (continueGame ? s.gameSettings[continueGame.id] : undefined));
+  const continueSettings = { ...(continueGame?.defaultSettings ?? {}), ...(storedSettings as object | undefined) };
   const firstName = user.name.split(' ')[0];
 
   const quickAdd = (gameId: string, name: string, button: HTMLElement) => {
@@ -74,8 +76,8 @@ export function HomePage() {
           <div className="home-hero">
             <GameHero
               game={continueGame}
-              // With a group it was played together – back to its setup screen (Spickzettel: Duell, …).
-              to={lastGroup ? `/spiel/${continueGame.id}` : undefined}
+              // Back to where it was played: Lernen → the stack and «Wer spielt mit?», others → their setup screen.
+              to={continueGame.pathFor ? continueGame.pathFor(continueSettings) : undefined}
               eyebrow="Weiterspielen"
               text={
                 lastGroup

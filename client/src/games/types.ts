@@ -60,24 +60,21 @@ export interface GameDefinition<S extends object = any> {
   status: 'available' | 'soon';
   /** The game needs no player group (e.g. tools like «Zufallsfinger»). */
   noGroup?: boolean;
-  /** Where the game cards lead instead of the setup screen (Spickzettel: the «Lernen» tab). */
+  /** Where the game cards lead instead of the setup screen (Lernen: the «Lernen» tab). */
   href?: string;
+  /**
+   * The game has its own pages instead of the setup screen: where it lives with these settings
+   * (Lernen: the stack, or «Wer spielt mit?» of a mode). Used after a game, for «Weiterspielen»
+   * and when the setup screen is opened anyway.
+   */
+  pathFor?: (settings: S) => string;
   /** Short rules shown on the setup screen. */
   rules?: string[];
   defaultSettings?: S;
   /** Optional settings panel rendered on the setup screen (collapsed). */
   Settings?: ComponentType<GameSettingsProps<S>>;
-  /** Optional section shown open on the setup screen, above the group – for choices the game cannot start without. */
-  Prepare?: ComponentType<GameSettingsProps<S>>;
-  /** Settings chosen in `Prepare` – they do not mark the collapsed settings as «Angepasst». */
-  prepareKeys?: (keyof S)[];
   /** Players needed with these settings (defaults to `minPlayers`). */
   playersNeeded?: (settings: S) => number;
-  /**
-   * Hook: why the game cannot start yet with these settings (shown on the start button), or null.
-   * Called on every render of the setup screen.
-   */
-  useBlocker?: (settings: S) => string | null;
   /** The game itself – lazy loaded so the start screen stays fast. */
   Play?: LazyExoticComponent<ComponentType<GameProps<S>>>;
   /** Optional illustration for the cards. Falls back to the emoji. */

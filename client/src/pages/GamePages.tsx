@@ -17,7 +17,7 @@ import { toast } from '../store/ui.ts';
 import { GroupPicker } from './GroupsPage.tsx';
 
 /** Pick the group to preselect: one asked for (?gruppe=…), the last used for this game, else the first one. */
-function useSelectedGroup(gameId: string) {
+export function useSelectedGroup(gameId: string) {
   const groups = useGroups();
   const [params] = useSearchParams();
   const lastGroupId = useSettings((s) => s.lastGroupByGame[gameId]);
@@ -44,14 +44,57 @@ export function GameSetupPage() {
       </Page>
     );
   }
+  if (game.pathFor) return <GameElsewhere game={game} />;
   return <GameSetup key={game.id} game={game} />;
+}
+
+/** A game with its own pages (Lernen): the setup screen leads there. */
+function GameElsewhere({ game }: { game: GameDefinition }) {
+  const [settings] = useGameSettings(game.id, game.defaultSettings ?? {});
+  return <Navigate to={game.pathFor!(settings)} replace />;
+}
+
+/** «Wer spielt mit?»: choose a group and edit its people – or create the first group. */
+export function GroupSection({
+  title = 'Spielgruppe',
+  selectedId,
+  onSelect,
+}: {
+  title?: string;
+  selectedId: string | undefined;
+  onSelect: (id: string) => void;
+}) {
+  const group = useGroup(selectedId);
+  const createGroup = useData((s) => s.createGroup);
+  return (
+    <Section title={title}>
+      {selectedId ? (
+        <>
+          <GroupPicker selectedId={selectedId} onSelect={onSelect} />
+          {group && <PlayerEditor group={group} />}
+        </>
+      ) : (
+        <div className="setup-nogroup">
+          <p>Wer spielt mit? Erstelle eine Gruppe und füge die Namen hinzu.</p>
+          <Button
+            icon="plus"
+            onClick={() => {
+              const created = createGroup({ name: 'Meine Runde' });
+              onSelect(created.id);
+            }}
+          >
+            Gruppe erstellen
+          </Button>
+        </div>
+      )}
+    </Section>
+  );
 }
 
 function GameSetup({ game }: { game: GameDefinition }) {
   const navigate = useNavigate();
   const library = useLibraryIds();
   const addGame = useData((s) => s.addGame);
-  const createGroup = useData((s) => s.createGroup);
   const setLastGroup = useSettings((s) => s.setLastGroup);
   const setLastPlayed = useSettings((s) => s.setLastPlayed);
   const { selectedId, select } = useSelectedGroup(game.id);
@@ -61,18 +104,13 @@ function GameSetup({ game }: { game: GameDefinition }) {
   const customised = useMemo(() => {
     const defaults = (game.defaultSettings ?? {}) as Record<string, unknown>;
     const current = settings as Record<string, unknown>;
-    const prepared = (game.prepareKeys ?? []) as string[];
-    return Object.keys(defaults)
-      .filter((key) => !prepared.includes(key))
-      .some((key) => JSON.stringify(current[key]) !== JSON.stringify(defaults[key]));
-  }, [game.defaultSettings, game.prepareKeys, settings]);
+    return Object.keys(defaults).some((key) => JSON.stringify(current[key]) !== JSON.stringify(defaults[key]));
+  }, [game.defaultSettings, settings]);
 
   const playerCount = group?.players.length ?? 0;
   const needed = game.playersNeeded?.(settings) ?? game.minPlayers;
-  // The component is keyed by game, so the hook order never changes.
-  const blocker = game.useBlocker?.(settings) ?? null;
   const missing = game.noGroup ? 0 : Math.max(0, needed - playerCount);
-  const canStart = !blocker && (game.noGroup || (!!group && missing === 0));
+  const canStart = game.noGroup || (!!group && missing === 0);
 
   const start = () => {
     if (!canStart) return;
@@ -124,31 +162,7 @@ function GameSetup({ game }: { game: GameDefinition }) {
         </Fold>
       )}
 
-      {game.Prepare && <game.Prepare value={settings} onChange={setSettings} />}
-
-      {!game.noGroup && (
-      <Section title="Spielgruppe">
-        {selectedId ? (
-          <>
-            <GroupPicker selectedId={selectedId} onSelect={select} />
-            {group && <PlayerEditor group={group} />}
-          </>
-        ) : (
-          <div className="setup-nogroup">
-            <p>Wer spielt mit? Erstelle eine Gruppe und füge die Namen hinzu.</p>
-            <Button
-              icon="plus"
-              onClick={() => {
-                const created = createGroup({ name: 'Meine Runde' });
-                select(created.id);
-              }}
-            >
-              Gruppe erstellen
-            </Button>
-          </div>
-        )}
-      </Section>
-      )}
+      {!game.noGroup && <GroupSection selectedId={selectedId} onSelect={select} />}
 
       {game.Settings && (
         <Fold
@@ -163,9 +177,7 @@ function GameSetup({ game }: { game: GameDefinition }) {
 
       <BottomBar>
         <Button size="lg" block icon="play" onClick={start} disabled={!canStart}>
-          {blocker
-            ? blocker
-            : game.noGroup
+          {game.noGroup
             ? 'Spiel starten'
             : missing > 0
               ? `Noch ${missing} ${missing === 1 ? 'Person' : 'Personen'} hinzufügen`
@@ -211,8 +223,10 @@ export function GamePlayPage() {
   usePlayScreen();
 
   if (!game?.Play || game.status !== 'available') return <Navigate to="/" replace />;
+  // After the game: its setup screen, or its own page (Lernen: «Wer spielt mit?» of the stack).
+  const home = game.pathFor?.(settings) ?? `/spiel/${game.id}`;
   const needed = game.playersNeeded?.(settings) ?? game.minPlayers;
-  if (!game.noGroup && (!group || players.length < needed)) return <Navigate to={`/spiel/${game.id}`} replace />;
+  if (!game.noGroup && (!group || players.length < needed)) return <Navigate to={home} replace />;
 
   const Play = game.Play;
   return (
@@ -221,7 +235,7 @@ export function GamePlayPage() {
         <Play
           players={players}
           settings={settings}
-          onExit={() => navigate(`/spiel/${game.id}`, { replace: true, viewTransition: true })}
+          onExit={() => navigate(home, { replace: true, viewTransition: true })}
         />
       </Suspense>
     </div>

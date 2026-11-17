@@ -6,7 +6,7 @@ funktioniert alles **auch offline**.
 
 Mit dabei: vom tickenden Klassiker **💣 Bombe** über Bluff-Spiele wie **🕵️ Spion unter uns** und **🐺 Nachts im Dorf**
 (mit Erzählstimme) bis zu Team-Ratespielen, Schätzfragen und kleinen Helfern wie dem **☝️ Zufallsfinger**. Mit
-**📝 Spickzettel** wird Schulstoff zum Spiel: Wörtliblatt fotografieren, eine KI in der Schweiz macht Lernkarten daraus.
+Im Tab **📝 Lernen** wird Schulstoff zum Spiel: Wörtliblatt fotografieren, eine KI in der Schweiz macht Lernkarten daraus.
 
 <p align="center">
   <img src="docs/screenshots/welcome.jpg" width="180" alt="Willkommen mit Phoni">
@@ -26,7 +26,7 @@ Mit dabei: vom tickenden Klassiker **💣 Bombe** über Bluff-Spiele wie **🕵�
   <img src="docs/screenshots/mehr-oder-weniger.jpg" width="180" alt="Mehr oder weniger">
   <img src="docs/screenshots/zufallsfinger.jpg" width="180" alt="Zufallsfinger">
 </p>
-<p align="center"><b>📝 Spickzettel – Schulstoff als Spiel</b></p>
+<p align="center"><b>📝 Lernen – Schulstoff als Spiel</b></p>
 <p align="center">
   <img src="docs/screenshots/stapel-foto.jpg" width="180" alt="Neuer Lernstapel: Wörtliblatt fotografieren – genau übernehmen oder neue Aufgaben erfinden">
   <img src="docs/screenshots/karten-pruefen.jpg" width="180" alt="Erkannte Karten prüfen, unsichere sind markiert">
@@ -74,7 +74,7 @@ Mit dabei: vom tickenden Klassiker **💣 Bombe** über Bluff-Spiele wie **🕵�
 | 🙋 **Ich hab noch nie …** | 3–30 | Wer schon hat, steht auf – mit Strichliste. 168 Aussagen |
 | ☝️ **Zufallsfinger** | 2–10 | Alle Finger aufs Display: eine Person, zwei Teams oder eine Reihenfolge auslosen |
 | 🍾 **Flaschendrehen** | beliebig | Wischen und drehen lassen – auf Wunsch mit Wahrheit-oder-Pflicht-Karte |
-| 📝 **Spickzettel** | 1–30 | Lernspiel mit eigenen Lernstapeln, eigener Tab «Lernen»: **Kartenkasten** (Lernkartei mit 5 Fächern, Lernstand und Lernserie pro Person, allein ohne Spielgruppe; aufdecken, Auswahl aus vier oder eintippen), **Duell** (zu zweit, geteilter Bildschirm, wer zuerst richtig tippt), **Blitzrunde** (Teams, eine Person fragt ab), **Schätzrunde** (Zahlen und Jahreszahlen, alle schätzen geheim) und **Lückentext** (Wortbank oder eintippen) |
+| 📝 **Lernen** | 1–30 | Eigener Tab mit Lernstapeln: **Kartenkasten** (Lernkartei mit 5 Fächern, Lernstand und Lernserie pro Person, allein ohne Spielgruppe; aufdecken, Auswahl aus vier oder eintippen), **Duell** (zu zweit, geteilter Bildschirm, wer zuerst richtig tippt), **Blitzrunde** (Teams, eine Person fragt ab), **Schätzrunde** (Zahlen und Jahreszahlen, alle schätzen geheim) und **Lückentext** (Wortbank oder eintippen) |
 
 Alle Inhalte sind in Schweizer Hochdeutsch geschrieben (ohne «ß») und funktionieren offline.
 
@@ -170,4 +170,4 @@ Backups, Rollback) steht in **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**.
 - [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) – Infomaniak-VPS einrichten und mit GitHub Actions ausrollen
 - [docs/ARCHITEKTUR.md](docs/ARCHITEKTUR.md) – Aufbau, Offline-Synchronisation, Sicherheit, API
 - [docs/SPIELE.md](docs/SPIELE.md) – Ein neues Spiel hinzufügen · Bausteine · Inhalte ergänzen
-- [docs/KONZEPT-LERNSTAPEL.md](docs/KONZEPT-LERNSTAPEL.md) – Konzept und Etappen des Lernspiels «Spickzettel»
+- [docs/KONZEPT-LERNSTAPEL.md](docs/KONZEPT-LERNSTAPEL.md) – Konzept und Etappen von «Lernen» (früher «Spickzettel»)

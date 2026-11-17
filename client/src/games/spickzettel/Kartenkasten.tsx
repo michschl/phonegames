@@ -213,7 +213,7 @@ export function Kartenkasten({
           </Button>
           {canPlayChoice(stack) && (
             <Link
-              to={`/spiel/spickzettel?stapel=${stack.id}&modus=duell${sharedGroup ? `&gruppe=${sharedGroup.id}` : ''}`}
+              to={`/lernen/${stack.id}/duell${sharedGroup ? `?gruppe=${sharedGroup.id}` : ''}`}
               className="btn btn--secondary btn--lg btn--block"
               // Back from the Duell leads to the stack page, not into this round again.
               replace
