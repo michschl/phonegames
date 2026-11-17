@@ -3,7 +3,6 @@ import { Logo } from '../components/Brand.tsx';
 import { GameHero, GameMini, GameTile } from '../components/GameCard.tsx';
 import { Icon } from '../components/Icon.tsx';
 import { OfflinePill } from '../components/Layout.tsx';
-import { LearnDue } from '../components/LearnDue.tsx';
 import { PasskeyHint } from '../components/PasskeyHint.tsx';
 import { Avatar, EmptyState } from '../components/ui.tsx';
 import { GAMES, getCatalogGame } from '../games/registry.ts';
@@ -89,7 +88,6 @@ export function HomePage() {
           </div>
         ) : null}
 
-        <LearnDue />
 
         <PasskeyHint />
 

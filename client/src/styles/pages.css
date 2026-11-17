@@ -1875,22 +1875,7 @@
   margin-bottom: 16px;
 }
 
-/* «Heute fällig» on the start page: one row per person and stack, one tap starts learning. */
-.learn-due {
-  margin-top: 18px;
-  padding: 12px 12px 10px;
-  border-radius: var(--radius-lg);
-  border: var(--border);
-  background: var(--yellow-soft);
-  box-shadow: var(--shadow);
-}
-
-.learn-due__title {
-  margin: 0 0 8px 4px;
-  font-family: var(--font-display);
-  font-size: 18px;
-}
-
+/* «Heute dran» in «Lernen»: one row per person and stack, one tap starts learning. */
 .learn-due__list {
   display: grid;
   gap: 8px;
@@ -1948,14 +1933,6 @@
   border-radius: 50%;
   border: 2.5px solid var(--ink);
   background: var(--pink);
-  color: var(--ink);
-}
-
-.learn-due__more {
-  display: inline-block;
-  margin: 8px 0 0 4px;
-  font-size: 14px;
-  font-weight: 800;
   color: var(--ink);
 }
 
