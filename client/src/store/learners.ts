@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { LearnStack, Player } from '../../../shared/types.ts';
-import { kastenStatus, learnStreak, LEARN_DIRECTIONS, type LearnDirection } from '../lib/learn.ts';
+import { kastenStatus, learnStreak, LEARN_DIRECTIONS, progressId, type LearnDirection } from '../lib/learn.ts';
 import { collectLearners, defaultLearner, learnerColor, learnerId, sameName } from '../lib/learners.ts';
 import { useAuth } from './auth.ts';
 import { useData, useDueByStack } from './data.ts';
@@ -13,7 +13,6 @@ export function useLearners(stackId?: string | null): Player[] {
   const self = useAuth((s) => s.user?.name);
   const extra = useSettings((s) => s.learnerNames);
   const learnGroupId = useSettings((s) => s.lastGroupByGame.spickzettel);
-  const hidden = useSettings((s) => (stackId ? s.hiddenLearners[stackId] : undefined));
   return useMemo(
     () =>
       collectLearners({
@@ -23,10 +22,28 @@ export function useLearners(stackId?: string | null): Player[] {
         learnGroupId,
         self,
         extra,
-        hidden,
       }),
-    [stackId, progress, groups, learnGroupId, self, extra, hidden],
+    [stackId, progress, groups, learnGroupId, self, extra],
   );
+}
+
+/**
+ * Names older versions kept only on this device move into the synchronised data of the stack that is
+ * open (see SettingsState.learnerNames) – from then on every device shows them. A name removed from this
+ * stack stays removed; a name that is known from another stack needs nothing.
+ */
+export function adoptDeviceLearners(stackId: string): void {
+  const names = useSettings.getState().learnerNames;
+  if (names.length === 0) return;
+  const data = useData.getState();
+  const entries = Object.values(data.progress);
+  for (const name of names) {
+    const here = data.progress[progressId(stackId, name)];
+    if (here && !here.deleted) continue;
+    if (entries.some((e) => !e.deleted && !e.removed && sameName(e.player, name))) continue;
+    data.addLearner(stackId, name);
+  }
+  useSettings.getState().clearLearnerNames();
 }
 
 /** The preselected learner for a stack (see defaultLearner). */

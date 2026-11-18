@@ -43,28 +43,37 @@ describe('collectLearners', () => {
     expect(list).toEqual([{ id: 'learner-lina', name: 'LINA', color: '#ff3d8b' }]);
   });
 
-  it('ignores deleted and empty progress', () => {
-    const list = collectLearners({
-      progress: [progress('s1', 'Weg', 1, { deleted: true }), progress('s1', 'Leer', 2, { cards: {} })],
+  it('ignores deleted progress, but offers names added without learning yet – on every stack', () => {
+    const sources = {
+      progress: [progress('s1', 'Weg', 1, { deleted: true }), progress('s1', 'Neu', 2, { cards: {} })],
       groups: [],
       self: 'Mama',
       extra: [],
-    });
-    expect(names(list)).toEqual(['Mama']);
+    };
+    expect(names(collectLearners({ ...sources, stackId: 's1' }))).toEqual(['Neu', 'Mama']);
+    expect(names(collectLearners({ ...sources, stackId: 's2' }))).toEqual(['Mama', 'Neu']);
   });
 
-  it('leaves out people removed from the stack – unless they have a Kartenkasten for it', () => {
+  it('leaves out people removed from the stack on any device – until they learn it again', () => {
+    const removed = (player: string) => progress('s1', player, 40, { cards: {}, days: [], removed: true });
     const sources = {
-      progress: [progress('s1', 'Lina', 20), progress('s2', 'Noah', 30)],
+      progress: [progress('s2', 'Noah', 30), removed('Mia'), removed('mama'), removed('Elia'), removed('Noah')],
       groups: [group('familie', ['Mia', 'Ben'])],
       learnGroupId: 'familie',
       self: 'Mama',
       extra: ['Elia'],
-      hidden: ['mia', 'mama', 'elia', 'noah', 'lina'],
     };
-    expect(names(collectLearners({ ...sources, stackId: 's1' }))).toEqual(['Lina', 'Ben']);
-    // The list belongs to a stack: without one, everyone is offered.
-    expect(names(collectLearners({ ...sources, stackId: null }))).toEqual(['Mia', 'Ben', 'Mama', 'Elia', 'Noah', 'Lina']);
+    expect(names(collectLearners({ ...sources, stackId: 's1' }))).toEqual(['Ben']);
+    // Only on that stack: elsewhere everyone is offered.
+    expect(names(collectLearners({ ...sources, stackId: 's2' }))).toEqual(['Noah', 'Mia', 'Ben', 'Mama', 'Elia']);
+    // Learning the stack again writes a normal Kartenkasten – the mark is gone.
+    const again = { ...sources, progress: [...sources.progress.slice(0, 1), progress('s1', 'Mia', 50)] };
+    expect(names(collectLearners({ ...again, stackId: 's1' }))).toEqual(['Mia', 'Ben', 'Mama', 'Elia', 'Noah']);
+  });
+
+  it('does not start right away for someone who was only removed elsewhere', () => {
+    const only = [{ id: 'b', name: 'Lina', color: '#000000' }];
+    expect(obviousLearner(only, 'new', {}, [progress('s1', 'Lina', 1, { cards: {}, removed: true })])).toBeNull();
   });
 
   it('gives names without a group a stable colour', () => {

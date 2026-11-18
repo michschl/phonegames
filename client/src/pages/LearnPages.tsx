@@ -30,7 +30,7 @@ import {
 import { learnerColor, learnerId, sameName } from '../lib/learners.ts';
 import { normalize } from '../lib/util.ts';
 import { useData, useDueByStack, useGroup, useProgress, useStack, useStacks } from '../store/data.ts';
-import { useDefaultLearner, useDueList, useLearnDirection, useLearners } from '../store/learners.ts';
+import { adoptDeviceLearners, useDefaultLearner, useDueList, useLearnDirection, useLearners } from '../store/learners.ts';
 import { useGameSettings, useSettings } from '../store/settings.ts';
 import { deleteStackWithUndo } from '../store/undo.ts';
 import { GroupSection, PlayLoading, usePlayScreen, useSelectedGroup } from './GamePages.tsx';
@@ -243,6 +243,11 @@ export function StackLearnPage() {
   const progress = useProgress(stackId, learner);
   const direction = useLearnDirection(stackId);
   const [edit, setEdit] = useState(false);
+  const deviceNames = useSettings((s) => s.learnerNames.length);
+  // Names of older versions, kept only on this phone, move into the synchronised data.
+  useEffect(() => {
+    if (stack && deviceNames > 0) adoptDeviceLearners(stack.id);
+  }, [stack?.id, deviceNames]); // eslint-disable-line react-hooks/exhaustive-deps
   // Nobody left: nothing to edit, «Person hinzufügen» is back.
   const editing = edit && learners.length > 0;
 

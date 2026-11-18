@@ -113,6 +113,12 @@ export interface LearnProgress {
    * LIMITS.learnDays. Over all stacks they make the learning streak. Missing in data of older versions.
    */
   days?: string[];
+  /**
+   * Removed from «Wer lernt?» of this stack – on every device. The Kartenkasten is empty and the person
+   * is not offered for this stack until the name is added again or the person learns it after all.
+   * Missing in data of older versions.
+   */
+  removed?: boolean;
   updatedAt: number;
   deleted: boolean;
 }

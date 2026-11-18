@@ -158,8 +158,8 @@ test('Wörtli: vor der Runde wählen, was gezeigt wird – wie erfasst, umgekehr
   await expect(page.getByRole('radiogroup', { name: 'Abfragen' }).getByRole('radio', { name: 'Gemischt' })).toHaveAttribute('aria-checked', 'true');
 });
 
-test('Wer lernt? Personen entfernen, mit «Rückgängig» zurückholen und wieder hinzufügen', async ({ page }) => {
-  await register(page, 'Lea');
+test('Wer lernt? Personen entfernen, mit «Rückgängig» zurückholen und wieder hinzufügen – auf allen Geräten', async ({ page, browser }) => {
+  const email = await register(page, 'Lea');
   await createStack(page, 'Entfernen', TIMES);
   await addLearner(page, 'Ben');
   await startLearning(page);
@@ -170,7 +170,7 @@ test('Wer lernt? Personen entfernen, mit «Rückgängig» zurückholen und wiede
   await expect(tile('Ben').locator('.due-badge')).toHaveText('1');
 
   await page.getByRole('button', { name: 'Bearbeiten', exact: true }).click();
-  await expect(page.getByText('Tippe eine Person an, um sie aus diesem Stapel zu entfernen.')).toBeVisible();
+  await expect(page.getByText('Tippe eine Person an, um sie aus diesem Stapel zu entfernen – auf allen Geräten.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Person hinzufügen' })).toHaveCount(0);
   await expectAccessible(page);
   await page.getByRole('button', { name: 'Ben entfernen' }).click();
@@ -201,6 +201,52 @@ test('Wer lernt? Personen entfernen, mit «Rückgängig» zurückholen und wiede
   await page.locator('.group-card', { hasText: 'Entfernen' }).click();
   await addLearner(page, 'Ben');
   await expect(tile('Ben').locator('.learner-tile__status')).toHaveText('Noch nicht begonnen');
+
+  // Mia learns a little, Lea (the account) is removed.
+  await tile('Mia').click();
+  await startLearning(page);
+  await learnRound(page, ['6 × 7']);
+  await endGame(page);
+  await page.getByRole('button', { name: 'Bearbeiten', exact: true }).click();
+  await page.getByRole('button', { name: 'Lea entfernen' }).click();
+  await page.getByRole('button', { name: 'Fertig', exact: true }).click();
+  await expect(tile('Lea')).toHaveCount(0);
+  const synced = async () => {
+    const data = await (await page.request.get('/api/account/export')).json();
+    return (data.learnProgress as { player: string; removed?: boolean; cards: object }[])
+      .map((p) => `${p.player}: ${p.removed ? 'entfernt' : `${Object.keys(p.cards).length} Karten`}`)
+      .sort();
+  };
+  await expect.poll(synced).toEqual(['Ben: 0 Karten', 'Lea: entfernt', 'Mia: 4 Karten']);
+
+  // A second phone: names added on the first one are there, with their Kartenkasten; Lea is not.
+  const other = await browser.newContext();
+  const phone = await other.newPage();
+  await phone.goto('/anmelden');
+  await phone.getByLabel('E-Mail').fill(email);
+  await phone.getByLabel('Passwort', { exact: true }).fill('passwort123');
+  await phone.getByRole('button', { name: 'Anmelden', exact: true }).click();
+  await expect(phone).toHaveURL('/');
+  // As if an older version had kept «Elia» only on this phone: moves into the synchronised data.
+  await phone.evaluate(() => {
+    const stored = JSON.parse(localStorage.getItem('phonegames-settings') ?? '{"state":{},"version":1}');
+    stored.state.learnerNames = ['Elia'];
+    localStorage.setItem('phonegames-settings', JSON.stringify(stored));
+  });
+  await phone.goto('/lernen');
+  await phone.locator('.group-card', { hasText: 'Entfernen' }).click();
+  const phoneTile = (name: string) => phone.getByRole('radio', { name: new RegExp(`^${name}`) });
+  await expect(phoneTile('Mia').locator('.due-badge')).toHaveText('1');
+  await expect(phoneTile('Ben').locator('.learner-tile__status')).toHaveText('Noch nicht begonnen');
+  await expect(phoneTile('Elia')).toBeVisible();
+  await expect(phoneTile('Lea')).toHaveCount(0);
+  // Added again on the second phone – back on the first one too, and Elia with it.
+  await addLearner(phone, 'Lea');
+  await expect.poll(synced).toEqual(['Ben: 0 Karten', 'Elia: 0 Karten', 'Lea: 0 Karten', 'Mia: 4 Karten']);
+  await other.close();
+  await page.reload();
+  await expect(tile('Lea')).toBeVisible();
+  await expect(tile('Elia')).toBeVisible();
 });
 
 test('Wer lernt? Namenstafeln zeigen, wer wie viele Karten fällig hat', async ({ page }) => {
