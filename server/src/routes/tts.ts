@@ -94,7 +94,7 @@ export const ttsRoutes: FastifyPluginAsync<{ rateLimit: boolean; tts: TtsConfig 
     return audio;
   }
 
-  app.get('/', { preHandler: app.requireAuth, config: limit(900) }, async (request, reply) => {
+  app.get('/', { preHandler: app.requireAccess, config: limit(900) }, async (request, reply) => {
     const tts = config();
     const { voice, text } = querySchema.parse(request.query);
     const model = TTS_VOICES.find((v) => v.id === voice)!.model;

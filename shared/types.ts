@@ -16,6 +16,30 @@ export interface PublicUser {
   passkeys: number;
   /** The user dismissed the hint to set up a passkey (for good, on all devices). */
   passkeyHintDismissed: boolean;
+  /** free = no payment (invitation code, accounts from before the subscription), paid = yearly subscription. */
+  plan: 'free' | 'paid';
+  /** May use the app: a free account or a subscription that runs (also in the trial). */
+  access: boolean;
+  /** The subscription of a paid account – null for free accounts. */
+  subscription: SubscriptionInfo | null;
+}
+
+/**
+ * Stripe's state of a subscription: none = never subscribed, trialing = free days, active = paid,
+ * past_due = the payment failed (Stripe tries again), canceled = ended.
+ */
+export type SubscriptionStatus = 'none' | 'trialing' | 'active' | 'past_due' | 'canceled';
+
+export interface SubscriptionInfo {
+  status: SubscriptionStatus;
+  /** End of the trial or of the paid year (ms) – when it renews or ends. */
+  until: number | null;
+  /** Cancelled: runs until `until`, then ends. */
+  cancelAtPeriodEnd: boolean;
+  /** The free trial has not been used yet. */
+  trialAvailable: boolean;
+  /** Payment details are stored at Stripe – «Abo verwalten» opens the customer portal. */
+  manageable: boolean;
 }
 
 /** A passkey as shown in the account settings (no key material). */
@@ -177,8 +201,6 @@ export interface LearnSharePreview {
   cardCount: number;
   /** The first cards as a teaser. */
   sample: { prompt: string; answer: string }[];
-  /** The link still works as an invitation (registering without a code). */
-  invites: boolean;
 }
 
 export interface LearnExtractResponse {
@@ -205,6 +227,11 @@ export interface AuthOptions {
   passkeys: { rpID: string } | null;
   /** Narrator voices rendered on the server, or null when no TTS service is configured. */
   tts: { voices: { id: string; name: string }[] } | null;
+  /**
+   * The yearly subscription (Stripe), or null when the server takes no payments – then registering
+   * needs an invitation code (if codes are set).
+   */
+  billing: { pricePerYear: number; currency: 'CHF'; trialDays: number } | null;
 }
 
 export interface ApiErrorBody {
@@ -227,6 +254,4 @@ export const LIMITS = {
   cardText: 300,
   stackTitleMax: 80,
   learnPhotos: 6,
-  /** Accounts that may be created with one shared link. */
-  shareSignups: 50,
 } as const;

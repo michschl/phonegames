@@ -81,18 +81,22 @@ test('Teilen per Link: Vorschau, Konto per Link, Übernahme', async ({ page, bro
   const link = await page.locator('.share-card__link').inputValue();
   expect(link).toMatch(/\/s\/[A-Za-z0-9_-]{22}$/);
 
-  // Somebody new opens the link, signs up without an invitation code and gets the stack.
+  // Somebody new opens the link: the link is no invitation – the account starts with the free trial.
   const guest = await (await browser.newContext({ serviceWorkers: 'block' })).newPage();
   await guest.goto(link);
   await expect(guest.getByRole('heading', { name: 'Unité 5' })).toBeVisible();
-  await expect(guest.getByText('Du brauchst keinen Einladungscode')).toBeVisible();
+  await expect(guest.locator('.share-page__hint')).toContainText('7 Tage gratis, danach CHF 5 pro Jahr.');
   await expectAccessible(guest);
   await guest.getByRole('link', { name: 'Konto erstellen & übernehmen' }).click();
-  await expect(guest.getByLabel('Einladungscode')).toHaveCount(0);
+  await expect(guest.getByRole('button', { name: 'Ich habe einen Einladungscode' })).toBeVisible();
   await guest.getByLabel('Dein Name').fill('Tim');
   await guest.getByLabel('E-Mail').fill(`tim-${Date.now()}@example.ch`);
   await guest.getByLabel('Passwort', { exact: true }).fill('passwort123');
-  await guest.getByRole('button', { name: 'Los geht’s' }).click();
+  await guest.getByRole('button', { name: 'Weiter zum Abo' }).click();
+  await expect(guest).toHaveURL('/abo');
+  await guest.getByRole('button', { name: '7 Tage gratis testen' }).click();
+  await guest.getByRole('button', { name: 'Bezahlen' }).click();
+  // Back from Stripe: on to the shared stack, taken over right away.
   await expect(guest).toHaveURL(/\/lernen\/[^/]+$/);
   await expect(guest.locator('h1')).toHaveText('Unité 5');
 

@@ -21,6 +21,8 @@ services:
       LEARN_AI_MODEL: ${LEARN_AI_MODEL:-}
       LEARN_MONTHLY_LIMIT: ${LEARN_MONTHLY_LIMIT:-}
       LEARN_GLOBAL_MONTHLY_LIMIT: ${LEARN_GLOBAL_MONTHLY_LIMIT:-}
+      # Yearly subscription (Stripe). Off without key – then new accounts need an invitation code.
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
     volumes:
       - app-data:/data
     expose:

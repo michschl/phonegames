@@ -53,6 +53,11 @@ export const config = {
     monthlyLimit: int(env.LEARN_MONTHLY_LIMIT, 5),
     globalMonthlyLimit: int(env.LEARN_GLOBAL_MONTHLY_LIMIT, 2000),
   },
+  /** Yearly subscription through Stripe (CHF 5, 7 days trial). Switched off without a secret key. */
+  billing: {
+    secretKey: env.STRIPE_SECRET_KEY ?? '',
+    apiUrl: env.STRIPE_API_URL || 'https://api.stripe.com',
+  },
 } as const;
 
 export type AppConfig = typeof config;

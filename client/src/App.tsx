@@ -4,10 +4,10 @@ import { Backdrop, TabBar, Toaster } from './components/Layout.tsx';
 import { UpdateHint, useAutoUpdate } from './components/UpdateHint.tsx';
 import { EmptyState } from './components/ui.tsx';
 import { setHapticsEnabled } from './lib/device.ts';
-import { refreshSession } from './lib/session.ts';
+import { hasAccess, refreshSession } from './lib/session.ts';
 import { startSyncEngine, syncNow } from './lib/sync.ts';
 import { AccountPage } from './pages/AccountPage.tsx';
-import { LoginPage, RegisterPage, WelcomePage } from './pages/AuthPages.tsx';
+import { LoginPage, RegisterPage, SubscribePage, WelcomePage } from './pages/AuthPages.tsx';
 import { DiscoverPage } from './pages/DiscoverPage.tsx';
 import { GamePlayPage, GameSetupPage } from './pages/GamePages.tsx';
 import { LearnHubPage, LearnPlayPage, StackLearnPage } from './pages/LearnPages.tsx';
@@ -38,7 +38,15 @@ function Root() {
   );
 }
 
+/** Signed in with access to the app – a paid account without a running subscription gets «Abo». */
 function RequireAuth() {
+  const user = useAuth((s) => s.user);
+  if (!user) return <Navigate to="/willkommen" replace />;
+  return hasAccess(user) ? <Outlet /> : <Navigate to="/abo" replace />;
+}
+
+/** Signed in, with or without subscription (the subscription page itself). */
+function RequireUser() {
   const user = useAuth((s) => s.user);
   return user ? <Outlet /> : <Navigate to="/willkommen" replace />;
 }
@@ -113,6 +121,10 @@ const router = createBrowserRouter([
           { path: '/anmelden', element: <LoginPage /> },
           { path: '/registrieren', element: <RegisterPage /> },
         ],
+      },
+      {
+        element: <RequireUser />,
+        children: [{ path: '/abo', element: <SubscribePage /> }],
       },
       {
         element: <RequireAuth />,

@@ -1,5 +1,5 @@
-import { useEffect, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router';
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router';
 import { Mascot, type Mood } from '../components/Brand.tsx';
 import { TrustNote } from '../components/TrustNote.tsx';
 import { Button, TextField } from '../components/ui.tsx';
@@ -9,7 +9,9 @@ import { useAuthOptions } from '../lib/authOptions.ts';
 import { PasskeyCancelled, passkeysSupported, preparePasskeySignIn, signInWithPasskey } from '../lib/passkeys.ts';
 import { confetti } from '../lib/confetti.ts';
 import { haptic } from '../lib/device.ts';
-import { login, register } from '../lib/session.ts';
+import { hasAccess, login, logout, register } from '../lib/session.ts';
+import { afterSignIn, formatPrice, takeAfterSubscribe } from '../lib/subscription.ts';
+import { useAuth } from '../store/auth.ts';
 import { toast, useUi } from '../store/ui.ts';
 import { LIMITS, type LearnSharePreview } from '../../../shared/types.ts';
 
@@ -51,6 +53,7 @@ function Marquee({ reverse }: { reverse?: boolean }) {
 
 export function WelcomePage() {
   const [mood, setMood] = useState<Mood>('party');
+  const billing = useAuthOptions()?.billing;
   return (
     <main className="welcome">
       <div className="welcome__hero">
@@ -103,19 +106,39 @@ export function WelcomePage() {
         <Link to="/anmelden" className="btn btn--secondary btn--lg btn--block" viewTransition>
           <span>Ich habe schon ein Konto</span>
         </Link>
+        {billing && (
+          <p className="welcome__price">
+            {billing.trialDays} Tage gratis, danach {formatPrice(billing.pricePerYear)} pro Jahr. Abo abgelaufen? Melde dich an und erneuere es.
+          </p>
+        )}
       </div>
       <TrustNote className="welcome__trust" />
     </main>
   );
 }
 
-function AuthShell({ title, subtitle, mood, children }: { title: string; subtitle: string; mood: Mood; children: ReactNode }) {
+function AuthShell({
+  title,
+  subtitle,
+  mood,
+  back = '/willkommen',
+  children,
+}: {
+  title: string;
+  subtitle: string;
+  mood: Mood;
+  /** Where «Zurück» leads – null for none. */
+  back?: string | null;
+  children: ReactNode;
+}) {
   const online = useUi((s) => s.online);
   return (
     <main className="auth">
-      <Link to="/willkommen" className="icon-btn auth__back" viewTransition aria-label="Zurück">
-        ←
-      </Link>
+      {back && (
+        <Link to={back} className="icon-btn auth__back" viewTransition aria-label="Zurück">
+          ←
+        </Link>
+      )}
       <div className="auth__card">
         <span className="auth__mascot">
           <Mascot size={96} mood={mood} />
@@ -136,7 +159,7 @@ export function RegisterPage() {
   const [params] = useSearchParams();
   const linkCode = (params.get('code') ?? '').trim().toUpperCase().slice(0, 64);
   const shareId = params.get('teilen') ?? '';
-  // Coming from a shared stack link: the link counts as invitation (while it still works).
+  // Coming from a shared stack link: the stack is taken over after registering (and subscribing).
   const [share, setShare] = useState<LearnSharePreview | null>(null);
   useEffect(() => {
     if (!shareId) return;
@@ -145,8 +168,13 @@ export function RegisterPage() {
       .then(setShare)
       .catch(() => setShare(null));
   }, [shareId]);
-  // Unknown (offline, loading): keep showing the field, registering needs the server anyway.
-  const showInvite = useAuthOptions()?.inviteRequired !== false && !share?.invites;
+  const options = useAuthOptions();
+  const billing = options?.billing ?? null;
+  // Without payments a code is needed. Unknown (offline, loading): keep showing the field.
+  const codeRequired = options?.inviteRequired !== false && !billing;
+  // With the subscription, a code is optional – it makes the account free.
+  const [codeOpen, setCodeOpen] = useState(!!linkCode);
+  const showInvite = codeRequired || codeOpen;
   const [inviteCode, setInviteCode] = useState(linkCode);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -163,7 +191,7 @@ export function RegisterPage() {
     setError(null);
     setInviteError(null);
     const problems: FieldErrors = {
-      invite: showInvite && !inviteCode.trim() ? 'Bitte gib deinen Einladungscode ein.' : undefined,
+      invite: codeRequired && !inviteCode.trim() ? 'Bitte gib deinen Einladungscode ein.' : undefined,
       name: name.trim() ? undefined : 'Wie sollen wir dich nennen?',
       email: emailProblem(email),
       password:
@@ -181,13 +209,15 @@ export function RegisterPage() {
         name: name.trim(),
         email: email.trim(),
         password,
-        ...(showInvite ? { inviteCode: inviteCode.trim() } : {}),
+        ...(showInvite && inviteCode.trim() ? { inviteCode: inviteCode.trim() } : {}),
         ...(share ? { shareId: share.id } : {}),
       });
-      confetti({ count: 180 });
-      toast(`Willkommen bei Phonegames, ${user.name}! 🎉`, { tone: 'success' });
-      // Through a shared link: take the stack over right away.
-      navigate(share ? `/s/${share.id}?uebernehmen=1` : '/', { replace: true, viewTransition: true });
+      if (hasAccess(user)) {
+        confetti({ count: 180 });
+        toast(`Willkommen bei Phonegames, ${user.name}! 🎉`, { tone: 'success' });
+      }
+      // Through a shared link: take the stack over right away – after the subscription, if one is needed.
+      navigate(afterSignIn(user, share ? `/s/${share.id}?uebernehmen=1` : '/'), { replace: true, viewTransition: true });
     } catch (err) {
       if (err instanceof ApiError && (err.code === 'invalid_invite' || err.code === 'invite_required')) {
         setInviteError(err.message);
@@ -203,13 +233,18 @@ export function RegisterPage() {
   return (
     <AuthShell
       title="Konto erstellen"
-      subtitle={showInvite ? 'Noch geheim – nur mit Einladung.' : 'Dauert keine 30 Sekunden. Versprochen.'}
+      subtitle={
+        billing
+          ? `${billing.trialDays} Tage gratis, danach ${formatPrice(billing.pricePerYear)} pro Jahr.`
+          : codeRequired
+            ? 'Noch geheim – nur mit Einladung.'
+            : 'Dauert keine 30 Sekunden. Versprochen.'
+      }
       mood={error || inviteError || Object.values(fieldErrors).some(Boolean) ? 'oops' : 'happy'}
     >
       {share && (
         <p className="notice notice--info auth__share">
           📝 Danach übernimmst du den Lernstapel «{share.title}».
-          {share.invites && ' Der Link gilt als Einladung – kein Code nötig.'}
         </p>
       )}
       <form className="form" onSubmit={submit} noValidate>
@@ -220,17 +255,26 @@ export function RegisterPage() {
             value={inviteCode}
             onChange={(e) => {
               setInviteCode(e.target.value.toUpperCase());
+              // Typed before the server settings arrived: keep the field, the code makes the account free.
+              setCodeOpen(true);
               setInviteError(null);
               clearFieldError('invite');
             }}
+            autoFocus={codeOpen && !linkCode && !inviteCode}
             autoComplete="off"
             autoCapitalize="characters"
             autoCorrect="off"
             spellCheck={false}
             maxLength={64}
             error={inviteError ?? fieldErrors.invite}
-            hint={linkCode ? 'Aus deiner Einladung übernommen 🎟️' : 'Den Code bekommst du von der Person, die dich eingeladen hat.'}
-            required
+            hint={
+              linkCode
+                ? 'Aus deiner Einladung übernommen 🎟️'
+                : billing
+                  ? 'Mit Einladungscode ist dein Konto kostenlos.'
+                  : 'Den Code bekommst du von der Person, die dich eingeladen hat.'
+            }
+            required={codeRequired}
           />
         )}
         <TextField
@@ -276,8 +320,13 @@ export function RegisterPage() {
         />
         {error && <p className="notice notice--error">{error}</p>}
         <Button type="submit" size="lg" block loading={loading}>
-          Los geht’s
+          {billing && !inviteCode.trim() ? 'Weiter zum Abo' : 'Los geht’s'}
         </Button>
+        {billing && !showInvite && (
+          <button type="button" className="auth__link-btn" onClick={() => setCodeOpen(true)}>
+            Ich habe einen Einladungscode
+          </button>
+        )}
       </form>
       <p className="auth__switch">
         Schon dabei? <Link to={shareId ? `/anmelden?teilen=${encodeURIComponent(shareId)}` : '/anmelden'}>Anmelden</Link>
@@ -313,7 +362,7 @@ export function LoginPage() {
       const user = await signInWithPasskey();
       confetti({ count: 90 });
       toast(`Schön, dass du da bist, ${user.name}!`, { tone: 'success' });
-      navigate(next, { replace: true, viewTransition: true });
+      navigate(afterSignIn(user, next), { replace: true, viewTransition: true });
     } catch (err) {
       if (!(err instanceof PasskeyCancelled)) setError(err instanceof Error ? err.message : errorMessage(err));
     } finally {
@@ -339,7 +388,7 @@ export function LoginPage() {
     try {
       const user = await login({ email: email.trim(), password });
       toast(`Schön, dass du da bist, ${user.name}!`, { tone: 'success' });
-      navigate(next, { replace: true, viewTransition: true });
+      navigate(afterSignIn(user, next), { replace: true, viewTransition: true });
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -394,6 +443,137 @@ export function LoginPage() {
       )}
       <p className="auth__switch">
         Neu hier? <Link to={shareId ? `/registrieren?teilen=${encodeURIComponent(shareId)}` : '/registrieren'}>Konto erstellen</Link>
+      </p>
+    </AuthShell>
+  );
+}
+
+const PAYMENT_METHODS = 'Bezahlen mit TWINT, Apple Pay, Google Pay oder Karte – sicher über Stripe.';
+
+/**
+ * «Abo» (/abo): the yearly subscription of a paid account – after registering (with the free
+ * trial), when it has ended, or when a payment failed. Stripe hosts the payment page and comes
+ * back here with `?checkout=…`, which is confirmed right away.
+ */
+export function SubscribePage() {
+  const user = useAuth((s) => s.user)!;
+  const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
+  const sessionId = params.get('checkout');
+  const billing = useAuthOptions()?.billing ?? null;
+  const [busy, setBusy] = useState<'confirm' | 'checkout' | 'portal' | null>(sessionId ? 'confirm' : null);
+  const [error, setError] = useState<string | null>(null);
+  const confirmed = useRef(false);
+
+  // Back from Stripe's payment page.
+  useEffect(() => {
+    if (!sessionId || confirmed.current) return;
+    confirmed.current = true;
+    api
+      .billingConfirm(sessionId)
+      .then(({ user: updated }) => {
+        useAuth.setState({ user: updated });
+        if (hasAccess(updated)) {
+          confetti({ count: 180 });
+          toast(
+            updated.subscription?.status === 'trialing' ? `Willkommen, ${updated.name}! Deine Gratis-Tage laufen 🎉` : 'Danke! Dein Abo läuft 🎉',
+            { tone: 'success' },
+          );
+          navigate(takeAfterSubscribe(), { replace: true, viewTransition: true });
+        } else {
+          setError('Die Zahlung ist noch nicht abgeschlossen. Versuche es nochmals.');
+          setParams({}, { replace: true });
+        }
+      })
+      .catch((err) => {
+        setError(errorMessage(err));
+        setParams({}, { replace: true });
+      })
+      .finally(() => setBusy(null));
+  }, [sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (hasAccess(user) && !sessionId) return <Navigate to="/" replace />;
+
+  const subscription = user.subscription;
+  const failed = subscription?.status === 'past_due';
+  const trial = subscription?.trialAvailable !== false;
+  const price = billing ? formatPrice(billing.pricePerYear) : 'CHF 5';
+  const days = billing?.trialDays ?? 7;
+
+  const open = async (kind: 'checkout' | 'portal') => {
+    setError(null);
+    setBusy(kind);
+    try {
+      const { url } = kind === 'checkout' ? await api.billingCheckout() : await api.billingPortal();
+      window.location.assign(url);
+    } catch (err) {
+      setError(errorMessage(err));
+      setBusy(null);
+    }
+  };
+
+  const signOut = async () => {
+    await logout();
+    navigate('/willkommen', { replace: true });
+  };
+
+  if (busy === 'confirm') {
+    return (
+      <AuthShell title="Einen Moment …" subtitle="Dein Abo wird bestätigt." mood="happy" back={null}>
+        <p className="subscribe__status" role="status">
+          Gleich geht’s los.
+        </p>
+      </AuthShell>
+    );
+  }
+
+  return (
+    <AuthShell
+      title={failed ? 'Zahlung fehlgeschlagen' : trial ? `Hallo ${user.name}!` : 'Willkommen zurück'}
+      subtitle={
+        failed
+          ? 'Die letzte Zahlung hat nicht geklappt.'
+          : trial
+            ? `Teste phonegames ${days} Tage gratis.`
+            : 'Dein Abo ist abgelaufen.'
+      }
+      mood={error || failed ? 'oops' : 'party'}
+      back={null}
+    >
+      {failed ? (
+        <p className="subscribe__text">Ändere die Zahlungsart – dann geht’s gleich weiter. Deine Daten sind alle noch da.</p>
+      ) : (
+        <ul className="subscribe__list">
+          <li>Alle Spiele und Lernen – für die ganze Familie</li>
+          <li>Auf allen Geräten, auch offline</li>
+          {trial ? (
+            <li>
+              {days} Tage gratis, danach {price} pro Jahr. Kündigst du vorher, kostet es nichts.
+            </li>
+          ) : (
+            <li>{price} pro Jahr – deine Spielgruppen und Lernstapel sind noch da</li>
+          )}
+          <li>Jederzeit kündbar unter «Konto»</li>
+        </ul>
+      )}
+      {error && <p className="notice notice--error">{error}</p>}
+      <div className="subscribe__actions">
+        {failed ? (
+          <Button size="lg" block icon="key" loading={busy === 'portal'} disabled={!!busy} onClick={() => void open('portal')}>
+            Zahlungsart ändern
+          </Button>
+        ) : (
+          <Button size="lg" block loading={busy === 'checkout'} disabled={!!busy} onClick={() => void open('checkout')}>
+            {trial ? `${days} Tage gratis testen` : `Abo erneuern – ${price} pro Jahr`}
+          </Button>
+        )}
+        <p className="subscribe__methods">{PAYMENT_METHODS}</p>
+      </div>
+      <p className="auth__switch">
+        Falsches Konto?{' '}
+        <button type="button" className="auth__link-btn" onClick={() => void signOut()}>
+          Abmelden
+        </button>
       </p>
     </AuthShell>
   );

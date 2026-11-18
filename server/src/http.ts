@@ -4,8 +4,9 @@ export const SESSION_COOKIE = 'phonegames_session';
 export class HttpError extends Error {
   readonly statusCode: number;
   readonly code: string;
-  constructor(statusCode: number, code: string, message: string) {
-    super(message);
+  /** `cause`: what went wrong behind the scenes – logged, never sent to the client. */
+  constructor(statusCode: number, code: string, message: string, options?: { cause?: unknown }) {
+    super(message, options);
     this.statusCode = statusCode;
     this.code = code;
   }
