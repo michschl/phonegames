@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App.tsx';
 import { initPwa } from './lib/pwa.ts';
+import { watchViewport } from './lib/viewport.ts';
 import './styles/fonts.css';
 import './styles/global.css';
 import './styles/components.css';
@@ -14,6 +15,7 @@ createRoot(document.getElementById('root')!).render(
 );
 
 initPwa();
+watchViewport();
 
 // View transitions are cosmetic. Browsers abort them, e.g. when the on-screen
 // keyboard resizes the viewport – that is not an error worth reporting.
