@@ -113,17 +113,6 @@ const MIGRATIONS: string[] = [
     UNIQUE (owner_id, stack_id)
   );
   `,
-  `
-  -- Yearly subscription (Stripe). Accounts from before stay free; new ones without an invitation pay.
-  ALTER TABLE users ADD COLUMN plan TEXT NOT NULL DEFAULT 'free';
-  ALTER TABLE users ADD COLUMN stripe_customer_id TEXT;
-  ALTER TABLE users ADD COLUMN stripe_subscription_id TEXT;
-  ALTER TABLE users ADD COLUMN subscription_status TEXT NOT NULL DEFAULT 'none';
-  ALTER TABLE users ADD COLUMN subscription_until INTEGER;
-  ALTER TABLE users ADD COLUMN subscription_cancel_at_end INTEGER NOT NULL DEFAULT 0;
-  ALTER TABLE users ADD COLUMN subscription_checked_at INTEGER;
-  ALTER TABLE users ADD COLUMN trial_used INTEGER NOT NULL DEFAULT 0;
-  `,
 ];
 
 export function openDatabase(file: string): Database {

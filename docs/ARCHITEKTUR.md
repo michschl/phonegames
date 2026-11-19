@@ -126,9 +126,7 @@ Gespeichert werden nur Name, E-Mail, Passwort-Hash, Avatar, die Spieleliste, die
 Mitspielenden), die Lernstapel und der Lernstand pro Person. Es gibt keine Tracker und keine externen Requests aus dem
 Browser (Schriften sind eingebettet). Fotos für Lernstapel reicht der Server an die Infomaniak AI Tools weiter
 (Rechenzentren in der Schweiz); sie werden weder gespeichert noch protokolliert, nur die erkannten Karten bleiben. Nutzer können
-ihre Daten als JSON exportieren und ihr Konto samt allen Daten selbst löschen. Das Jahresabo läuft über Stripe:
-Zahlungsdaten gibt man nur auf der Zahlungsseite und im Kundenportal von Stripe ein; der Server kennt nur die
-Kunden- und Abo-Nummer bei Stripe, den Status und das Ablaufdatum. Mit einem Infomaniak-VPS liegen
+ihre Daten als JSON exportieren und ihr Konto samt allen Daten selbst löschen. Mit einem Infomaniak-VPS liegen
 die Daten in der Schweiz.
 
 ## Datenmodell (SQLite)
@@ -157,8 +155,8 @@ Alle Antworten sind JSON. Fehler haben die Form `{ "error": "code", "message": "
 | --- | --- | --- | --- |
 | `GET /api/health` | – | – | `{ ok, version }` |
 | `GET /api/tts?voice=thorsten&text=…` | ✅ | – | `audio/wav` (ein Satz, max. 300 Zeichen) · `503 tts_unavailable` |
-| `GET /api/auth/options` | – | – | `{ inviteRequired, passkeys, tts, billing }` |
-| `POST /api/auth/register` | – | `{ name, email, password, inviteCode?, shareId? }` | `201 { user }` + Cookie – mit Code kostenlos (`plan: 'free'`), ohne Code mit Abo (`plan: 'paid'`, `access: false` bis zum Abo) · `403 invite_required` (ohne Stripe) / `invalid_invite` |
+| `GET /api/auth/options` | – | – | `{ inviteRequired }` |
+| `POST /api/auth/register` | – | `{ name, email, password, inviteCode?, shareId? }` | `201 { user }` + Cookie · `403 invite_required` / `invalid_invite` |
 | `POST /api/auth/login` | – | `{ email, password }` | `{ user }` + Cookie |
 | `POST /api/auth/logout` | – | – | `204` |
 | `POST /api/passkeys/login/options` | – | – | WebAuthn-Optionen zum Anmelden |
@@ -167,11 +165,7 @@ Alle Antworten sind JSON. Fehler haben die Form `{ "error": "code", "message": "
 | `POST /api/passkeys/register/options` | ✅ | – | WebAuthn-Optionen zum Einrichten |
 | `POST /api/passkeys/register/verify` | ✅ | `{ response }` | `201 { passkey, user }` |
 | `DELETE /api/passkeys/:id` | ✅ | – | `{ user, remaining }` |
-| `GET /api/auth/me` | ✅ | – | `{ user }` – fragt Stripe, wenn das Abojahr abgelaufen ist |
-| `POST /api/billing/checkout` | ✅ | – | `{ url }` der Zahlungsseite von Stripe (beim ersten Mal mit 7 Tagen gratis) · `409 free_plan` / `already_subscribed` |
-| `POST /api/billing/confirm` | ✅ | `{ sessionId }` | `{ user, confirmed }` – nach der Zahlungsseite · `403 checkout_foreign` |
-| `POST /api/billing/portal` | ✅ | – | `{ url }` des Kundenportals von Stripe · `409 no_subscription` |
-| `POST /api/billing/refresh` | ✅ | – | `{ user }` – nach dem Kundenportal |
+| `GET /api/auth/me` | ✅ | – | `{ user }` |
 | `PATCH /api/account` | ✅ | `{ name?, avatar?, color?, email?, password?, passkeyHintDismissed? }` | `{ user }` |
 | `POST /api/account/password` | ✅ | `{ currentPassword, newPassword }` | `204` |
 | `DELETE /api/account` | ✅ | `{ password }` | `204` |
@@ -181,12 +175,9 @@ Alle Antworten sind JSON. Fehler haben die Form `{ "error": "code", "message": "
 | `GET /api/shares/mine` | ✅ | – | `{ shares: LearnShareInfo[] }` |
 | `POST /api/shares` | ✅ | `{ stackId, title, subject, languages, cards, suggestedModes }` | `{ share }` – legt den Link an oder aktualisiert die Karten dahinter |
 | `DELETE /api/shares/:id` | ✅ | – | `204` – der Link funktioniert danach nicht mehr |
-| `GET /api/shares/:id` | – | – | Vorschau `{ title, subject, cardCount, sample }` · `404 share_not_found` |
+| `GET /api/shares/:id` | – | – | Vorschau `{ title, subject, cardCount, sample, invites }` · `404 share_not_found` |
 | `POST /api/shares/:id/import` | ✅ | – | `{ stack }` (Kopie der Karten) |
 | `POST /api/learn/extract` | ✅ | `{ images: string[], mode?: 'exact' \| 'creative', count?: 5–30 }` (1–6 JPEG/PNG/WebP als Data-URL) | `{ draft, usage }` · `429 learn_limit` / `learn_running` · `422 learn_empty` · `502 learn_failed` · `503 learn_unavailable` / `learn_busy` |
-
-Sync, Lernen, Teilen (anlegen, übernehmen) und die Erzählstimme brauchen zusätzlich ein laufendes Abo oder ein
-kostenloses Konto, sonst `402 subscription_required`. Konto, Export und Löschen gehen immer.
 
 Die Typen stehen in [`shared/types.ts`](../shared/types.ts).
 
@@ -203,9 +194,7 @@ Die Typen stehen in [`shared/types.ts`](../shared/types.ts).
 | `TRUST_PROXY` | in Produktion `true` | `X-Forwarded-*` von Caddy vertrauen (für Rate-Limit nach Client-IP) |
 | `LOG_LEVEL` | `info` / `debug` | Fastify/Pino-Loglevel |
 | `APP_VERSION` | `dev` | Wird im Health-Check und in der App angezeigt |
-| `INVITE_CODES` | – | Einladungscodes, mit Komma getrennt. Ein Code gibt ein kostenloses Konto. Ohne Stripe: gesetzt = Registrierung nur mit Code; leer = offen |
-| `STRIPE_SECRET_KEY` | – | Geheimer Stripe-Schlüssel für das Jahresabo (CHF 5, 7 Tage gratis). Ohne Schlüssel kein Abo |
-| `STRIPE_API_URL` | `https://api.stripe.com` | Nur für Tests (Stripe-Attrappe) |
+| `INVITE_CODES` | – | Einladungscodes, mit Komma getrennt. Gesetzt = Registrierung nur mit Code; leer = offen |
 | `TTS_URL` | – | Piper-Dienst für die Erzählstimme (Docker: `http://tts:5000`). Ohne Wert gibt es nur Gerätestimmen |
 | `APP_ORIGIN` | Dev: `http://localhost:5173,http://localhost:3000` | Öffentliche Adresse der App (Docker: `https://${APP_DOMAIN}`). Passkeys sind an diese Domain gebunden; ohne Wert sind sie in Produktion ausgeschaltet |
 | `INFOMANIAK_AI_TOKEN` | – | API-Token der Infomaniak AI Tools für die Foto-Auswertung. Ohne Token ist sie ausgeschaltet (Abtippen geht weiterhin) |

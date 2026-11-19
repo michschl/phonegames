@@ -108,7 +108,6 @@ jobs:
           HAS_SSH_KEY: ${{ secrets.VPS_SSH_KEY != '' }}
           INVITE_CODES: ${{ secrets.INVITE_CODES }}
           INFOMANIAK_AI_TOKEN: ${{ secrets.INFOMANIAK_AI_TOKEN }}
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
         run: |
           missing=0
           for v in VPS_HOST APP_DOMAIN IMAGE_TAG; do
@@ -138,14 +137,6 @@ jobs:
               echo "::error::Variable INFOMANIAK_AI_PRODUCT_ID fehlt oder ist keine Zahl (Produkt-ID der Infomaniak AI Tools)."
               missing=1
             fi
-          fi
-          if [ -z "$STRIPE_SECRET_KEY" ]; then
-            echo "::warning::Secret STRIPE_SECRET_KEY fehlt – kein Abo: neue Konten nur mit Einladungscode."
-          elif ! [[ "$STRIPE_SECRET_KEY" =~ ^(sk|rk)_(live|test)_[A-Za-z0-9]+$ ]]; then
-            echo "::error::STRIPE_SECRET_KEY sieht nicht nach einem Stripe-Schlüssel aus (sk_live_… oder sk_test_…; Leerzeichen mitkopiert?)."
-            missing=1
-          elif [[ "$STRIPE_SECRET_KEY" == *_test_* ]]; then
-            echo "::warning::STRIPE_SECRET_KEY ist ein Test-Schlüssel – Zahlungen laufen im Stripe-Testmodus, es fliesst kein Geld."
           fi
           for v in LEARN_MONTHLY_LIMIT LEARN_GLOBAL_MONTHLY_LIMIT; do
             if [ -n "${!v}" ] && ! [[ "${!v}" =~ ^[0-9]+$ ]]; then echo "::error::Variable $v muss eine ganze Zahl sein."; missing=1; fi
@@ -185,7 +176,6 @@ jobs:
         env:
           INVITE_CODES: ${{ secrets.INVITE_CODES }}
           INFOMANIAK_AI_TOKEN: ${{ secrets.INFOMANIAK_AI_TOKEN }}
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
         run: |
           IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}"
           TTS_TAG="$(cat tts/* | sha256sum | cut -c1-16)"
@@ -205,7 +195,6 @@ jobs:
             for v in LEARN_AI_MODEL LEARN_MONTHLY_LIMIT LEARN_GLOBAL_MONTHLY_LIMIT; do
               if [ -n "${!v}" ]; then echo "$v=${!v}"; fi
             done
-            if [ -n "$STRIPE_SECRET_KEY" ]; then echo "STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}"; fi
           } > deploy/.env
           if ! ssh vps "mkdir -p '$APP_DIR' 2>/dev/null && test -w '$APP_DIR'"; then
             echo "::error::$APP_DIR fehlt auf dem VPS oder ist nicht beschreibbar. Einmalig als root anlegen: sudo install -d -m 750 -o $VPS_USER -g $VPS_USER $APP_DIR"

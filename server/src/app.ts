@@ -15,8 +15,6 @@ import { passkeyRoutes, type WebAuthnConfig } from './routes/passkeys.ts';
 import { TTS_VOICES, ttsRoutes, type TtsConfig } from './routes/tts.ts';
 import { learnRoutes, type LearnConfig } from './routes/learn.ts';
 import { shareRoutes } from './routes/shares.ts';
-import { billingRoutes } from './routes/billing.ts';
-import { refreshSubscription, type BillingConfig } from './billing.ts';
 
 export interface AppOptions {
   db: Database;
@@ -36,10 +34,6 @@ export interface AppOptions {
   tts?: TtsConfig | null;
   /** Photo analysis for learning stacks; null or missing = switched off (text import still works). */
   learn?: LearnConfig | null;
-  /** Yearly subscription through Stripe; null or missing = no payments (free accounts only). */
-  billing?: BillingConfig | null;
-  /** Public address of the app (Stripe's return links); missing = taken from the request. */
-  appUrl?: string | null;
 }
 
 declare module 'fastify' {
@@ -48,10 +42,6 @@ declare module 'fastify' {
     setSessionCookie(reply: FastifyReply, token: string): void;
     clearSessionCookie(reply: FastifyReply): void;
     requireAuth(request: FastifyRequest, reply: FastifyReply): Promise<void>;
-    /** Signed in and allowed to use the app (free account or running subscription). */
-    requireAccess(request: FastifyRequest, reply: FastifyReply): Promise<void>;
-    /** The user with the subscription as Stripe sees it now, when it is due for a check. */
-    currentUser(user: UserRecord): Promise<UserRecord>;
   }
   interface FastifyRequest {
     user: UserRecord | null;
@@ -122,17 +112,6 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     if (session.refreshed) app.setSessionCookie(reply, token);
   });
 
-  const billing = options.billing ?? null;
-  app.decorate('currentUser', (user: UserRecord) => refreshSubscription(app.db, billing, user));
-
-  app.decorate('requireAccess', async (request: FastifyRequest, reply: FastifyReply) => {
-    await app.requireAuth(request, reply);
-    request.user = await app.currentUser(request.user!);
-    if (!request.user.access) {
-      throw new HttpError(402, 'subscription_required', 'Dein Abo ist abgelaufen. Erneuere es, um weiterzumachen.');
-    }
-  });
-
   // CSRF protection: state changing API calls must carry a custom header,
   // which browsers only allow for same-origin requests (no CORS is enabled).
   app.addHook('onRequest', async (request) => {
@@ -160,7 +139,6 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       return reply.status(400).send({ error: 'validation', message });
     }
     if (error instanceof HttpError) {
-      if (error.statusCode >= 500) request.log.warn({ code: error.code, cause: error.cause }, error.message);
       return reply.status(error.statusCode).send({ error: error.code, message: error.message });
     }
     const err = error as { statusCode?: number; message?: string; error?: string; code?: string };
@@ -183,13 +161,6 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     inviteCodes: options.inviteCodes ?? [],
     passkeys: options.webauthn ? { rpID: options.webauthn.rpID } : null,
     tts: options.tts ? { voices: TTS_VOICES.map(({ id, name }) => ({ id, name })) } : null,
-    billing,
-  });
-  await app.register(billingRoutes, {
-    prefix: '/api/billing',
-    rateLimit: options.rateLimit ?? true,
-    billing,
-    appUrl: options.appUrl ?? null,
   });
   await app.register(ttsRoutes, { prefix: '/api/tts', rateLimit: options.rateLimit ?? true, tts: options.tts ?? null });
   await app.register(passkeyRoutes, {
@@ -197,10 +168,14 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     rateLimit: options.rateLimit ?? true,
     webauthn: options.webauthn ?? null,
   });
-  await app.register(accountRoutes, { prefix: '/api/account', rateLimit: options.rateLimit ?? true, billing });
+  await app.register(accountRoutes, { prefix: '/api/account', rateLimit: options.rateLimit ?? true });
   await app.register(syncRoutes, { prefix: '/api' });
   await app.register(learnRoutes, { prefix: '/api/learn', rateLimit: options.rateLimit ?? true, learn: options.learn ?? null });
-  await app.register(shareRoutes, { prefix: '/api/shares', rateLimit: options.rateLimit ?? true });
+  await app.register(shareRoutes, {
+    prefix: '/api/shares',
+    rateLimit: options.rateLimit ?? true,
+    inviteRequired: (options.inviteCodes ?? []).length > 0,
+  });
 
   if (options.serveClient && options.clientDir) {
     registerClient(app, options.clientDir);

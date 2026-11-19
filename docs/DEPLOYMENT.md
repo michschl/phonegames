@@ -147,7 +147,6 @@ Unter **Settings → Environments → production → «Add environment secret»*
 | `VPS_KNOWN_HOSTS` | empfohlen | Ausgabe von `ssh-keyscan -H <host>` aus Schritt 4 |
 | `INVITE_CODES` | empfohlen | Einladungscodes für die Registrierung, mit Komma getrennt, z. B. `PARTY-2026,FAMILIE`. Nicht gesetzt = jede und jeder kann sich registrieren |
 | `INFOMANIAK_AI_TOKEN` | – | API-Token der Infomaniak AI Tools für die Foto-Auswertung der Lernstapel. Nicht gesetzt = Foto-Auswertung aus, Abtippen geht |
-| `STRIPE_SECRET_KEY` | – | Geheimer Schlüssel von Stripe für das Jahresabo (`sk_live_…`, zum Ausprobieren `sk_test_…`). Nicht gesetzt = kein Abo, neue Konten nur mit Einladungscode |
 
 Mit der GitHub-CLI geht das auch so:
 
@@ -169,10 +168,6 @@ gh secret set INFOMANIAK_AI_TOKEN --env production
 
 ```bash
 gh variable set INFOMANIAK_AI_PRODUCT_ID --body "112859"
-```
-
-```bash
-gh secret set STRIPE_SECRET_KEY --env production
 ```
 
 ```bash
@@ -255,10 +250,9 @@ weiterhin).
 
 ### Einladungscodes
 
-Ein Einladungscode gibt ein **kostenloses Konto** (ohne Abo). Ist kein Stripe-Schlüssel gesetzt (kein Abo), braucht
-die Registrierung einen dieser Codes, solange das Secret `INVITE_CODES` gesetzt ist. Gross-/Kleinschreibung und
-Leerzeichen spielen keine Rolle; erlaubt sind Buchstaben, Ziffern, `-` und `_`. Bestehende Konten melden sich ganz
-normal an.
+Solange das Secret `INVITE_CODES` gesetzt ist, braucht die Registrierung einen dieser Codes. Gross-/Kleinschreibung
+und Leerzeichen spielen keine Rolle; erlaubt sind Buchstaben, Ziffern, `-` und `_`. Bestehende Konten melden sich
+ganz normal an.
 
 - **Einladen:** Code weitergeben oder direkt einen Link schicken – das Feld ist dann schon ausgefüllt:
   `https://phonegames.example.ch/registrieren?code=PARTY-2026`
@@ -268,40 +262,6 @@ normal an.
 
 Wähle Codes, die man nicht leicht errät. Die Registrierung ist zusätzlich auf 20 Versuche pro 15 Minuten und
 IP-Adresse begrenzt.
-
-### Jahresabo (Stripe)
-
-Neue Konten ohne Einladungscode brauchen ein Jahresabo: **7 Tage gratis, danach CHF 5 pro Jahr**, verlängert sich
-automatisch. Bezahlt wird auf der Zahlungsseite von Stripe (TWINT, Apple Pay, Google Pay, Karte); Kündigen,
-Zahlungsart ändern und Quittungen laufen über das Kundenportal von Stripe («Konto → Abo verwalten»). Die App sieht
-nie Zahlungsdaten. Konten von vor dem Abo und Konten mit Einladungscode bleiben kostenlos. Auch über einen geteilten
-Lernstapel entsteht kein kostenloses Konto mehr.
-
-Ohne laufendes Abo öffnet die App nur die Seite «Abo» (Test starten, erneuern oder bei einer fehlgeschlagenen Zahlung
-die Zahlungsart ändern); Daten, Lernstapel und Lernstand bleiben gespeichert. Wer das Konto löscht, dessen Abo endet
-bei Stripe sofort.
-
-**Einrichten**
-
-1. Konto bei [Stripe](https://dashboard.stripe.com) eröffnen (Firma oder Einzelfirma, Schweizer Bankkonto für die
-   Auszahlungen in CHF).
-2. **Settings → Payment methods:** TWINT einschalten; Karten, Apple Pay und Google Pay sind normalerweise schon an.
-   Die Zahlungsseite zeigt, was hier eingeschaltet ist und zum Gerät passt.
-3. **Settings → Billing → Customer portal:** «Cancel subscriptions» (am Ende der Periode), «Update payment methods»
-   und «Invoice history» einschalten und speichern.
-4. **Developers → API keys:** den geheimen Schlüssel (`sk_live_…`) als Secret `STRIPE_SECRET_KEY` (Environment
-   `production`) hinterlegen und neu ausrollen. Im Log steht danach «Jahresabo über Stripe aktiv». Zum Ausprobieren
-   zuerst den Test-Schlüssel (`sk_test_…`) nehmen – Testkarte `4242 4242 4242 4242`, es fliesst kein Geld.
-
-Produkt und Preis legt die App selbst an (pro Zahlungsseite, «phonegames Jahresabo», CHF 5 pro Jahr); im Dashboard
-ist dafür nichts nötig. Webhooks braucht es keine: Nach der Zahlungsseite bestätigt die App die Zahlung sofort, und
-wenn ein Abojahr (oder die Testphase) abgelaufen ist, fragt der Server Stripe beim nächsten Öffnen der App, ob
-verlängert, gekündigt oder die Zahlung fehlgeschlagen ist. Ist Stripe gerade nicht erreichbar, bleibt der Zugang
-noch drei Tage offen.
-
-**Kosten:** keine Grundgebühr; pro Zahlung rund 2,9 % + CHF 0.30 (Karte, Wallets) bzw. 1,9 % + CHF 0.30 (TWINT)
-sowie die Gebühr von Stripe Billing für Abos – bei CHF 5 etwa 40–45 Rappen pro Jahr und Abo (Stand November 2026,
-aktuelle Preise im Stripe-Dashboard). Unter CHF 100'000 Umsatz pro Jahr besteht in der Schweiz keine MWST-Pflicht.
 
 ### Foto-Auswertung (Lernstapel)
 

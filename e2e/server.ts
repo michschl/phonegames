@@ -1,16 +1,14 @@
 /*
  * Server for the browser tests: the real app (built client from dist/client) with an
- * in-memory database, no rate limits and stand-ins for the AI service and Stripe, so the
- * tests never call Infomaniak or Stripe and always get the same cards and payments.
+ * in-memory database, no rate limits and a stand-in for the AI service, so the tests
+ * never call Infomaniak and always get the same cards.
  *
  *   npm run build && node e2e/server.ts      (Playwright starts it itself, see playwright.config.ts)
  */
 import http from 'node:http';
 import path from 'node:path';
 import { buildApp } from '../server/src/app.ts';
-import { PRICE_PER_YEAR, TRIAL_DAYS } from '../server/src/billing.ts';
 import { openDatabase } from '../server/src/db.ts';
-import { FAKE_STRIPE_KEY, startFakeStripe } from '../server/test/fakeStripe.ts';
 
 const PORT = Number(process.env.E2E_PORT ?? 3100);
 const AI_PORT = PORT + 1;
@@ -69,7 +67,6 @@ const ai = http.createServer((req, res) => {
   });
 });
 await new Promise<void>((resolve) => ai.listen(AI_PORT, '127.0.0.1', resolve));
-const stripe = await startFakeStripe(PORT + 2);
 
 const app = await buildApp({
   db: openDatabase(':memory:'),
@@ -87,14 +84,12 @@ const app = await buildApp({
     monthlyLimit: 20,
     globalMonthlyLimit: 1000,
   },
-  billing: { secretKey: FAKE_STRIPE_KEY, apiUrl: stripe.url, pricePerYear: PRICE_PER_YEAR, trialDays: TRIAL_DAYS },
 });
 await app.listen({ port: PORT, host: '127.0.0.1' });
 
 const stop = async () => {
   await app.close();
   ai.close();
-  await stripe.close();
   process.exit(0);
 };
 process.on('SIGTERM', () => void stop());

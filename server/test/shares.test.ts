@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import { buildApp } from '../src/app.ts';
 import { openDatabase } from '../src/db.ts';
-import type { LearnShareInfo, LearnSharePreview, LearnShareStack } from '../../shared/types.ts';
+import { LIMITS, type LearnShareInfo, type LearnSharePreview, type LearnShareStack } from '../../shared/types.ts';
 
 const HEADERS = { 'x-requested-with': 'phonegames' };
 const STACK = {
@@ -69,6 +69,7 @@ describe('sharing learning stacks', () => {
       title: 'Unité 5 (neu)',
       subject: 'Französisch',
       cardCount: 4,
+      invites: true,
       sample: [
         { prompt: 'le chien', answer: 'der Hund' },
         { prompt: 'la maison', answer: 'das Haus' },
@@ -109,16 +110,26 @@ describe('sharing learning stacks', () => {
     expect(again).not.toBe(id);
   });
 
-  it('does not count the link as an invitation any more – it only counts the new accounts', async () => {
+  it('counts the link as an invitation, up to the limit', async () => {
     const { cookie } = await register('owner@example.ch');
     const id = ((await share(cookie)).json().share as LearnShareInfo).id;
 
-    // Without payments (no Stripe) a code is needed, with or without the link.
-    expect((await register('nocode@example.ch', {})).res.statusCode).toBe(403);
-    expect((await register('friend@example.ch', { shareId: id })).res.statusCode).toBe(403);
-    expect((await register('friend@example.ch', { shareId: id, inviteCode: 'PARTY-2026' })).res.statusCode).toBe(201);
+    const without = await register('nocode@example.ch', {});
+    expect(without.res.statusCode).toBe(403);
+    const wrongLink = await register('wrong@example.ch', { shareId: 'xxxxxxxxxxxxxxxxxxxxxx' });
+    expect(wrongLink.res.statusCode).toBe(403);
+
+    const invited = await register('friend@example.ch', { shareId: id });
+    expect(invited.res.statusCode).toBe(201);
     const mine = await app.inject({ method: 'GET', url: '/api/shares/mine', headers: { cookie } });
     expect(mine.json().shares[0].signups).toBe(1);
+
+    // Used up: the link no longer replaces the invitation code.
+    app.db.prepare('UPDATE learn_shares SET signups = ? WHERE id = ?').run(LIMITS.shareSignups, id);
+    expect((await app.inject({ method: 'GET', url: `/api/shares/${id}` })).json().invites).toBe(false);
+    expect((await register('late@example.ch', { shareId: id })).res.statusCode).toBe(403);
+    // A valid code still works together with the link.
+    expect((await register('late2@example.ch', { shareId: id, inviteCode: 'PARTY-2026' })).res.statusCode).toBe(201);
   });
 
   it('validates the shared cards', async () => {

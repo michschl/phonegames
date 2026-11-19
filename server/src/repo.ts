@@ -12,7 +12,6 @@ import type {
   Player,
   PlayerGroup,
   PublicUser,
-  SubscriptionStatus,
   SyncPayload,
 } from '../../shared/types.ts';
 
@@ -31,40 +30,15 @@ interface UserRow {
   updated_at: number;
   passkey_hint_dismissed: number;
   passkey_count: number;
-  plan: string;
-  stripe_customer_id: string | null;
-  stripe_subscription_id: string | null;
-  subscription_status: string;
-  subscription_until: number | null;
-  subscription_cancel_at_end: number;
-  subscription_checked_at: number | null;
-  trial_used: number;
 }
 
 const SELECT_USER = 'SELECT u.*, (SELECT COUNT(*) FROM passkeys p WHERE p.user_id = u.id) AS passkey_count FROM users u';
 
 export interface UserRecord extends PublicUser {
   passwordHash: string;
-  stripe: { customerId: string | null; subscriptionId: string | null; checkedAt: number | null };
-}
-
-/**
- * A running subscription keeps access a little past its end: Stripe renews at the end of the period,
- * and the app asks Stripe only then (see billing.ts) – an outage must not lock anybody out.
- */
-export const ACCESS_GRACE_MS = 3 * 24 * 60 * 60 * 1000;
-
-const STATUSES: readonly SubscriptionStatus[] = ['none', 'trialing', 'active', 'past_due', 'canceled'];
-
-export function hasAccess(plan: PublicUser['plan'], status: SubscriptionStatus, until: number | null, now = Date.now()): boolean {
-  if (plan === 'free') return true;
-  if (status !== 'trialing' && status !== 'active') return false;
-  return until === null || until + ACCESS_GRACE_MS > now;
 }
 
 function toUser(row: UserRow): UserRecord {
-  const plan = row.plan === 'paid' ? 'paid' : 'free';
-  const status = (STATUSES as readonly string[]).includes(row.subscription_status) ? (row.subscription_status as SubscriptionStatus) : 'none';
   return {
     id: row.id,
     email: row.email,
@@ -74,25 +48,12 @@ function toUser(row: UserRow): UserRecord {
     createdAt: row.created_at,
     passkeys: row.passkey_count,
     passkeyHintDismissed: row.passkey_hint_dismissed === 1,
-    plan,
-    access: hasAccess(plan, status, row.subscription_until),
-    subscription:
-      plan === 'paid'
-        ? {
-            status,
-            until: row.subscription_until,
-            cancelAtPeriodEnd: row.subscription_cancel_at_end === 1,
-            trialAvailable: row.trial_used === 0,
-            manageable: !!row.stripe_customer_id,
-          }
-        : null,
     passwordHash: row.password_hash,
-    stripe: { customerId: row.stripe_customer_id, subscriptionId: row.stripe_subscription_id, checkedAt: row.subscription_checked_at },
   };
 }
 
 export function toPublicUser(user: UserRecord): PublicUser {
-  const { passwordHash: _hash, stripe: _stripe, ...rest } = user;
+  const { passwordHash: _hash, ...rest } = user;
   return rest;
 }
 
@@ -110,50 +71,14 @@ export function findUserById(db: Database, id: string): UserRecord | null {
 
 export function createUser(
   db: Database,
-  user: { id: string; email: string; name: string; avatar: string; color: string; passwordHash: string; plan: PublicUser['plan'] },
+  user: { id: string; email: string; name: string; avatar: string; color: string; passwordHash: string },
 ): UserRecord {
   const now = Date.now();
   db.prepare(
-    `INSERT INTO users (id, email, name, avatar, color, password_hash, plan, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  ).run(user.id, user.email, user.name, user.avatar, user.color, user.passwordHash, user.plan, now, now);
+    `INSERT INTO users (id, email, name, avatar, color, password_hash, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(user.id, user.email, user.name, user.avatar, user.color, user.passwordHash, now, now);
   return findUserById(db, user.id)!;
-}
-
-/** What Stripe says about a person's subscription – stored with the account. */
-export interface SubscriptionState {
-  customerId: string;
-  subscriptionId: string | null;
-  status: SubscriptionStatus;
-  until: number | null;
-  cancelAtPeriodEnd: boolean;
-  /** The subscription started with the free trial. */
-  trialUsed: boolean;
-}
-
-export function saveSubscription(db: Database, userId: string, state: SubscriptionState): UserRecord {
-  const now = Date.now();
-  db.prepare(
-    `UPDATE users SET stripe_customer_id = ?, stripe_subscription_id = ?, subscription_status = ?, subscription_until = ?,
-       subscription_cancel_at_end = ?, subscription_checked_at = ?, trial_used = MAX(trial_used, ?), updated_at = ?
-     WHERE id = ?`,
-  ).run(
-    state.customerId,
-    state.subscriptionId,
-    state.status,
-    state.until,
-    Number(state.cancelAtPeriodEnd),
-    now,
-    Number(state.trialUsed),
-    now,
-    userId,
-  );
-  return findUserById(db, userId)!;
-}
-
-/** Remembers that Stripe was asked (also when it did not answer) – at most one question per hour. */
-export function markSubscriptionChecked(db: Database, userId: string): void {
-  db.prepare('UPDATE users SET subscription_checked_at = ? WHERE id = ?').run(Date.now(), userId);
 }
 
 export function updateUser(

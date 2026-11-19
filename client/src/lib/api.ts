@@ -36,14 +36,6 @@ export class OfflineError extends Error {
   }
 }
 
-const subscriptionListeners = new Set<() => void>();
-
-/** Called when the server says the subscription has ended (HTTP 402) – see session.ts. */
-export function onSubscriptionRequired(listener: () => void): () => void {
-  subscriptionListeners.add(listener);
-  return () => subscriptionListeners.delete(listener);
-}
-
 async function request<T>(method: string, url: string, body?: unknown): Promise<T> {
   let response: Response;
   try {
@@ -73,7 +65,6 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
 
   if (!response.ok) {
     const err = (data ?? {}) as Partial<ApiErrorBody>;
-    if (response.status === 402) for (const listener of subscriptionListeners) listener();
     throw new ApiError(response.status, err.error ?? 'error', err.message ?? 'Da ist etwas schiefgelaufen.');
   }
   return data as T;
@@ -112,12 +103,6 @@ export const api = {
   deleteShare: (id: string) => request<void>('DELETE', `/api/shares/${encodeURIComponent(id)}`),
   sharePreview: (id: string) => request<LearnSharePreview>('GET', `/api/shares/${encodeURIComponent(id)}`),
   importShare: (id: string) => request<{ stack: LearnShareStack }>('POST', `/api/shares/${encodeURIComponent(id)}/import`, {}),
-  /** Stripe's payment page for the yearly subscription. */
-  billingCheckout: () => request<{ url: string }>('POST', '/api/billing/checkout', {}),
-  billingConfirm: (sessionId: string) => request<{ user: PublicUser; confirmed: boolean }>('POST', '/api/billing/confirm', { sessionId }),
-  /** Stripe's customer portal: cancel, payment method, receipts. */
-  billingPortal: () => request<{ url: string }>('POST', '/api/billing/portal', {}),
-  billingRefresh: () => request<{ user: PublicUser }>('POST', '/api/billing/refresh', {}),
 };
 
 /** Public address of a shared stack. */
