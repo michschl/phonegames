@@ -92,6 +92,7 @@ test('Teilen per Link: Vorschau, Konto per Link, Übernahme', async ({ page, bro
   await guest.getByLabel('Dein Name').fill('Tim');
   await guest.getByLabel('E-Mail').fill(`tim-${Date.now()}@example.ch`);
   await guest.getByLabel('Passwort', { exact: true }).fill('passwort123');
+  await guest.getByRole('checkbox', { name: /Ich akzeptiere die Nutzungsbedingungen/ }).check();
   await guest.getByRole('button', { name: 'Weiter zum Abo' }).click();
   await expect(guest).toHaveURL('/abo');
   await guest.getByRole('button', { name: '7 Tage gratis testen' }).click();

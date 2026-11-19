@@ -18,8 +18,10 @@ export async function register(input: {
   email: string;
   password: string;
   inviteCode?: string;
-  /** Registering through a shared stack link (counts as invitation). */
+  /** Registering through a shared stack link. */
   shareId?: string;
+  /** The version of the terms agreed to with the checkbox. */
+  termsVersion?: string;
 }): Promise<PublicUser> {
   const { user } = await api.register(input);
   signIn(user);
@@ -49,9 +51,22 @@ onSubscriptionRequired(() => {
   if (!useAuth.getState().user) return;
   api
     .me()
-    .then(({ user }) => useAuth.setState({ user }))
+    .then(({ user }) => keepUser(user))
     .catch(() => undefined);
 });
+
+/**
+ * Stores a fresh copy of the signed-in account – unless the person signed out (or switched accounts)
+ * while the request was on its way; a late answer must not sign them in again.
+ */
+function keepUser(user: PublicUser): void {
+  if (useAuth.getState().user?.id === user.id) useAuth.setState({ user });
+}
+
+/** Has the person agreed to the current terms? Accounts stored by older versions: yes until the server says. */
+export function needsTerms(user: PublicUser | null): boolean {
+  return !!user && user.termsAccepted === false;
+}
 
 /** May the person use the app? Accounts stored by older versions know nothing of the subscription. */
 export function hasAccess(user: PublicUser | null): boolean {
@@ -63,7 +78,7 @@ export async function refreshSession(): Promise<void> {
   if (!useAuth.getState().user || !navigator.onLine) return;
   try {
     const { user } = await api.me();
-    useAuth.setState({ user });
+    keepUser(user);
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) handleSessionExpired();
   }

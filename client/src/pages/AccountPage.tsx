@@ -10,6 +10,7 @@ import { isIos, isStandalone, setHapticsEnabled } from '../lib/device.ts';
 import { speechAvailable, stopSpeaking } from '../lib/speech.ts';
 import { VoicePicker } from '../components/VoicePicker.tsx';
 import { PasskeySettings } from '../components/PasskeySettings.tsx';
+import { LegalLinks } from '../legal/LegalPages.tsx';
 import { applyUpdate, checkForUpdate, promptInstall, usePwa } from '../lib/pwa.ts';
 import { deleteAccount, logout, updateProfile } from '../lib/session.ts';
 import { syncNow } from '../lib/sync.ts';
@@ -159,6 +160,7 @@ export function AccountPage() {
           Konto löschen
         </Button>
         <p className="app-version">Phonegames v{__APP_VERSION__} · Mit ❤️ in der Schweiz gehostet</p>
+        <LegalLinks />
         <button type="button" className="app-version__check" onClick={() => void lookForUpdate()}>
           Nach Updates suchen
         </button>

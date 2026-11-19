@@ -283,6 +283,9 @@ bei Stripe sofort.
 
 **Einrichten**
 
+0. Betreiberangaben in `client/src/legal/operator.ts` eintragen (Firmenname mit Rechtsform bzw. Vor- und Nachname,
+   Adresse, E-Mail) – gleich wie im Stripe-Konto. TWINT verlangt sie im Impressum; solange Platzhalter drinstehen,
+   sind sie auf den Seiten gelb markiert.
 1. Konto bei [Stripe](https://dashboard.stripe.com) eröffnen (Firma oder Einzelfirma, Schweizer Bankkonto für die
    Auszahlungen in CHF).
 2. **Settings → Payment methods:** TWINT einschalten; Karten, Apple Pay und Google Pay sind normalerweise schon an.

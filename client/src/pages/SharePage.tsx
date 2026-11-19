@@ -4,6 +4,7 @@ import type { LearnSharePreview } from '../../../shared/types.ts';
 import { Mascot } from '../components/Brand.tsx';
 import { Icon } from '../components/Icon.tsx';
 import { Button } from '../components/ui.tsx';
+import { LegalLinks } from '../legal/LegalPages.tsx';
 import { api, ApiError, errorMessage } from '../lib/api.ts';
 import { useAuthOptions } from '../lib/authOptions.ts';
 import { hasAccess } from '../lib/session.ts';
@@ -170,6 +171,7 @@ export function SharePage() {
             )}
           </>
         )}
+        <LegalLinks inSheet />
       </div>
     </main>
   );

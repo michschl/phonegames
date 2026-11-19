@@ -128,7 +128,15 @@ Browser (Schriften sind eingebettet). Fotos für Lernstapel reicht der Server an
 (Rechenzentren in der Schweiz); sie werden weder gespeichert noch protokolliert, nur die erkannten Karten bleiben. Nutzer können
 ihre Daten als JSON exportieren und ihr Konto samt allen Daten selbst löschen. Das Jahresabo läuft über Stripe:
 Zahlungsdaten gibt man nur auf der Zahlungsseite und im Kundenportal von Stripe ein; der Server kennt nur die
-Kunden- und Abo-Nummer bei Stripe, den Status und das Ablaufdatum. Mit einem Infomaniak-VPS liegen
+Kunden- und Abo-Nummer bei Stripe, den Status und das Ablaufdatum.
+
+**Rechtstexte:** Impressum, Nutzungsbedingungen (AGB) und Datenschutzerklärung sind öffentliche Seiten
+(`/impressum`, `/agb`, `/datenschutz`, Texte in `client/src/legal/`), verlinkt auf der Startseite, bei Anmeldung,
+Registrierung, Abo, Konto und geteilten Stapeln. Die Betreiberangaben stehen an einer Stelle:
+`client/src/legal/operator.ts`. Bei der Registrierung stimmt man per Checkbox zu; der Server speichert Version
+(`TERMS_VERSION` in `shared/legal.ts`) und Zeitpunkt. Konten ohne Zustimmung zur aktuellen Version – ältere Konten
+oder nach einer Änderung der Texte – sehen vor allem anderen die Seite «Kurz zustimmen» (`/bedingungen`). Wer die
+Texte ändert, setzt `TERMS_VERSION` und `TERMS_DATE` auf das neue Datum. Mit einem Infomaniak-VPS liegen
 die Daten in der Schweiz.
 
 ## Datenmodell (SQLite)
@@ -158,7 +166,7 @@ Alle Antworten sind JSON. Fehler haben die Form `{ "error": "code", "message": "
 | `GET /api/health` | – | – | `{ ok, version }` |
 | `GET /api/tts?voice=thorsten&text=…` | ✅ | – | `audio/wav` (ein Satz, max. 300 Zeichen) · `503 tts_unavailable` |
 | `GET /api/auth/options` | – | – | `{ inviteRequired, passkeys, tts, billing }` |
-| `POST /api/auth/register` | – | `{ name, email, password, inviteCode?, shareId? }` | `201 { user }` + Cookie – mit Code kostenlos (`plan: 'free'`), ohne Code mit Abo (`plan: 'paid'`, `access: false` bis zum Abo) · `403 invite_required` (ohne Stripe) / `invalid_invite` |
+| `POST /api/auth/register` | – | `{ name, email, password, inviteCode?, shareId?, termsVersion? }` | `201 { user }` + Cookie – mit Code kostenlos (`plan: 'free'`), ohne Code mit Abo (`plan: 'paid'`, `access: false` bis zum Abo) · `403 invite_required` (ohne Stripe) / `invalid_invite` |
 | `POST /api/auth/login` | – | `{ email, password }` | `{ user }` + Cookie |
 | `POST /api/auth/logout` | – | – | `204` |
 | `POST /api/passkeys/login/options` | – | – | WebAuthn-Optionen zum Anmelden |
@@ -174,6 +182,7 @@ Alle Antworten sind JSON. Fehler haben die Form `{ "error": "code", "message": "
 | `POST /api/billing/refresh` | ✅ | – | `{ user }` – nach dem Kundenportal |
 | `PATCH /api/account` | ✅ | `{ name?, avatar?, color?, email?, password?, passkeyHintDismissed? }` | `{ user }` |
 | `POST /api/account/password` | ✅ | `{ currentPassword, newPassword }` | `204` |
+| `POST /api/account/terms` | ✅ | `{ version }` | `{ user }` – Zustimmung zu Nutzungsbedingungen und Datenschutzerklärung (`shared/legal.ts`) |
 | `DELETE /api/account` | ✅ | `{ password }` | `204` |
 | `GET /api/account/export` | ✅ | – | JSON-Datei mit allen Daten |
 | `POST /api/sync` | ✅ | `{ library, groups, stacks, progress }` (ältere Apps ohne `stacks`/`progress` gehen auch) | `{ library, groups, stacks, progress, serverTime }` |

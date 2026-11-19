@@ -9,6 +9,7 @@ async function registerPaid(page: Page, name: string): Promise<string> {
   await page.getByLabel('Dein Name').fill(name);
   await page.getByLabel('E-Mail').fill(email);
   await page.getByLabel('Passwort', { exact: true }).fill('passwort123');
+  await page.getByRole('checkbox', { name: /Ich akzeptiere die Nutzungsbedingungen/ }).check();
   await page.getByRole('button', { name: 'Weiter zum Abo' }).click();
   await expect(page).toHaveURL('/abo');
   return email;

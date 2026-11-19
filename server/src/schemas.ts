@@ -30,8 +30,14 @@ export const registerSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
   inviteCode: z.string().max(64, 'Der Einladungscode ist zu lang.').optional(),
-  /** A shared stack link counts as an invitation. */
+  /** Registering through a shared stack link (counted for its owner). */
   shareId: z.string().regex(/^[A-Za-z0-9_-]{10,64}$/).optional(),
+  /** The version of the terms of use and privacy notice agreed to (shared/legal.ts). Older apps send none. */
+  termsVersion: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ungültige Version.').optional(),
+});
+
+export const acceptTermsSchema = z.object({
+  version: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ungültige Version.'),
 });
 
 export const loginSchema = z.object({

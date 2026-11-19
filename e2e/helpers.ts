@@ -15,6 +15,7 @@ export async function register(page: Page, name = 'Lea'): Promise<string> {
   await page.getByLabel('Dein Name').fill(name);
   await page.getByLabel('E-Mail').fill(email);
   await page.getByLabel('Passwort', { exact: true }).fill('passwort123');
+  await page.getByRole('checkbox', { name: /Ich akzeptiere die Nutzungsbedingungen/ }).check();
   await page.getByRole('button', { name: 'Los geht’s' }).click();
   await expect(page).toHaveURL('/');
   return email;

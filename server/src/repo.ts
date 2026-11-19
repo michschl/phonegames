@@ -2,6 +2,7 @@ import type { Database } from './db.ts';
 import { transaction } from './db.ts';
 import { randomToken, sha256 } from './security.ts';
 import { TOMBSTONE_TTL_MS, shouldReplace } from '../../shared/sync.ts';
+import { TERMS_VERSION } from '../../shared/legal.ts';
 import type {
   LearnProgress,
   LearnShareInfo,
@@ -39,6 +40,8 @@ interface UserRow {
   subscription_cancel_at_end: number;
   subscription_checked_at: number | null;
   trial_used: number;
+  terms_version: string | null;
+  terms_accepted_at: number | null;
 }
 
 const SELECT_USER = 'SELECT u.*, (SELECT COUNT(*) FROM passkeys p WHERE p.user_id = u.id) AS passkey_count FROM users u';
@@ -86,6 +89,8 @@ function toUser(row: UserRow): UserRecord {
             manageable: !!row.stripe_customer_id,
           }
         : null,
+    termsAccepted: row.terms_version === TERMS_VERSION,
+    termsAcceptedAt: row.terms_accepted_at,
     passwordHash: row.password_hash,
     stripe: { customerId: row.stripe_customer_id, subscriptionId: row.stripe_subscription_id, checkedAt: row.subscription_checked_at },
   };
@@ -110,14 +115,43 @@ export function findUserById(db: Database, id: string): UserRecord | null {
 
 export function createUser(
   db: Database,
-  user: { id: string; email: string; name: string; avatar: string; color: string; passwordHash: string; plan: PublicUser['plan'] },
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    avatar: string;
+    color: string;
+    passwordHash: string;
+    plan: PublicUser['plan'];
+    /** The version of the terms agreed to when registering, or null (older app versions). */
+    termsVersion: string | null;
+  },
 ): UserRecord {
   const now = Date.now();
   db.prepare(
-    `INSERT INTO users (id, email, name, avatar, color, password_hash, plan, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  ).run(user.id, user.email, user.name, user.avatar, user.color, user.passwordHash, user.plan, now, now);
+    `INSERT INTO users (id, email, name, avatar, color, password_hash, plan, terms_version, terms_accepted_at, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    user.id,
+    user.email,
+    user.name,
+    user.avatar,
+    user.color,
+    user.passwordHash,
+    user.plan,
+    user.termsVersion,
+    user.termsVersion ? now : null,
+    now,
+    now,
+  );
   return findUserById(db, user.id)!;
+}
+
+/** The person agreed to a version of the terms of use and the privacy notice. */
+export function acceptTerms(db: Database, userId: string, version: string): UserRecord {
+  const now = Date.now();
+  db.prepare('UPDATE users SET terms_version = ?, terms_accepted_at = ?, updated_at = ? WHERE id = ?').run(version, now, now, userId);
+  return findUserById(db, userId)!;
 }
 
 /** What Stripe says about a person's subscription – stored with the account. */

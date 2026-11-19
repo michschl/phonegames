@@ -11,13 +11,15 @@ import {
   listShares,
   toShareInfo,
   getLibrary,
+  acceptTerms,
   listPasskeys,
   toPasskeyInfo,
   toPublicUser,
   updateUser,
 } from '../repo.ts';
 import { hashPassword, verifyPassword } from '../security.ts';
-import { changePasswordSchema, deleteAccountSchema, updateAccountSchema } from '../schemas.ts';
+import { acceptTermsSchema, changePasswordSchema, deleteAccountSchema, updateAccountSchema } from '../schemas.ts';
+import { TERMS_VERSION } from '../../../shared/legal.ts';
 
 export const accountRoutes: FastifyPluginAsync<{ rateLimit: boolean; billing: BillingConfig | null }> = async (app, opts) => {
   const limit = (max: number) => ({
@@ -77,6 +79,14 @@ export const accountRoutes: FastifyPluginAsync<{ rateLimit: boolean; billing: Bi
     deleteUser(app.db, user.id); // sessions, passkeys, library and groups are deleted via ON DELETE CASCADE
     app.clearSessionCookie(reply);
     return reply.status(204).send();
+  });
+
+  /** Agreeing to the terms of use and the privacy notice (new accounts agree when registering). */
+  app.post('/terms', { config: limit(30) }, async (request) => {
+    const { version } = acceptTermsSchema.parse(request.body);
+    // An app that is out of date showed older texts – it asks again after its update.
+    if (version > TERMS_VERSION) throw new HttpError(400, 'terms_unknown', 'Diese Version der Bedingungen gibt es nicht.');
+    return { user: toPublicUser(acceptTerms(app.db, request.user!.id, version)) };
   });
 
   /** Data export (Auskunftsrecht nach DSG/DSGVO). */

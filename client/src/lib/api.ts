@@ -81,7 +81,7 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
 
 export const api = {
   authOptions: () => request<AuthOptions>('GET', '/api/auth/options'),
-  register: (body: { name: string; email: string; password: string; inviteCode?: string; shareId?: string }) =>
+  register: (body: { name: string; email: string; password: string; inviteCode?: string; shareId?: string; termsVersion?: string }) =>
     request<{ user: PublicUser }>('POST', '/api/auth/register', body),
   login: (body: { email: string; password: string }) => request<{ user: PublicUser }>('POST', '/api/auth/login', body),
   logout: () => request<void>('POST', '/api/auth/logout'),
@@ -92,6 +92,8 @@ export const api = {
   changePassword: (body: { currentPassword: string; newPassword: string }) =>
     request<void>('POST', '/api/account/password', body),
   deleteAccount: (body: { password: string }) => request<void>('DELETE', '/api/account', body),
+  /** Agree to the terms of use and the privacy notice (shared/legal.ts). */
+  acceptTerms: (version: string) => request<{ user: PublicUser }>('POST', '/api/account/terms', { version }),
   exportData: () => request<unknown>('GET', '/api/account/export'),
   sync: (body: SyncPayload) => request<SyncResponse>('POST', '/api/sync', body),
   passkeys: () => request<{ passkeys: PasskeyInfo[]; userHandle: string }>('GET', '/api/passkeys'),

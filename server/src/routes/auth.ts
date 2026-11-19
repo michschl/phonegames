@@ -70,6 +70,7 @@ export const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (app, opt
       color: pick(COLORS),
       passwordHash: await hashPassword(body.password),
       plan,
+      termsVersion: body.termsVersion ?? null,
     });
     // How many accounts a shared stack brought – for its owner.
     if (share) countShareSignup(app.db, share.id);

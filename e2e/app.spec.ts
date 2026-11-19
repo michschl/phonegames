@@ -8,6 +8,7 @@ test('Registrierung: ein falscher Einladungscode wird gemeldet, Anmelden und Abm
   await page.getByLabel('Dein Name').fill('Mia');
   await page.getByLabel('E-Mail').fill(`falsch-${Date.now()}@example.ch`);
   await page.getByLabel('Passwort', { exact: true }).fill('passwort123');
+  await page.getByRole('checkbox', { name: /Ich akzeptiere die Nutzungsbedingungen/ }).check();
   await page.getByRole('button', { name: 'Los geht’s' }).click();
   await expect(page.locator('.field__error')).toBeVisible();
   await expect(page).toHaveURL(/\/registrieren/);

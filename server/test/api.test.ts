@@ -3,6 +3,7 @@ import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import { buildApp } from '../src/app.ts';
 import { openDatabase } from '../src/db.ts';
 import type { PlayerGroup, SyncResponse } from '../../shared/types.ts';
+import { TERMS_VERSION } from '../../shared/legal.ts';
 
 let app: FastifyInstance;
 
@@ -50,6 +51,30 @@ function group(overrides: Partial<PlayerGroup> = {}): PlayerGroup {
     ...overrides,
   };
 }
+
+describe('terms of use', () => {
+  it('stores the consent from registering, and asks again for a new version', async () => {
+    const withConsent = await app.inject({
+      method: 'POST',
+      url: '/api/auth/register',
+      headers: HEADERS,
+      payload: { name: 'Lea', email: 'lea@example.ch', password: 'geheim123', termsVersion: TERMS_VERSION },
+    });
+    expect(withConsent.json().user).toMatchObject({ termsAccepted: true });
+    expect(withConsent.json().user.termsAcceptedAt).toBeGreaterThan(0);
+
+    // Older apps send no consent: the app asks before anything else.
+    const { cookie, user } = await register('ben@example.ch');
+    expect(user).toMatchObject({ termsAccepted: false, termsAcceptedAt: null });
+    const accept = (version: string) =>
+      app.inject({ method: 'POST', url: '/api/account/terms', headers: { ...HEADERS, cookie }, payload: { version } });
+    expect((await accept('2999-01-01')).statusCode).toBe(400);
+    expect((await accept('2020-01-01')).json().user).toMatchObject({ termsAccepted: false });
+    expect((await accept(TERMS_VERSION)).json().user).toMatchObject({ termsAccepted: true });
+    const me = await app.inject({ method: 'GET', url: '/api/auth/me', headers: { cookie } });
+    expect(me.json().user.termsAccepted).toBe(true);
+  });
+});
 
 describe('auth', () => {
   it('registers, reads the profile and logs out', async () => {

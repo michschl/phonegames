@@ -2269,3 +2269,145 @@
   font-weight: 650;
 }
 
+
+/* ============================================================ Legal texts */
+
+.legal {
+  display: grid;
+  gap: 18px;
+  font-size: 15.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+.legal__date {
+  margin: 0;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.legal__section h2 {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.legal__section p,
+.legal__section ul {
+  margin: 0 0 8px;
+}
+
+.legal__section ul {
+  display: grid;
+  gap: 6px;
+  padding-left: 20px;
+}
+
+.legal a {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* A detail of the operator that is still missing (see legal/operator.ts). */
+.legal__todo {
+  padding: 0 4px;
+  border-radius: 4px;
+  background: var(--yellow);
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.legal-page .legal {
+  padding: 18px;
+  border-radius: var(--radius-lg);
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow);
+}
+
+.legal-sheet {
+  padding-bottom: 8px;
+}
+
+/* «Impressum · AGB · Datenschutz» under forms and pages. */
+.legal-links {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.legal-links a,
+.legal-links__btn {
+  padding: 4px 2px;
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.welcome > .legal-links {
+  padding: 0 24px calc(var(--safe-bottom) + 18px);
+}
+
+/* «Ich akzeptiere die Nutzungsbedingungen …» */
+.consent {
+  display: grid;
+  gap: 6px;
+}
+
+.consent__label {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  gap: 10px;
+  align-items: start;
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.consent__box {
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  accent-color: var(--pink);
+  cursor: pointer;
+}
+
+.consent.has-error .consent__box {
+  outline: 3px solid #d62f43;
+  outline-offset: 2px;
+}
+
+.consent__link {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* Long titles («Datenschutzerklärung») fit a narrow phone: a bit smaller, hyphenated. */
+.legal-page .page__title {
+  font-size: clamp(26px, 8vw, 36px);
+  hyphens: auto;
+  overflow-wrap: normal;
+}
+
+.consent + .subscribe__actions,
+.consent + .notice {
+  margin-top: 18px;
+}

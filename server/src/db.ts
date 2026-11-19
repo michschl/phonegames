@@ -124,6 +124,11 @@ const MIGRATIONS: string[] = [
   ALTER TABLE users ADD COLUMN subscription_checked_at INTEGER;
   ALTER TABLE users ADD COLUMN trial_used INTEGER NOT NULL DEFAULT 0;
   `,
+  `
+  -- Consent to the terms of use and the privacy notice (shared/legal.ts): version and time.
+  ALTER TABLE users ADD COLUMN terms_version TEXT;
+  ALTER TABLE users ADD COLUMN terms_accepted_at INTEGER;
+  `,
 ];
 
 export function openDatabase(file: string): Database {

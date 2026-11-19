@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type R
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router';
 import { Mascot, type Mood } from '../components/Brand.tsx';
 import { TrustNote } from '../components/TrustNote.tsx';
+import { LegalLinks, LegalSheet, type LegalDoc } from '../legal/LegalPages.tsx';
+import { TERMS_VERSION } from '../../../shared/legal.ts';
 import { Button, TextField } from '../components/ui.tsx';
 import { GAMES } from '../games/registry.ts';
 import { api, ApiError, errorMessage } from '../lib/api.ts';
@@ -9,13 +11,54 @@ import { useAuthOptions } from '../lib/authOptions.ts';
 import { PasskeyCancelled, passkeysSupported, preparePasskeySignIn, signInWithPasskey } from '../lib/passkeys.ts';
 import { confetti } from '../lib/confetti.ts';
 import { haptic } from '../lib/device.ts';
-import { hasAccess, login, logout, register } from '../lib/session.ts';
+import { hasAccess, login, logout, needsTerms, register } from '../lib/session.ts';
 import { afterSignIn, formatPrice, takeAfterSubscribe } from '../lib/subscription.ts';
 import { useAuth } from '../store/auth.ts';
 import { toast, useUi } from '../store/ui.ts';
 import { LIMITS, type LearnSharePreview } from '../../../shared/types.ts';
 
-type FieldErrors = Partial<Record<'invite' | 'name' | 'email' | 'password', string>>;
+type FieldErrors = Partial<Record<'invite' | 'name' | 'email' | 'password' | 'terms', string>>;
+
+const TERMS_MISSING = 'Bitte stimme den Nutzungsbedingungen zu.';
+
+/**
+ * «Ich akzeptiere die Nutzungsbedingungen und habe die Datenschutzerklärung gelesen.» – the texts open
+ * in a sheet, so the form behind stays filled in.
+ */
+function TermsConsent({ checked, onChange, error }: { checked: boolean; onChange: (checked: boolean) => void; error?: string }) {
+  const [doc, setDoc] = useState<LegalDoc | null>(null);
+  return (
+    <div className={`consent ${error ? 'has-error' : ''}`}>
+      <label className="consent__label">
+        <input
+          type="checkbox"
+          className="consent__box"
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+          aria-invalid={!!error}
+          aria-describedby={error ? 'consent-error' : undefined}
+        />
+        <span>
+          Ich akzeptiere die{' '}
+          <button type="button" className="consent__link" onClick={() => setDoc('agb')}>
+            Nutzungsbedingungen
+          </button>{' '}
+          und habe die{' '}
+          <button type="button" className="consent__link" onClick={() => setDoc('datenschutz')}>
+            Datenschutzerklärung
+          </button>{' '}
+          zur Kenntnis genommen.
+        </span>
+      </label>
+      {error && (
+        <p className="field__error" id="consent-error">
+          {error}
+        </p>
+      )}
+      <LegalSheet doc={doc} onClose={() => setDoc(null)} />
+    </div>
+  );
+}
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -113,6 +156,7 @@ export function WelcomePage() {
         )}
       </div>
       <TrustNote className="welcome__trust" />
+      <LegalLinks />
     </main>
   );
 }
@@ -149,6 +193,7 @@ function AuthShell({
           <p className="notice notice--warn">Du bist offline. Für die Anmeldung brauchst du eine Internetverbindung.</p>
         )}
         {children}
+        <LegalLinks inSheet />
       </div>
     </main>
   );
@@ -179,6 +224,7 @@ export function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [termsChecked, setTermsChecked] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -196,6 +242,7 @@ export function RegisterPage() {
       email: emailProblem(email),
       password:
         password.length < LIMITS.passwordMin ? `Dein Passwort braucht mindestens ${LIMITS.passwordMin} Zeichen.` : undefined,
+      terms: termsChecked ? undefined : TERMS_MISSING,
     };
     setFieldErrors(problems);
     if (Object.values(problems).some(Boolean)) {
@@ -206,6 +253,7 @@ export function RegisterPage() {
     setLoading(true);
     try {
       const user = await register({
+        termsVersion: TERMS_VERSION,
         name: name.trim(),
         email: email.trim(),
         password,
@@ -317,6 +365,14 @@ export function RegisterPage() {
           error={fieldErrors.password}
           hint={`Mindestens ${LIMITS.passwordMin} Zeichen`}
           required
+        />
+        <TermsConsent
+          checked={termsChecked}
+          onChange={(checked) => {
+            setTermsChecked(checked);
+            clearFieldError('terms');
+          }}
+          error={fieldErrors.terms}
         />
         {error && <p className="notice notice--error">{error}</p>}
         <Button type="submit" size="lg" block loading={loading}>
@@ -572,6 +628,83 @@ export function SubscribePage() {
       <p className="auth__switch">
         Falsches Konto?{' '}
         <button type="button" className="auth__link-btn" onClick={() => void signOut()}>
+          Abmelden
+        </button>
+      </p>
+    </AuthShell>
+  );
+}
+
+/**
+ * «/bedingungen»: agree to the terms of use and the privacy notice before using the app – for accounts
+ * from before these texts, and again whenever they change (shared/legal.ts).
+ */
+export function TermsPage() {
+  const user = useAuth((s) => s.user)!;
+  const navigate = useNavigate();
+  const [checked, setChecked] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [termsError, setTermsError] = useState<string | undefined>();
+  const [busy, setBusy] = useState(false);
+
+  if (!needsTerms(user)) return <Navigate to="/" replace />;
+  const changed = user.termsAcceptedAt !== null;
+
+  const agree = async () => {
+    if (!checked) {
+      setTermsError(TERMS_MISSING);
+      haptic([30, 40, 30]);
+      return;
+    }
+    setError(null);
+    setBusy(true);
+    try {
+      const { user: updated } = await api.acceptTerms(TERMS_VERSION);
+      useAuth.setState({ user: updated });
+      navigate('/', { replace: true, viewTransition: true });
+    } catch (err) {
+      setError(errorMessage(err));
+      setBusy(false);
+    }
+  };
+
+  return (
+    <AuthShell
+      title={changed ? 'Neue Bedingungen' : 'Kurz zustimmen'}
+      subtitle={
+        changed
+          ? 'Die Nutzungsbedingungen oder die Datenschutzerklärung haben sich geändert.'
+          : 'phonegames hat jetzt Nutzungsbedingungen und eine Datenschutzerklärung.'
+      }
+      mood="happy"
+      back={null}
+    >
+      <p className="subscribe__text">
+        Bitte lies sie und stimme zu, damit du weiterspielen und -lernen kannst.
+        {user.plan === 'free' && ' Dein Konto bleibt kostenlos.'}
+      </p>
+      <TermsConsent
+        checked={checked}
+        onChange={(value) => {
+          setChecked(value);
+          setTermsError(undefined);
+        }}
+        error={termsError}
+      />
+      {error && <p className="notice notice--error">{error}</p>}
+      <div className="subscribe__actions">
+        <Button size="lg" block icon="check" loading={busy} onClick={() => void agree()}>
+          Zustimmen und weiter
+        </Button>
+      </div>
+      <p className="auth__switch">
+        <button
+          type="button"
+          className="auth__link-btn"
+          onClick={() => {
+            void logout().then(() => navigate('/willkommen', { replace: true }));
+          }}
+        >
           Abmelden
         </button>
       </p>

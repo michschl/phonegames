@@ -22,6 +22,10 @@ export interface PublicUser {
   access: boolean;
   /** The subscription of a paid account – null for free accounts. */
   subscription: SubscriptionInfo | null;
+  /** Agreed to the current terms of use and privacy notice (shared/legal.ts) – else the app asks first. */
+  termsAccepted: boolean;
+  /** When the person agreed to them, or null. */
+  termsAcceptedAt: number | null;
 }
 
 /**
