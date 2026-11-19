@@ -1,5 +1,5 @@
 import type { PublicUser } from '../../../shared/types.ts';
-import { api, ApiError } from './api.ts';
+import { api, ApiError, onSubscriptionRequired } from './api.ts';
 import { handleSessionExpired, syncNow } from './sync.ts';
 import { useAuth } from '../store/auth.ts';
 import { useData } from '../store/data.ts';
@@ -42,6 +42,20 @@ export async function logout(): Promise<void> {
   useAuth.setState({ user: null });
   useData.getState().resetFor(null);
   useLearnDraft.getState().setDraft(null);
+}
+
+/** The server says the subscription has ended: load the account again – the app then shows «Abo». */
+onSubscriptionRequired(() => {
+  if (!useAuth.getState().user) return;
+  api
+    .me()
+    .then(({ user }) => useAuth.setState({ user }))
+    .catch(() => undefined);
+});
+
+/** May the person use the app? Accounts stored by older versions know nothing of the subscription. */
+export function hasAccess(user: PublicUser | null): boolean {
+  return !!user && user.access !== false;
 }
 
 /** Validate the stored session with the server (when online). */

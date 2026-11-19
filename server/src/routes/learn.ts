@@ -382,13 +382,13 @@ export const learnRoutes: FastifyPluginAsync<{ rateLimit: boolean; learn: LearnC
     };
   };
 
-  app.get('/usage', { preHandler: app.requireAuth, config: limit(120) }, async (request): Promise<LearnUsage> =>
+  app.get('/usage', { preHandler: app.requireAccess, config: limit(120) }, async (request): Promise<LearnUsage> =>
     usageFor(request.user!.id),
   );
 
   app.post(
     '/extract',
-    { preHandler: app.requireAuth, config: limit(20), bodyLimit: 16 * 1024 * 1024 },
+    { preHandler: app.requireAccess, config: limit(20), bodyLimit: 16 * 1024 * 1024 },
     async (request): Promise<LearnExtractResponse> => {
       const learn = opts.learn;
       if (!learn) {

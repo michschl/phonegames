@@ -1,8 +1,9 @@
 import { expect, test } from '@playwright/test';
 import { expectAccessible, expectNoSidewaysScroll, register } from './helpers.ts';
 
-test('Registrierung braucht den Einladungscode, Anmelden und Abmelden', async ({ page }) => {
+test('Registrierung: ein falscher Einladungscode wird gemeldet, Anmelden und Abmelden', async ({ page }) => {
   await page.goto('/registrieren');
+  await page.getByRole('button', { name: 'Ich habe einen Einladungscode' }).click();
   await page.getByLabel('Einladungscode').fill('FALSCH');
   await page.getByLabel('Dein Name').fill('Mia');
   await page.getByLabel('E-Mail').fill(`falsch-${Date.now()}@example.ch`);

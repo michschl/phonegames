@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
+import { cancelSubscription, type BillingConfig } from '../billing.ts';
 import { HttpError } from '../http.ts';
 import {
   deleteOtherSessions,
@@ -18,7 +19,7 @@ import {
 import { hashPassword, verifyPassword } from '../security.ts';
 import { changePasswordSchema, deleteAccountSchema, updateAccountSchema } from '../schemas.ts';
 
-export const accountRoutes: FastifyPluginAsync<{ rateLimit: boolean }> = async (app, opts) => {
+export const accountRoutes: FastifyPluginAsync<{ rateLimit: boolean; billing: BillingConfig | null }> = async (app, opts) => {
   const limit = (max: number) => ({
     rateLimit: opts.rateLimit ? { max, timeWindow: '15 minutes' } : (false as const),
   });
@@ -66,6 +67,12 @@ export const accountRoutes: FastifyPluginAsync<{ rateLimit: boolean }> = async (
     const body = deleteAccountSchema.parse(request.body);
     if (!(await verifyPassword(body.password, user.passwordHash))) {
       throw new HttpError(403, 'invalid_password', 'Das Passwort ist falsch.');
+    }
+    // A running subscription ends with the account – otherwise Stripe would go on charging.
+    const status = user.subscription?.status;
+    if (user.stripe.subscriptionId && status && status !== 'canceled' && status !== 'none') {
+      if (!opts.billing) throw new HttpError(409, 'subscription_running', 'Dein Abo läuft noch. Kündige es zuerst unter «Abo verwalten».');
+      await cancelSubscription(opts.billing, user.stripe.subscriptionId);
     }
     deleteUser(app.db, user.id); // sessions, passkeys, library and groups are deleted via ON DELETE CASCADE
     app.clearSessionCookie(reply);

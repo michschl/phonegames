@@ -7,6 +7,10 @@ let counter = 0;
 export async function register(page: Page, name = 'Lea'): Promise<string> {
   const email = `e2e-${Date.now()}-${process.pid}-${counter++}@example.ch`;
   await page.goto('/registrieren');
+  // With the subscription the code is optional – it makes the account free.
+  const codeButton = page.getByRole('button', { name: 'Ich habe einen Einladungscode' });
+  await expect(codeButton.or(page.getByLabel('Einladungscode'))).toBeVisible();
+  if (await codeButton.isVisible()) await codeButton.click();
   await page.getByLabel('Einladungscode').fill('PARTY-2026');
   await page.getByLabel('Dein Name').fill(name);
   await page.getByLabel('E-Mail').fill(email);
