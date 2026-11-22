@@ -7,7 +7,7 @@ test('Arena: 3D-Spiele ab 13, Familien-Rangliste, Kugelbahn-Level und Ausblenden
   await expect(areas.getByRole('radio')).toHaveText(['Zusammen', 'Allein', 'Arena']);
   await areas.getByRole('radio', { name: 'Arena' }).click();
   await expect(page).toHaveURL('/arena');
-  await expect(page.locator('.arena-tile')).toHaveCount(5);
+  await expect(page.locator('.arena-tile')).toHaveCount(6);
   await expectAccessible(page);
 
   // Another person of the family already has a record in the Raumdenker.
@@ -46,7 +46,7 @@ test('Arena: 3D-Spiele ab 13, Familien-Rangliste, Kugelbahn-Level und Ausblenden
   await expect(page.getByRole('radio', { name: 'Level 2', exact: true })).toBeEnabled();
 
   // Pistenjagd and Beat-Bahn start and can be left.
-  for (const name of ['Pistenjagd', 'Beat-Bahn', 'Drohnen-Parcours']) {
+  for (const name of ['Pistenjagd', 'Beat-Bahn', 'Drohnen-Parcours', 'Golfinsel']) {
     await page.goto('/arena');
     await page.locator('.arena-tile', { hasText: name }).click();
     await page.getByRole('button', { name: /^Spielen/ }).click();

@@ -143,6 +143,33 @@ export const ARENA_GAMES: ArenaGame[] = [
     },
     Play: lazy(() => import('./drone/DroneGame.tsx')),
   },
+  {
+    id: 'golf',
+    name: 'Golfinsel',
+    tagline: 'Minigolf über dem Meer',
+    description: 'Minigolf auf schwebenden Inseln: Banden, Sand, Förderbänder, Windmühlen und Sprungschanzen über die Lücken. Wer über den Rand rollt, landet im Meer.',
+    emoji: '⛳',
+    colors: ['#4cc25a', '#4fb2ff'],
+    skills: ['Kraft dosieren', 'Winkel'],
+    rules: [
+      'Irgendwo auf den Platz tippen, zurückziehen wie eine Steinschleuder und loslassen – je weiter, desto fester.',
+      'Banden prallen ab, Sand bremst, Förderbänder schieben, Windmühlen-Flügel versperren den Weg.',
+      'Über den Rand ins Meer: ein Schlag mehr, zurück an den letzten Ort.',
+      'Neun Löcher – so wenige Schläge wie möglich. Nach acht Schlägen geht es weiter.',
+    ],
+    duration: '3–5 Min.',
+    tilt: false,
+    skinLabel: 'Ball',
+    skins: [
+      { id: 'weiss', name: 'Classic', color: '#f7f7f2', accent: '#ff4f6d', price: 0 },
+      { id: 'neon', name: 'Neon', color: '#b6ff3a', accent: '#2ec5ff', price: 25 },
+      { id: 'pink', name: 'Bubblegum', color: '#ff7ad9', accent: '#ffd23f', price: 50 },
+      { id: 'gold', name: 'Gold', color: '#ffc107', accent: '#8b5cf6', price: 100 },
+    ],
+    unit: 'Punkte',
+    options: { label: 'Platz', values: ['Sonneninsel', 'Vulkaninsel'] },
+    Play: lazy(() => import('./golf/GolfGame.tsx')),
+  },
 ];
 
 export function getArenaGame(id: string | undefined): ArenaGame | undefined {
