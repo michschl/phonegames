@@ -4,24 +4,7 @@ import type {
   PublicKeyCredentialRequestOptionsJSON,
   RegistrationResponseJSON,
 } from '@simplewebauthn/browser';
-import type {
-  ApiErrorBody,
-  AuthOptions,
-  LearnExtractMode,
-  LearnExtractResponse,
-  LearnShareInfo,
-  LearnSharePreview,
-  LearnShareStack,
-  LearnUsage,
-  PasskeyInfo,
-  TopicDraftResponse,
-  TaskDocRequest,
-  TaskDocument,
-  TaskUsage,
-  PublicUser,
-  SyncPayload,
-  SyncResponse,
-} from '../../../shared/types.ts';
+import type { ApiErrorBody, AuthOptions, DocAttempt, LearnExtractMode, LearnExtractResponse, LearnShareInfo, LearnSharePreview, LearnShareStack, LearnUsage, PasskeyInfo, PublicUser, SyncPayload, SyncResponse, TaskDocRequest, TaskDocument, TaskUsage, TopicCardsRequest, TopicDraftResponse } from '../../../shared/types.ts';
 
 export class ApiError extends Error {
   readonly status: number;
@@ -128,6 +111,13 @@ export const api = {
   /** Starts writing a document – it comes back «pending», the AI writes it in the background. */
   createDocument: (body: TaskDocRequest) => request<{ document: TaskDocument; usage: TaskUsage }>('POST', '/api/tasks/documents', body),
   deleteDocument: (id: string) => request<void>('DELETE', `/api/tasks/documents/${encodeURIComponent(id)}`),
+  /** A result: solved in the app, or the points of a sheet solved on paper. */
+  saveAttempt: (docId: string, attempt: DocAttempt) =>
+    request<{ document: TaskDocument }>('POST', `/api/tasks/documents/${encodeURIComponent(docId)}/attempts`, attempt),
+  deleteAttempt: (docId: string, attemptId: string) =>
+    request<{ document: TaskDocument }>('DELETE', `/api/tasks/documents/${encodeURIComponent(docId)}/attempts/${encodeURIComponent(attemptId)}`),
+  /** Lernkarten from the learning goals of a topic – a draft to review. */
+  topicCards: (body: TopicCardsRequest) => request<LearnExtractResponse>('POST', '/api/tasks/cards', body),
   /** Stripe's payment page for the yearly subscription. */
   billingCheckout: () => request<{ url: string }>('POST', '/api/billing/checkout', {}),
   billingConfirm: (sessionId: string) => request<{ user: PublicUser; confirmed: boolean }>('POST', '/api/billing/confirm', { sessionId }),

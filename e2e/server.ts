@@ -75,6 +75,20 @@ const DOC = {
   ],
 };
 
+/** Lernkarten from the learning goals of a topic. */
+const TOPIC_CARDS = {
+  title: 'Die Römer',
+  subject: 'Geschichte',
+  languages: [],
+  cards: [
+    { kind: 'qa', prompt: 'Wer gründete der Sage nach Rom?', answer: 'Romulus', accepted: [], distractors: ['Remus', 'Caesar', 'Nero'], uncertain: '' },
+    { kind: 'number', prompt: 'In welchem Jahr wurde Rom der Sage nach gegründet?', answer: '753 v. Chr.', accepted: [], distractors: [], uncertain: '' },
+    { kind: 'cloze', prompt: 'Die Republik wurde von zwei ___ geführt.', answer: 'Konsuln', accepted: [], distractors: ['Kaisern', 'Königen'], uncertain: '' },
+  ],
+  suggested_modes: ['kasten', 'blitz'],
+  removed_personal_data: false,
+};
+
 /** The check of a document doubts one task. */
 const DOC_CHECK = { checks: [{ index: 2, correct: false, reason: 'Schreibweise prüfen.', answer: '', solution: '' }] };
 
@@ -91,7 +105,9 @@ const ai = http.createServer((req, res) => {
       ? DOC_CHECK
       : system.includes('Unterlagen zur Prüfungsvorbereitung')
         ? DOC
-        : system.includes('Lernziele der Prüfung')
+        : system.includes('LERNKARTEN ZU LERNZIELEN')
+          ? TOPIC_CARDS
+          : system.includes('Lernziele der Prüfung')
           ? TOPIC
           : system.includes('kritische Lehrperson')
             ? CHECK

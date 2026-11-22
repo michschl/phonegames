@@ -3,8 +3,8 @@ import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import { buildApp } from '../src/app.ts';
 import { openDatabase } from '../src/db.ts';
 import type { LearnConfig } from '../src/routes/learn.ts';
-import { applyChecks, documentPrompt, documentSize, levelHint, toTasks, toTopicDraft } from '../src/routes/tasks.ts';
-import type { DocTask, LearnTopic, SyncResponse, TaskDocRequest, TaskDocument, TaskUsage, TopicDraftResponse } from '../../shared/types.ts';
+import { applyChecks, documentPrompt, documentSize, levelHint, toAttempt, toTasks, toTopicDraft, withAttempt } from '../src/routes/tasks.ts';
+import type { DocAttempt, DocTask, LearnExtractResponse, LearnTopic, SyncResponse, TaskDocRequest, TaskDocument, TaskUsage, TopicDraftResponse } from '../../shared/types.ts';
 import { fakeAi } from './fakeAi.ts';
 
 const HEADERS = { 'x-requested-with': 'phonegames' };
@@ -36,6 +36,21 @@ const DOC_ANSWER = {
   ],
 };
 
+const CARDS_ANSWER = {
+  title: '',
+  subject: '',
+  languages: [],
+  cards: [
+    { kind: 'qa', prompt: 'Wer gründete der Sage nach Rom?', answer: 'Romulus', accepted: [], distractors: ['Remus', 'Caesar', 'Nero'], uncertain: '' },
+    { kind: 'number', prompt: 'In welchem Jahr wurde Rom der Sage nach gegründet?', answer: '753 v. Chr.', accepted: [], distractors: [], uncertain: '' },
+    { kind: 'cloze', prompt: 'Die Republik wurde von zwei ___ geführt.', answer: 'Konsuln', accepted: [], distractors: ['Kaisern'], uncertain: '' },
+  ],
+  suggested_modes: ['kasten', 'blitz'],
+  removed_personal_data: false,
+};
+
+const CARD_CHECK = { checks: [{ index: 1, correct: false, reason: 'Jahreszahl prüfen.' }] };
+
 const DOC_CHECK = { checks: [{ index: 3, correct: false, reason: 'Nicht ganz.', answer: 'Die Volksversammlung', solution: 'Die Volksversammlung beschliesst Gesetze; der Senat berät.' }] };
 
 let app: FastifyInstance;
@@ -51,7 +66,15 @@ const post = (url: string, payload: object) => app.inject({ method: 'POST', url,
 
 beforeEach(async () => {
   ai = fakeAi((call) =>
-    call.system.includes('prüfst Prüfungsaufgaben') ? DOC_CHECK : call.system.includes('Unterlagen zur Prüfungsvorbereitung') ? DOC_ANSWER : TOPIC_ANSWER,
+    call.system.includes('prüfst Prüfungsaufgaben')
+      ? DOC_CHECK
+      : call.system.includes('Unterlagen zur Prüfungsvorbereitung')
+        ? DOC_ANSWER
+        : call.system.includes('LERNKARTEN ZU LERNZIELEN')
+          ? CARDS_ANSWER
+          : call.system.includes('prüfst Lernkarten')
+            ? CARD_CHECK
+            : TOPIC_ANSWER,
   );
   const url = await ai.start();
   const learn: LearnConfig = { url, productId: '112859', token: 'test-token', model: 'Qwen', monthlyLimit: 3, globalMonthlyLimit: 100 };
@@ -237,6 +260,46 @@ describe('documents of «Aufgaben»', () => {
   });
 });
 
+describe('results and Lernkarten of «Aufgaben»', () => {
+  it('keeps the results of a document: in the app or entered after paper, points within the task', async () => {
+    const doc = await waitForDocument((await post('/api/tasks/documents', docRequest())).json().document.id);
+    const [t1, , , t4] = doc.tasks;
+    const res = await post(`/api/tasks/documents/${doc.id}/attempts`, {
+      id: 'attempt-01',
+      at: Date.now(),
+      mode: 'paper',
+      learner: 'Lea',
+      scores: { [t1!.id]: 1, [t4!.id]: 7.3, unknown: 3 },
+    });
+    expect(res.statusCode).toBe(200);
+    const saved = res.json().document as TaskDocument;
+    expect(saved.attempts).toHaveLength(1);
+    // More than the task gives is cut to its points; unknown tasks are dropped.
+    expect(saved.attempts[0]).toMatchObject({ mode: 'paper', learner: 'Lea', scores: { [t1!.id]: 1, [t4!.id]: 2 } });
+
+    const again = await post(`/api/tasks/documents/${doc.id}/attempts`, { id: 'attempt-02', at: Date.now(), mode: 'app', scores: { [t1!.id]: 0 } });
+    expect(again.json().document.attempts.map((a: DocAttempt) => a.id)).toEqual(['attempt-01', 'attempt-02']);
+    const removed = await app.inject({ method: 'DELETE', url: `/api/tasks/documents/${doc.id}/attempts/attempt-01`, headers: { ...HEADERS, cookie } });
+    expect(removed.json().document.attempts.map((a: DocAttempt) => a.id)).toEqual(['attempt-02']);
+    expect((await post('/api/tasks/documents/unknown-document/attempts', { id: 'attempt-03', at: 1, mode: 'app', scores: {} })).statusCode).toBe(404);
+  });
+
+  it('writes Lernkarten from the learning goals, marks doubtful ones and counts like a photo analysis', async () => {
+    const res = await post('/api/tasks/cards', { topic: TOPIC_FOR_DOC, goalIds: ['goal-0001', 'goal-0002'], count: 12 });
+    expect(res.statusCode).toBe(200);
+    const { draft, usage } = res.json() as LearnExtractResponse;
+    expect(draft).toMatchObject({ title: 'Die Römer', subject: 'Geschichte', generated: true });
+    expect(draft.cards.map((c) => c.kind)).toEqual(['qa', 'number', 'cloze']);
+    expect(draft.cards[1]!.uncertain).toBe('Möglicherweise falsch – Jahreszahl prüfen.');
+    expect(usage.used).toBe(1);
+    const call = ai.calls.find((c) => c.system.includes('LERNKARTEN ZU LERNZIELEN'))!;
+    expect(call.system).toContain('genau 12 Lernkarten');
+    const question = String(call.body.messages[1].content);
+    expect(question).toContain('Kernstoff: Senat, Konsuln.');
+    expect(question).not.toContain('Spuren in der Schweiz');
+  });
+});
+
 describe('document helpers', () => {
   const goals = TOPIC_FOR_DOC.goals;
   it('fits the number of tasks to the time', () => {
@@ -256,6 +319,15 @@ describe('document helpers', () => {
     expect(tasks[4]).toMatchObject({ type: 'short', options: [], answer: '1291' });
     // In a task sheet, choice questions keep their points.
     expect(toTasks(DOC_ANSWER, goals, 'exam')[0]!.points).toBe(3);
+  });
+
+  it('keeps at most 20 results, the latest, ordered by time', () => {
+    const tasks = toTasks(DOC_ANSWER, goals, 'exam');
+    let attempts: DocAttempt[] = [];
+    for (let i = 0; i < 25; i++) attempts = withAttempt(attempts, toAttempt({ tasks }, { id: `a${i}`, at: 1000 + i, mode: 'app', learner: '', scores: {} }));
+    expect(attempts).toHaveLength(20);
+    expect(attempts[0]!.id).toBe('a5');
+    expect(toAttempt({ tasks }, { id: 'x', at: 1, mode: 'app', learner: ' Lea ', scores: { t1: 1.26, t2: -1 } }).scores).toEqual({ t1: 1.5, t2: 0 });
   });
 
   it('takes over the corrections of the check, and marks what it cannot fix', () => {

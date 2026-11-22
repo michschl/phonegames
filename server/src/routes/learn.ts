@@ -67,7 +67,7 @@ export function nextMonthStart(month: string): string {
 
 /* --------------------------------------------------------------- prompt */
 
-const SCHEMA = {
+export const CARD_SCHEMA = {
   type: 'object',
   additionalProperties: false,
   required: ['title', 'subject', 'languages', 'cards', 'suggested_modes', 'removed_personal_data'],
@@ -100,7 +100,7 @@ const SCHEMA = {
   },
 } as const;
 
-const BASE_RULES = `- Schreibe in Schweizer Rechtschreibung (ss statt ß), aber übernimm Fremdsprachen exakt mit allen Akzenten.
+export const BASE_RULES = `- Schreibe in Schweizer Rechtschreibung (ss statt ß), aber übernimm Fremdsprachen exakt mit allen Akzenten.
 - Lass Namen von Personen, Noten, Unterschriften, Klassen und Daten weg. Setze dann removed_personal_data auf true.
 - Eine Karte pro Lerninhalt. kind: translation = Wort/Ausdruck mit Übersetzung, definition = Begriff mit Erklärung,
   qa = Frage mit Antwort, number = Antwort ist eine Zahl oder Jahreszahl, cloze = Lückentext.
@@ -289,7 +289,7 @@ async function callModel(
           ],
         },
       ],
-      response_format: { type: 'json_schema', json_schema: { name: 'lernstapel', strict: true, schema: SCHEMA } },
+      response_format: { type: 'json_schema', json_schema: { name: 'lernstapel', strict: true, schema: CARD_SCHEMA } },
       // Thinking would use up the whole output budget before any card is written.
       reasoning_effort: 'none',
       // Taking over needs precision; inventing a little variety.
@@ -328,7 +328,7 @@ reason nennt dann in einem kurzen Satz den Fehler (bei Sprachfehlern die richtig
  * Invented cards get a second, text-only look by the same model: a fresh check finds
  * many of its own mistakes (e.g. a wrong «longest river»). Returns the reason per card index.
  */
-async function checkCards(config: LearnConfig, cards: LearnDraftCard[], log: FastifyBaseLogger): Promise<Map<number, string>> {
+export async function checkCards(config: LearnConfig, cards: LearnDraftCard[], log: FastifyBaseLogger): Promise<Map<number, string>> {
   const raw = (await chat(
     config,
     {

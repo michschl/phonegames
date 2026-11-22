@@ -8,8 +8,11 @@ import { topicGoalSchema } from '../schemas.ts';
 import {
   LIMITS,
   TOPIC_LEVELS,
+  type DocAttempt,
   type DocTask,
   type DocTaskType,
+  type LearnDraft,
+  type LearnExtractResponse,
   type TaskDocKind,
   type TaskDocRequest,
   type TaskDocument,
@@ -20,7 +23,11 @@ import {
 } from '../../../shared/types.ts';
 import {
   assertAnalysisLeft,
+  BASE_RULES,
+  CARD_SCHEMA,
   chat,
+  checkCards,
+  toDraft,
   IMAGE,
   learnUsage,
   looksLikeImage,
@@ -421,14 +428,78 @@ export function applyChecks(tasks: DocTask[], checks: unknown): DocTask[] {
   return result;
 }
 
+/* ------------------------------------------------------------- results */
+
+const half = (value: number) => Math.round(value * 2) / 2;
+
+/** A result as the app sends it, made safe: only tasks of the document, points between 0 and the maximum. */
+export function toAttempt(doc: Pick<TaskDocument, 'tasks'>, input: Omit<DocAttempt, 'scores'> & { scores: Record<string, number> }): DocAttempt {
+  const scores: Record<string, number> = {};
+  for (const task of doc.tasks) {
+    const value = input.scores[task.id];
+    if (typeof value === 'number' && Number.isFinite(value)) scores[task.id] = Math.min(task.points, Math.max(0, half(value)));
+  }
+  return { id: input.id, at: Math.min(input.at, Date.now() + 60_000), mode: input.mode, learner: input.learner.trim().slice(0, LIMITS.nameMax), scores };
+}
+
+/** Keeps a result (a newer one with the same id replaces it) and only the latest ones. */
+export function withAttempt(attempts: DocAttempt[], attempt: DocAttempt): DocAttempt[] {
+  return [...attempts.filter((a) => a.id !== attempt.id), attempt].sort((a, b) => a.at - b.at).slice(-LIMITS.attemptsPerDocument);
+}
+
+const attemptSchema = z.object({
+  id: z.string().regex(/^[A-Za-z0-9_-]{6,64}$/, 'Ungültiges Ergebnis.'),
+  at: z.number().int().positive(),
+  mode: z.enum(['app', 'paper']),
+  learner: z.string().max(LIMITS.nameMax).default(''),
+  scores: z.record(z.string().max(16), z.number().min(0).max(1000)).refine((value) => Object.keys(value).length <= LIMITS.tasksPerDocument),
+});
+
+/* ---------------------------------------------------------- Lernkarten */
+
+/** Lernkarten on the core content of the learning goals – for the Kartenkasten and the games of «Lernen». */
+export function cardsPrompt(level: string, count: number): string {
+  return `Du erstellst Lernkarten für ein Lernspiel für Kinder und Jugendliche in der Schweiz.
+Stufe: ${levelHint(level)}.
+
+Auftrag: LERNKARTEN ZU LERNZIELEN.
+- Du bekommst das Thema einer Prüfung mit seinen Lernzielen und dem Kernstoff.
+- Erstelle genau ${count} Lernkarten, die den Kernstoff abfragen – verteilt auf alle Lernziele.
+- Kurze, eindeutige Fragen mit kurzen Antworten: Fachbegriffe, Fakten, Jahreszahlen, Wörter. Zusammenhänge aus
+  Merktexten als Lückentext (cloze). Bei Wörtli (Fremdsprachen) Karten der Art translation.
+- Alles muss fachlich korrekt, sprachlich richtig (Artikel!) und für die Stufe passend sein. Bist du bei einer Karte
+  nicht sicher, lass sie weg. Die Antwort darf nicht schon in der Frage stehen.
+- title: das Thema, z. B. «Die Römer».
+
+Regeln:
+${BASE_RULES}`;
+}
+
+function goalsText(request: { topic: TaskDocRequest['topic']; goalIds: string[] }): string {
+  const chosen = request.topic.goals.filter((goal) => request.goalIds.length === 0 || request.goalIds.includes(goal.id));
+  return [
+    `Thema: ${request.topic.title}${request.topic.subject ? ` (${request.topic.subject})` : ''}`,
+    'Lernziele:',
+    ...chosen.map((goal, i) => `${i + 1}. ${goal.text}${goal.content ? `\n   Kernstoff: ${goal.content}` : ''}`),
+  ].join('\n');
+}
+
+const topicShape = z.object({
+  title: z.string().trim().min(1).max(LIMITS.stackTitleMax),
+  subject: z.string().trim().max(40),
+  level: z.string().trim().max(40),
+  goals: z.array(topicGoalSchema).min(1, 'Das Thema hat keine Lernziele.').max(LIMITS.goalsPerTopic),
+});
+
+const cardsSchema = z.object({
+  topic: topicShape,
+  goalIds: z.array(z.string().max(64)).max(LIMITS.goalsPerTopic).default([]),
+  count: z.number().int().min(5).max(30).default(15),
+});
+
 const docRequestSchema = z.object({
   topicId: z.string().regex(/^[A-Za-z0-9_-]{6,64}$/, 'Ungültiges Thema.'),
-  topic: z.object({
-    title: z.string().trim().min(1).max(LIMITS.stackTitleMax),
-    subject: z.string().trim().max(40),
-    level: z.string().trim().max(40),
-    goals: z.array(topicGoalSchema).min(1, 'Das Thema hat keine Lernziele.').max(LIMITS.goalsPerTopic),
-  }),
+  topic: topicShape,
   kind: z.enum(['quiz', 'tasks', 'exam']),
   durationMin: z.union([z.literal(15), z.literal(30), z.literal(45)]),
   difficulty: z.enum(['easy', 'mixed', 'hard']),
@@ -520,6 +591,79 @@ export const taskRoutes: FastifyPluginAsync<{ rateLimit: boolean; learn: LearnCo
     const { id } = docIdSchema.parse(request.params);
     if (!deleteDocument(app.db, request.user!.id, id)) throw new HttpError(404, 'document_not_found', 'Diese Unterlage gibt es nicht mehr.');
     return reply.status(204).send();
+  });
+
+  /** A result: solved in the app, or the points of a sheet solved on paper. */
+  app.post('/documents/:id/attempts', { preHandler: app.requireAccess, config: limit(120) }, async (request): Promise<{ document: TaskDocument }> => {
+    const { id } = docIdSchema.parse(request.params);
+    const userId = request.user!.id;
+    const doc = getDocument(app.db, userId, id);
+    if (!doc) throw new HttpError(404, 'document_not_found', 'Diese Unterlage gibt es nicht mehr.');
+    if (doc.status !== 'ready') throw new HttpError(409, 'document_not_ready', 'Die Unterlage ist noch nicht fertig.');
+    const attempt = toAttempt(doc, attemptSchema.parse(request.body));
+    return { document: saveDocument(app.db, userId, { ...doc, attempts: withAttempt(doc.attempts, attempt), updatedAt: Date.now() }) };
+  });
+
+  app.delete('/documents/:id/attempts/:attemptId', { preHandler: app.requireAccess }, async (request): Promise<{ document: TaskDocument }> => {
+    const { id, attemptId } = docIdSchema.extend({ attemptId: z.string().max(64) }).parse(request.params);
+    const userId = request.user!.id;
+    const doc = getDocument(app.db, userId, id);
+    if (!doc) throw new HttpError(404, 'document_not_found', 'Diese Unterlage gibt es nicht mehr.');
+    const attempts = doc.attempts.filter((a) => a.id !== attemptId);
+    return { document: attempts.length === doc.attempts.length ? doc : saveDocument(app.db, userId, { ...doc, attempts, updatedAt: Date.now() }) };
+  });
+
+  /** Lernkarten from the learning goals – a draft to review, counted like a photo analysis. */
+  app.post('/cards', { preHandler: app.requireAccess, config: limit(20), bodyLimit: 256 * 1024 }, async (request): Promise<LearnExtractResponse> => {
+    const learn = opts.learn;
+    if (!learn) throw new HttpError(503, 'learn_unavailable', 'Die KI ist auf diesem Server nicht eingerichtet.');
+    const userId = request.user!.id;
+    const body = cardsSchema.parse(request.body);
+    assertAnalysisLeft(app.db, learn, userId);
+    if (running.has(userId)) throw new HttpError(429, 'learn_running', 'Eine Auswertung läuft bereits.');
+
+    running.add(userId);
+    try {
+      let draft: LearnDraft | null = null;
+      for (let attempt = 0; attempt < 2 && !draft; attempt++) {
+        try {
+          const raw = await chat(
+            learn,
+            {
+              messages: [
+                { role: 'system', content: cardsPrompt(body.topic.level, body.count) },
+                { role: 'user', content: goalsText(body) },
+              ],
+              response_format: { type: 'json_schema', json_schema: { name: 'lernstapel', strict: true, schema: CARD_SCHEMA } },
+              reasoning_effort: 'none',
+              temperature: 0.5,
+              max_tokens: 8000,
+            },
+            'cards',
+            request.log,
+          );
+          draft = toDraft(raw, true);
+          // The topic names the stack when the model leaves title or subject out.
+          const named = raw as { title?: unknown; subject?: unknown } | null;
+          if (!text(named?.title)) draft.title = body.topic.title.slice(0, LIMITS.stackTitleMax);
+          if (!text(named?.subject)) draft.subject = body.topic.subject;
+        } catch (error) {
+          if (!(error instanceof UpstreamError)) throw error;
+          if (attempt === 1) throw new HttpError(502, 'learn_failed', 'Das hat leider nicht geklappt. Versuch es nochmals.');
+        }
+      }
+      if (!draft || draft.cards.length === 0) throw new HttpError(422, 'learn_empty', 'Zu diesen Lernzielen habe ich keine Lernkarten gefunden.');
+      try {
+        const issues = await checkCards(learn, draft.cards, request.log);
+        for (const [index, reason] of issues) draft.cards[index]!.uncertain = `Möglicherweise falsch – ${reason}`.slice(0, 200);
+      } catch (error) {
+        if (!(error instanceof UpstreamError)) throw error;
+      }
+      countLearnUsage(app.db, userId, currentMonth());
+      return { draft, usage: learnUsage(app.db, learn, userId) };
+    } finally {
+      running.delete(userId);
+    }
   });
 
   /**

@@ -14,9 +14,21 @@ import { sound } from '../lib/audio.ts';
 import { haptic } from '../lib/device.ts';
 import { subjectEmoji } from '../lib/learn.ts';
 import { documentMeta, KIND_INFO } from '../lib/taskDocs.ts';
+import { attemptSummary, goalStatus, GOAL_LEVEL, latestAttempt, weakGoals } from '../lib/taskResults.ts';
 import type { PdfVariant } from '../lib/taskPdf.ts';
 import { daysUntil, examDateLabel, examLabel } from '../lib/topics.ts';
-import { createDocument, deleteDocument, loadDocument, loadDocuments, useDocuments, usePollPending, useTopicDocuments } from '../store/documents.ts';
+import {
+  createDocument,
+  deleteAttempt,
+  deleteDocument,
+  flushAttempts,
+  loadDocument,
+  loadDocuments,
+  useDocuments,
+  usePollPending,
+  useTopicDocuments,
+} from '../store/documents.ts';
+import { fromDraft, useLearnDraft } from '../store/learnDraft.ts';
 import { useAuth } from '../store/auth.ts';
 import { useData, useTopic, useTopics } from '../store/data.ts';
 import { useGameSettings, useSettings } from '../store/settings.ts';
@@ -427,9 +439,17 @@ export function TopicPage() {
   const online = useUi((s) => s.online);
   const documents = useTopicDocuments(topicId);
   usePollPending(documents);
+  const navigate = useNavigate();
+  const userId = useAuth((s) => s.user?.id ?? '');
+  const [cardsOpen, setCardsOpen] = useState(false);
+  const [cardCount, setCardCount] = useState('20');
+  const [cardsBusy, setCardsBusy] = useState(false);
+  const [cardsError, setCardsError] = useState<string | null>(null);
+  const status = useMemo(() => (topic ? goalStatus(topic, documents) : {}), [topic, documents]);
 
   useEffect(() => {
-    if (topicId && online) void loadDocuments(topicId).catch(() => undefined);
+    if (!topicId || !online) return;
+    void flushAttempts().then(() => loadDocuments(topicId).catch(() => undefined));
   }, [topicId, online]);
 
   if (!topic) {
@@ -441,6 +461,31 @@ export function TopicPage() {
   }
 
   const exam = examLabel(topic.examDate);
+  const weak = weakGoals(topic, status);
+  const tested = Object.values(status).some((g) => g.level !== 'offen');
+
+  const makeCards = async () => {
+    setCardsBusy(true);
+    setCardsError(null);
+    sound.unlock();
+    try {
+      const { draft } = await api.topicCards({
+        topic: { title: topic.title, subject: topic.subject, level: topic.level, goals: topic.goals },
+        goalIds: [],
+        count: Number(cardCount),
+      });
+      useLearnDraft.getState().setDraft({ ...fromDraft(draft, 'text'), ownerId: userId });
+      sound.sparkle();
+      setCardsOpen(false);
+      navigate('/stapel/neu', { viewTransition: true });
+    } catch (err) {
+      setCardsError(errorMessage(err));
+      sound.fail();
+    } finally {
+      setCardsBusy(false);
+    }
+  };
+
   return (
     <Page
       title={topic.title}
@@ -462,20 +507,49 @@ export function TopicPage() {
 
       <Section title={`Lernziele (${topic.goals.length})`}>
         <ol className="goal-view">
-          {topic.goals.map((goal, i) => (
+          {topic.goals.map((goal, i) => {
+            const goalState = status[goal.id];
+            const level = goalState && goalState.level !== 'offen' ? GOAL_LEVEL[goalState.level] : null;
+            return (
             <li key={goal.id}>
               <details>
                 <summary>
                   <span className="goal-view__num" aria-hidden="true">
                     {i + 1}
                   </span>
-                  <span>{goal.text}</span>
+                  <span>
+                    {goal.text}
+                    {level && (
+                      <span className={`goal-status__badge is-${goalState!.level}`}>
+                        {level.emoji} {level.label}
+                      </span>
+                    )}
+                  </span>
                 </summary>
                 {goal.content ? <p className="goal-view__content">{goal.content}</p> : <p className="goal-view__content is-empty">Kein Kernstoff erfasst.</p>}
               </details>
             </li>
-          ))}
+            );
+          })}
         </ol>
+        {tested && (
+          <p className="goal-summary">
+            {weak.length === 0
+              ? 'Nach den letzten Ergebnissen sitzen alle geprüften Lernziele. 🎉'
+              : `Nach den letzten Ergebnissen ${weak.length === 1 ? 'braucht ein Lernziel' : `brauchen ${weak.length} Lernziele`} noch Übung.`}
+          </p>
+        )}
+        <div className="topic-tools">
+          {weak.length > 0 && (
+            <Link to={`/aufgaben/${topic.id}/unterlage?ziele=${weak.join(',')}`} className="btn btn--secondary btn--block" viewTransition>
+              <Icon name="refresh" size={18} />
+              <span>Gezielt üben</span>
+            </Link>
+          )}
+          <Button variant="secondary" block icon="cards" onClick={() => setCardsOpen(true)}>
+            Lernkarten daraus machen
+          </Button>
+        </div>
       </Section>
 
       <Section title="Unterlagen">
@@ -495,7 +569,9 @@ export function TopicPage() {
                       ? 'Phoni schreibt …'
                       : doc.status === 'failed'
                         ? 'Hat nicht geklappt'
-                        : `${documentMeta(doc)} · ${new Date(doc.createdAt).toLocaleDateString('de-CH')}`}
+                        : latestAttempt(doc)
+                          ? `${documentMeta(doc)} · zuletzt ${attemptSummary(doc, latestAttempt(doc)!)}`
+                          : `${documentMeta(doc)} · ${new Date(doc.createdAt).toLocaleDateString('de-CH')}`}
                   </span>
                 </span>
                 {doc.status === 'pending' && <span className="spinner" aria-label="wird erstellt" />}
@@ -511,6 +587,27 @@ export function TopicPage() {
           <span>Unterlage erstellen</span>
         </Link>
       </BottomBar>
+
+      <Sheet open={cardsOpen} onClose={() => !cardsBusy && setCardsOpen(false)} title="Lernkarten daraus machen">
+        <p className="sheet__text">
+          Phoni schreibt Lernkarten zum Kernstoff der Lernziele – für den Kartenkasten, das Duell und die anderen Spielformen. Du prüfst sie, bevor
+          sie gespeichert werden. Zählt als eine Auswertung.
+        </p>
+        <div className="settings-panel__group">
+          <span className="settings-panel__label">Wie viele Karten?</span>
+          <Segmented
+            label="Wie viele Karten?"
+            value={cardCount}
+            options={['10', '20', '30'].map((n) => ({ value: n, label: n }))}
+            onChange={setCardCount}
+          />
+        </div>
+        {!online && <p className="notice notice--warn">Dafür brauchst du Internet.</p>}
+        {cardsError && <p className="notice notice--error">{cardsError}</p>}
+        <Button size="lg" block icon="sparkles" loading={cardsBusy} disabled={!online} onClick={() => void makeCards()}>
+          {cardsBusy ? 'Phoni schreibt Karten …' : 'Karten erstellen'}
+        </Button>
+      </Sheet>
     </Page>
   );
 }
@@ -545,8 +642,14 @@ export function NewDocumentPage() {
   const topic = useTopic(topicId);
   const navigate = useNavigate();
   const online = useUi((s) => s.online);
+  const [params] = useSearchParams();
   const [choice, setChoice] = useGameSettings<DocChoice>('aufgaben-unterlage', { kind: 'quiz', durationMin: 15, difficulty: 'mixed' });
-  const [goalIds, setGoalIds] = useState<string[]>(() => topic?.goals.map((g) => g.id) ?? []);
+  // «Gezielt üben» comes with the goals that need practice.
+  const [goalIds, setGoalIds] = useState<string[]>(() => {
+    const all = topic?.goals.map((g) => g.id) ?? [];
+    const wanted = (params.get('ziele') ?? '').split(',').filter((id) => all.includes(id));
+    return wanted.length > 0 ? wanted : all;
+  });
   const [usage, setUsage] = useState<TaskUsage | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -689,13 +792,16 @@ export function DocumentPage() {
   const [pdfBusy, setPdfBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [missing, setMissing] = useState(false);
+  const [removeAttempt, setRemoveAttempt] = useState<string | null>(null);
   usePollPending(doc ? [doc] : []);
 
   useEffect(() => {
     if (!docId || !online) return;
-    loadDocument(docId).catch((err) => {
-      if (err instanceof ApiError && err.status === 404) setMissing(true);
-    });
+    void flushAttempts()
+      .then(() => loadDocument(docId))
+      .catch((err) => {
+        if (err instanceof ApiError && err.status === 404) setMissing(true);
+      });
   }, [docId, online]);
 
   if (!topic || missing) return <Navigate to={topic ? `/aufgaben/${topic.id}` : TASKS} replace />;
@@ -825,16 +931,61 @@ export function DocumentPage() {
         <Icon name="sparkles" size={16} />
         <span>Aufgaben und Musterlösungen hat Phoni erstellt und einmal kontrolliert. Auch eine KI irrt sich – bitte überfliege sie vor dem Drucken.</span>
       </p>
+      <Section title="Ergebnisse">
+        {doc.attempts.length === 0 ? (
+          <p className="learn-hub__calm">Noch keine. Löse die Unterlage in der App – oder trag nach dem Lösen auf Papier die Punkte ein.</p>
+        ) : (
+          <ul className="attempt-list">
+            {[...doc.attempts].reverse().map((attempt) => (
+              <li key={attempt.id} className="attempt-row">
+                <span className="attempt-row__icon" aria-hidden="true">
+                  {attempt.mode === 'app' ? '📱' : '📄'}
+                </span>
+                <span className="attempt-row__text">
+                  <strong>{attemptSummary(doc, attempt)}</strong>
+                  <small>
+                    {[attempt.learner, new Date(attempt.at).toLocaleDateString('de-CH'), attempt.mode === 'app' ? 'in der App' : 'auf Papier'].filter(Boolean).join(' · ')}
+                  </small>
+                </span>
+                <IconButton icon="trash" label="Ergebnis löschen" onClick={() => setRemoveAttempt(attempt.id)} />
+              </li>
+            ))}
+          </ul>
+        )}
+        <Link to={`/aufgaben/${topic.id}/${doc.id}/ergebnis`} className="btn btn--secondary btn--block" viewTransition>
+          <Icon name="edit" size={18} />
+          <span>Ergebnis vom Papier eintragen</span>
+        </Link>
+      </Section>
       <div className="doc-actions">
-        <Button variant="secondary" block icon="refresh" onClick={() => void again()} disabled={!online}>
+        <Button variant="ghost" block icon="refresh" onClick={() => void again()} disabled={!online}>
           Neue Version mit anderen Aufgaben
         </Button>
       </div>
       <BottomBar>
-        <Button size="lg" block icon="download" onClick={() => setPdfOpen(true)}>
-          Als PDF
-        </Button>
+        <div className="solve-nav">
+          <Button variant="secondary" icon="download" onClick={() => setPdfOpen(true)}>
+            PDF
+          </Button>
+          <Link to={`/aufgaben/${topic.id}/${doc.id}/loesen`} className="btn btn--primary" viewTransition>
+            <Icon name="play" size={18} />
+            <span>In der App lösen</span>
+          </Link>
+        </div>
       </BottomBar>
+      <ConfirmSheet
+        open={removeAttempt !== null}
+        onClose={() => setRemoveAttempt(null)}
+        title="Ergebnis löschen?"
+        message="Es zählt dann nicht mehr für die Lernziele."
+        confirmLabel="Löschen"
+        danger
+        onConfirm={() => {
+          const id = removeAttempt;
+          setRemoveAttempt(null);
+          if (id) deleteAttempt(doc.id, id).catch((err) => toast(errorMessage(err), { tone: 'error' }));
+        }}
+      />
       <Sheet open={pdfOpen} onClose={() => setPdfOpen(false)} title="Als PDF">
         <div className="action-list">
           {PDF_OPTIONS.map((option) => (

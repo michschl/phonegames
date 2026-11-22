@@ -2675,3 +2675,495 @@
 .doc-card .spinner {
   flex: none;
 }
+
+/* ======================================================= Aufgaben: lösen und Ergebnisse */
+
+.learn-due__list + .learn-due__list,
+.learn-due__list + .learn-hub__calm {
+  margin-top: 8px;
+}
+
+.learn-due__exam {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--pink-soft);
+  font-size: 18px;
+}
+
+/* Goal status: «sitzt», «fast», «üben». */
+.goal-status__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1.5px solid var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  vertical-align: 1px;
+  background: var(--paper);
+}
+
+.goal-status__badge.is-sicher,
+.goal-status.is-sicher .goal-status__badge {
+  background: var(--lime-soft);
+}
+
+.goal-status__badge.is-fast,
+.goal-status.is-fast .goal-status__badge {
+  background: var(--yellow-soft);
+}
+
+.goal-status__badge.is-ueben,
+.goal-status.is-ueben .goal-status__badge {
+  background: var(--pink-soft);
+}
+
+.goal-summary {
+  margin: 10px 0 0;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+.topic-tools {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.goal-status-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.goal-status {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  padding: 12px;
+  border-radius: var(--radius);
+  border: var(--border);
+  background: var(--paper);
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.goal-status .goal-status__badge {
+  margin-left: 0;
+}
+
+/* Results of a document. */
+.attempt-list {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.attempt-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 6px 8px 12px;
+  border-radius: var(--radius);
+  border: var(--border);
+  background: var(--paper);
+}
+
+.attempt-row__icon {
+  font-size: 22px;
+}
+
+.attempt-row__text {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+}
+
+.attempt-row__text small {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* Two buttons side by side in the bottom bar. */
+.solve-nav {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  max-width: calc(var(--page-max) - 40px);
+  margin: 0 auto;
+}
+
+.start-bar .solve-nav .btn {
+  margin: 0;
+}
+
+/* Solving one task after the other. */
+.solve-intro {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.solve-intro__emoji {
+  font-size: 54px;
+  line-height: 1.1;
+}
+
+.solve-intro__meta {
+  margin: 0;
+  font-weight: 800;
+}
+
+.solve-intro__hint {
+  margin: 0;
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+
+.solver-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.solver-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 14px 4px 4px;
+  border-radius: 999px;
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow-sm);
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.solver-chip.is-active {
+  background: var(--yellow);
+}
+
+.solve-progress {
+  height: 10px;
+  margin: 0 0 14px;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  overflow: hidden;
+}
+
+.solve-progress span {
+  display: block;
+  height: 100%;
+  background: var(--cyan);
+  transition: width 0.3s var(--ease-out);
+}
+
+.solve-task {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border-radius: var(--radius-lg);
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow);
+}
+
+.solve-task__prompt {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.4;
+  white-space: pre-line;
+}
+
+.solve-options {
+  display: grid;
+  gap: 10px;
+}
+
+.solve-options.is-pair {
+  grid-template-columns: 1fr 1fr;
+}
+
+.solve-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 54px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow-sm);
+  color: var(--ink);
+  font-size: 16.5px;
+  font-weight: 700;
+  text-align: left;
+  transition:
+    transform 0.12s,
+    box-shadow 0.12s,
+    background 0.2s;
+}
+
+.solve-options.is-pair .solve-option {
+  justify-content: center;
+}
+
+.solve-option:active {
+  transform: translateY(3px);
+  box-shadow: none;
+}
+
+.solve-option.is-chosen {
+  background: var(--yellow);
+}
+
+.solve-option__key {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.solve-input,
+.solve-textarea {
+  width: 100%;
+  font-size: 17px;
+}
+
+.solve-pad {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+.solve-dots {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin: 18px 0 6px;
+}
+
+.solve-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.solve-dot.is-done {
+  background: var(--lime-soft);
+}
+
+.solve-dot.is-current {
+  background: var(--yellow);
+  transform: scale(1.12);
+}
+
+.solve-keep {
+  margin: 8px 0 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* Hand-in: the solutions, points given by oneself. */
+.solve-check.is-right {
+  border-color: var(--green);
+}
+
+.solve-check.is-wrong {
+  border-color: var(--red);
+}
+
+.solve-check__mine {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.solve-check__mark {
+  font-weight: 900;
+}
+
+.solve-check.is-right .solve-check__mark {
+  color: var(--green);
+}
+
+.solve-check.is-wrong .solve-check__mark {
+  color: var(--red);
+}
+
+.solve-check__ask {
+  margin: 4px 0 0;
+  font-weight: 800;
+}
+
+.points-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.points-picker__step {
+  min-width: 42px;
+  height: 42px;
+  padding: 0 10px;
+  border-radius: 12px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.points-picker__step.is-active {
+  background: var(--cyan);
+  color: #fff;
+}
+
+.solve-result {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+.solve-result__points {
+  margin: 4px 0 0;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.solve-result__text {
+  margin: 0;
+  color: var(--ink-2);
+  font-weight: 700;
+}
+
+/* Points from paper. */
+.paper-tasks {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.paper-task {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border-radius: var(--radius);
+  border: var(--border);
+  background: var(--paper);
+}
+
+.paper-task__prompt {
+  margin: 0;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.paper-task__answer {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.paper-total {
+  max-width: calc(var(--page-max) - 40px);
+  margin: 0 auto 8px;
+  text-align: center;
+  font-weight: 800;
+}
+
+/* «Notizblatt»: finger or pen. */
+.notepad {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
+.notepad__sheet {
+  display: block;
+  width: 100%;
+  height: min(62vh, 520px);
+  border-radius: var(--radius);
+  border: var(--border);
+  background: #fffef9;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.notepad.is-readonly .notepad__sheet {
+  height: 220px;
+  cursor: default;
+  touch-action: auto;
+}
+
+.notepad__tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.notepad__tools .chip:disabled {
+  opacity: 0.45;
+}
+
+.text-import.solve-input {
+  min-height: 0;
+  height: 52px;
+  resize: none;
+}
+
+.text-import.solve-textarea {
+  min-height: 110px;
+}
+
+/* Room below for the bottom bar. */
+.topic-page,
+.doc-page,
+.solve-start,
+.solve-page,
+.solve-review,
+.solve-done {
+  padding-bottom: calc(var(--safe-bottom) + 140px);
+}
+
+.paper-result {
+  padding-bottom: calc(var(--safe-bottom) + 180px);
+}
+
+.solve-review > .notice,
+.paper-result > .notice {
+  margin-bottom: 14px;
+}

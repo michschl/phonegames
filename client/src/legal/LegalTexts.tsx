@@ -84,8 +84,10 @@ export function TermsText() {
       <Section title="2. Was phonegames bietet">
         <p>
           phonegames ist eine Web-App mit Spielen für eine Runde auf einem Handy und mit Lernfunktionen: Lernstapel erfassen (auch
-          per Foto), mit dem Kartenkasten und weiteren Spielformen lernen und Lernstapel per Link teilen. Deine Daten werden
-          zwischen deinen Geräten synchronisiert.
+          per Foto), mit dem Kartenkasten und weiteren Spielformen lernen, Lernstapel per Link teilen und sich mit Themen,
+          Lernzielen und von einer KI erstellten Unterlagen (Wissenstests, Übungsaufgaben, Probeprüfungen) auf Prüfungen
+          vorbereiten. Deine Daten werden zwischen deinen Geräten synchronisiert. Von der KI erstellte Inhalte können Fehler
+          enthalten; prüfe sie, bevor du dich darauf verlässt.
         </p>
         <p>
           Wir entwickeln phonegames laufend weiter; Funktionen können sich ändern, dazukommen oder wegfallen. Wir bemühen uns um
@@ -236,12 +238,14 @@ export function PrivacyText() {
           </li>
           <li>
             <strong>Was du in der App erfasst:</strong> deine Spieleliste, Spielgruppen mit Vornamen und Farben der Mitspielenden,
-            Lernstapel, der Lernstand pro lernender Person (Vorname, Fächer, Lerntage) und geteilte Lernstapel (eine Kopie der
-            Karten sowie die Zahl der Übernahmen).
+            Lernstapel, der Lernstand pro lernender Person (Vorname, Fächer, Lerntage), geteilte Lernstapel (eine Kopie der
+            Karten sowie die Zahl der Übernahmen), Themen mit Lernzielen und Prüfungsdatum, die Unterlagen dazu und deren
+            Ergebnisse (Vorname, Datum, Punkte pro Aufgabe). Antworten und Notizen beim Lösen in der App bleiben auf dem Gerät.
           </li>
           <li>
-            <strong>Fotos für Lernstapel:</strong> Der Server leitet die Fotos zur Auswertung an die KI von Infomaniak weiter. Sie
-            werden weder gespeichert noch protokolliert – es bleiben nur die erkannten Karten. Die KI ist angewiesen, Namen,
+            <strong>Fotos und Stichworte für Lernstapel und Themen:</strong> Der Server leitet sie zur Auswertung an die KI von
+            Infomaniak weiter, ebenso die Lernziele eines Themas, wenn du Unterlagen oder Lernkarten erstellen lässt. Fotos
+            werden weder gespeichert noch protokolliert – es bleiben nur die erkannten Karten bzw. Lernziele. Die KI ist angewiesen, Namen,
             Noten und Unterschriften wegzulassen.
           </li>
           <li>

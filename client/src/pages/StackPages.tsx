@@ -166,7 +166,7 @@ export function NewStackPage() {
       >
         <p className="notice notice--info stack-review-note">
           {draft.generated
-            ? `Phoni hat ${cardCount(draft.cards.length)} zum Thema deiner Fotos neu erfunden und nochmals kontrolliert. Auch eine KI irrt sich – bitte prüfe jede Karte.`
+            ? `Phoni hat ${cardCount(draft.cards.length)} zum Thema ${draft.source === 'photo' ? 'deiner Fotos ' : ''}neu erfunden und nochmals kontrolliert. Auch eine KI irrt sich – bitte prüfe jede Karte.`
             : draft.source === 'photo'
               ? `Phoni hat ${cardCount(draft.cards.length)} erkannt.`
               : `${cardCount(draft.cards.length)} erkannt.`}{' '}

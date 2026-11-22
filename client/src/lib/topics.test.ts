@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { daysUntil, examLabel } from './topics.ts';
+import { daysUntil, examLabel, upcomingExams } from './topics.ts';
 
 describe('day of the test', () => {
   const NOW = new Date(2026, 10, 22, 18).getTime();
@@ -16,5 +16,21 @@ describe('day of the test', () => {
     expect(examLabel('2026-11-23', NOW)).toBe('Prüfung morgen');
     expect(examLabel('2026-11-27', NOW)).toBe('Prüfung in 5 Tagen');
     expect(examLabel('2026-11-21', NOW)).toBeNull();
+  });
+
+  it('lists the tests of the next seven days, soonest first', () => {
+    const now = new Date(2026, 10, 22, 9).getTime();
+    const topics = [
+      { id: 'a', examDate: '2026-11-29' },
+      { id: 'b', examDate: '2026-11-23' },
+      { id: 'c', examDate: '2026-11-30' },
+      { id: 'd', examDate: '2026-11-21' },
+      { id: 'e', examDate: null },
+      { id: 'f', examDate: '2026-11-22', deleted: true },
+    ];
+    expect(upcomingExams(topics, 7, now).map((e) => [e.topic.id, e.days])).toEqual([
+      ['b', 1],
+      ['a', 7],
+    ]);
   });
 });

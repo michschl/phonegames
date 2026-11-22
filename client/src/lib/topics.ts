@@ -27,3 +27,12 @@ export function examDateLabel(examDate: string): string {
   const [year, month, day] = examDate.split('-').map(Number) as [number, number, number];
   return new Date(year, month - 1, day).toLocaleDateString('de-CH', { day: 'numeric', month: 'long', year: 'numeric' });
 }
+
+/** Topics whose test is today or within the next days – soonest first (for «Heute dran»). */
+export function upcomingExams<T extends { examDate: string | null; deleted?: boolean }>(topics: T[], withinDays = 7, now = Date.now()): { topic: T; days: number }[] {
+  return topics
+    .filter((topic) => !topic.deleted)
+    .map((topic) => ({ topic, days: daysUntil(topic.examDate, now) }))
+    .filter((entry): entry is { topic: T; days: number } => entry.days !== null && entry.days >= 0 && entry.days <= withinDays)
+    .sort((a, b) => a.days - b.days);
+}

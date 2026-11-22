@@ -317,9 +317,19 @@ export interface DocTask {
 export interface DocAttempt {
   id: string;
   at: number;
+  /** app = solved in the app, paper = points entered after solving on paper. */
   mode: 'app' | 'paper';
+  /** Who solved it (a name of «Wer lernt?»), or empty. */
+  learner: string;
   /** Task id → points reached. */
   scores: Record<string, number>;
+}
+
+/** Lernkarten from the learning goals of a topic – reviewed like a photo analysis before saving. */
+export interface TopicCardsRequest {
+  topic: Pick<LearnTopic, 'title' | 'subject' | 'level' | 'goals'>;
+  goalIds: string[];
+  count: number;
 }
 
 /** A test, task sheet or practice exam made by the AI from the learning goals of a topic. */

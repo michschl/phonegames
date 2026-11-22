@@ -151,6 +151,9 @@ die Daten in der Schweiz.
 | `learn_stacks` | `user_id`, `id`, `data` (JSON: Titel, Fach, Sprachen, Karten, empfohlene Spielformen, Quelle), `created_at`, `updated_at`, `deleted` |
 | `learn_progress` | `user_id`, `id` (aus Stapel und Personenname abgeleitet), `stack_id`, `data` (JSON: Name, Fach und Fälligkeit pro Karte, Lerntage für die Lernserie), `updated_at`, `deleted` |
 | `learn_usage` | `user_id`, `month` (Kalendermonat in der Schweiz, z. B. `2026-11`), `count` – für das Monatslimit der Foto-Auswertung |
+| `learn_topics` | `user_id`, `id`, `data` (JSON: Titel, Fach, Stufe, Prüfungsdatum, Lernziele mit Kernstoff, Notizen, Quelle), `created_at`, `updated_at`, `deleted` – synchronisiert wie die Stapel |
+| `learn_documents` | `user_id`, `id`, `topic_id`, `kind` (`quiz`/`tasks`/`exam`), `status` (`pending`/`ready`/`failed`), `data` (JSON: Titel, Anleitung, Dauer, Schwierigkeit, Aufgaben mit Musterlösungen, Ergebnisse), Zeitstempel – nicht im Sync, sondern über `/api/tasks/documents` |
+| `task_usage` | `user_id`, `month`, `count` – Monatslimit der Unterlagen |
 | `learn_shares` | `id` (zufällig, 128 Bit), `owner_id`, `stack_id` (ein Link pro Stapel), `data` (JSON: Kopie der Karten ohne Lernstand), `imports`, `signups`, Zeitstempel |
 
 Migrationen stehen in [`server/src/db.ts`](../server/src/db.ts) und laufen beim Start automatisch. Neue
@@ -185,7 +188,7 @@ Alle Antworten sind JSON. Fehler haben die Form `{ "error": "code", "message": "
 | `POST /api/account/terms` | ✅ | `{ version }` | `{ user }` – Zustimmung zu Nutzungsbedingungen und Datenschutzerklärung (`shared/legal.ts`) |
 | `DELETE /api/account` | ✅ | `{ password }` | `204` |
 | `GET /api/account/export` | ✅ | – | JSON-Datei mit allen Daten |
-| `POST /api/sync` | ✅ | `{ library, groups, stacks, progress }` (ältere Apps ohne `stacks`/`progress` gehen auch) | `{ library, groups, stacks, progress, serverTime }` |
+| `POST /api/sync` | ✅ | `{ library, groups, stacks, progress, topics }` (ältere Apps ohne `stacks`/`progress`/`topics` gehen auch) | `{ library, groups, stacks, progress, topics, serverTime }` |
 | `GET /api/learn/usage` | ✅ | – | `{ available, used, limit, remaining, resetsOn, maxPhotos }` |
 | `GET /api/shares/mine` | ✅ | – | `{ shares: LearnShareInfo[] }` |
 | `POST /api/shares` | ✅ | `{ stackId, title, subject, languages, cards, suggestedModes }` | `{ share }` – legt den Link an oder aktualisiert die Karten dahinter |
@@ -193,6 +196,15 @@ Alle Antworten sind JSON. Fehler haben die Form `{ "error": "code", "message": "
 | `GET /api/shares/:id` | – | – | Vorschau `{ title, subject, cardCount, sample }` · `404 share_not_found` |
 | `POST /api/shares/:id/import` | ✅ | – | `{ stack }` (Kopie der Karten) |
 | `POST /api/learn/extract` | ✅ | `{ images: string[], mode?: 'exact' \| 'creative', count?: 5–30 }` (1–6 JPEG/PNG/WebP als Data-URL) | `{ draft, usage }` · `429 learn_limit` / `learn_running` · `422 learn_empty` · `502 learn_failed` · `503 learn_unavailable` / `learn_busy` |
+| `POST /api/tasks/topic` | ✅ | `{ images: string[], text, subject, level }` (Fotos und/oder Stichworte) | `{ draft, usage }` – Lernziele mit Kernstoff; zählt wie eine Foto-Auswertung · `429 learn_limit` / `learn_running` · `422 learn_empty` |
+| `GET /api/tasks/usage` | ✅ | – | `{ available, used, limit, remaining, resetsOn }` – Unterlagen in diesem Monat |
+| `GET /api/tasks/documents?topicId=…` | ✅ | – | `{ documents }` eines Themas, neueste zuerst |
+| `GET /api/tasks/documents/:id` | ✅ | – | `{ document }` · `404 document_not_found` |
+| `POST /api/tasks/documents` | ✅ | `{ topicId, topic, kind, durationMin: 15\|30\|45, difficulty, goalIds }` | `{ document, usage }` – sofort mit `status: 'pending'`; die KI schreibt im Hintergrund · `429 task_limit` / `task_running` |
+| `DELETE /api/tasks/documents/:id` | ✅ | – | `204` |
+| `POST /api/tasks/documents/:id/attempts` | ✅ | `{ id, at, mode: 'app'\|'paper', learner, scores }` | `{ document }` – Ergebnis (höchstens 20 pro Unterlage) · `409 document_not_ready` |
+| `DELETE /api/tasks/documents/:id/attempts/:attemptId` | ✅ | – | `{ document }` |
+| `POST /api/tasks/cards` | ✅ | `{ topic, goalIds, count: 5–30 }` | `{ draft, usage }` – Lernkarten zu den Lernzielen, zählt wie eine Foto-Auswertung |
 
 Sync, Lernen, Teilen (anlegen, übernehmen) und die Erzählstimme brauchen zusätzlich ein laufendes Abo oder ein
 kostenloses Konto, sonst `402 subscription_required`. Konto, Export und Löschen gehen immer.
@@ -222,6 +234,7 @@ Die Typen stehen in [`shared/types.ts`](../shared/types.ts).
 | `LEARN_AI_MODEL` | `Qwen/Qwen3.8-27B-FP8` | Modell mit Bildverständnis |
 | `LEARN_MONTHLY_LIMIT` | `5` | Foto-Auswertungen pro Person und Kalendermonat |
 | `LEARN_GLOBAL_MONTHLY_LIMIT` | `2000` | Notbremse: Auswertungen pro Monat über alle Konten |
+| `TASK_MONTHLY_LIMIT` | `20` | Unterlagen («Aufgaben»: Wissenstests, Übungsaufgaben, Probeprüfungen) pro Person und Kalendermonat |
 | `LEARN_AI_URL` | `https://api.infomaniak.com` | Basis-URL der KI-Schnittstelle (für Tests) |
 
 ## Sound, Grafik & Haptik
@@ -315,8 +328,41 @@ Die Typen stehen in [`shared/types.ts`](../shared/types.ts).
 - **Teilen:** Auf der Stapel-Seite erzeugt «Link teilen» eine Freigabe (`POST /api/shares`) mit zufälliger ID
   (`/s/<id>`) und öffnet das Teilen-Menü des Handys (sonst wird der Link kopiert). Der Server speichert eine Kopie
   der Karten, ohne Lernstand und ohne Namen. Die Vorschau sehen alle mit dem Link (Titel, Fach, Anzahl, drei
-  Beispielkarten, `X-Robots-Tag: noindex`); übernehmen können nur angemeldete Personen – als eigene Kopie. Solange
-  die Registrierung einen Einladungscode braucht, gilt der Link als Einladung, höchstens für 50 neue Konten
-  (`LIMITS.shareSignups`). Nach Registrierung oder Anmeldung über den Link wird der Stapel gleich übernommen. Wer
+  Beispielkarten, `X-Robots-Tag: noindex`); übernehmen können nur angemeldete Personen – als eigene Kopie. Wer noch
+  kein Konto hat, registriert sich normal (mit Abo oder Einladungscode); danach wird der Stapel gleich übernommen. Wer
   teilt, sieht, wie oft übernommen wurde, kann die geteilte Version aktualisieren und die Freigabe beenden.
 
+## Aufgaben (Prüfungsvorbereitung)
+
+Der zweite Bereich im Tab «Lernen» (Konzept: [KONZEPT-AUFGABEN.md](KONZEPT-AUFGABEN.md)) – für Stoff, der sich
+schlecht in Karten fassen lässt.
+
+- **Thema:** Titel, Fach, Stufe, Prüfungsdatum und Lernziele («Du kannst …») mit Kernstoff (`LearnTopic`,
+  synchronisiert wie die Stapel). Die Lernziele schreibt die KI aus Fotos (Lernziel-Blatt, Buchseiten) und/oder
+  Stichworten (`POST /api/tasks/topic`, Prompt `topicPrompt` mit Lehrplan-21-Zyklus der Stufe, `levelHint`); man
+  prüft sie in derselben Ansicht wie beim Bearbeiten (`TopicEditor`). Ohne KI lassen sie sich selbst schreiben.
+- **Unterlagen:** Wissenstest, Übungsaufgaben oder Probeprüfung zu ausgewählten Lernzielen, 15/30/45 Minuten,
+  drei Schwierigkeiten (`documentSize`, `documentPrompt`). `POST /api/tasks/documents` antwortet sofort mit
+  `pending`; ein Hintergrundauftrag lässt die KI schreiben (`toTasks` bereinigt: Antwort einer Auswahlfrage muss
+  unter den Optionen sein, sonst wird es eine Kurzantwort; Punkte, Zeilen, Lernziel-Nummern) und in einem zweiten
+  Aufruf prüfen (`DOC_CHECK_PROMPT`, `applyChecks`: korrigierte Lösungen werden übernommen, sonst bleibt ein
+  «Bitte prüfen»). Die App fragt alle 3 Sekunden nach (`usePollPending`); hängt eine Unterlage länger als
+  5 Minuten, gilt sie als fehlgeschlagen. Nur fertige Unterlagen zählen ans Monatslimit (`TASK_MONTHLY_LIMIT`).
+  Unterlagen liegen auf dem Server und als Kopie im Gerät (`phonegames-documents`), damit sie offline lesbar sind.
+- **PDF:** im Browser mit pdfmake (`lib/taskPdf.ts`, erst bei Bedarf geladen, Schrift Roboto aus dem
+  virtuellen Dateisystem – kein `eval`, läuft unter der CSP). Kopf mit Name/Datum/Punkten (Probeprüfung mit Note),
+  Linien bzw. 5-mm-Häuschen in Mathematik, Musterlösung auf neuer Seite, Notenskala (Note = Punkte ÷ Total × 5 + 1,
+  auf Halbe gerundet). Auf dem Handy über das Teilen-Menü, sonst als Download.
+- **Lösen in der App** (`pages/TaskSolvePages.tsx`): eine Aufgabe pro Seite; Auswahl und «richtig/falsch» per
+  Tipp, Kurzantworten getippt und tolerant geprüft (`autoScore` → `checkTypedAnswer`), ausführliche Aufgaben mit
+  Textfeld und **Notizblatt** (`components/Notepad.tsx`: Finger oder Stift, Druckstärke beim Stift, die Hand auf dem
+  Bildschirm zeichnet nicht, sobald ein Stift erkannt wurde; Radierer entfernt ganze Striche; in Mathematik
+  Häuschen). Antworten bleiben beim Verlassen erhalten (`phonegames-solve`). Nach dem Abgeben zeigt die App die
+  Lösungen; die Punkte der ausführlichen Aufgaben gibt man sich mit der Musterlösung selbst.
+- **Ergebnisse:** `DocAttempt` (`app` oder `paper`, wer, Punkte pro Aufgabe). Auf Papier gelöste Unterlagen
+  bekommen ihre Punkte über «Ergebnis vom Papier eintragen». Ohne Internet wartet ein Ergebnis im Gerät und wird
+  später gesendet (`flushAttempts`). Pro Lernziel zählt das letzte Ergebnis jeder Unterlage (`goalStatus`):
+  ab 80 % «sitzt», ab 50 % «fast», sonst «üben». «Gezielt üben» öffnet eine neue Unterlage mit diesen Lernzielen.
+- **Lernkarten daraus machen:** `POST /api/tasks/cards` schreibt Karten zum Kernstoff (zweiter Prüfaufruf wie bei
+  erfundenen Karten); sie landen in der Prüfansicht von «Neuer Stapel».
+- **Heute dran:** Prüfungen der nächsten 7 Tage stehen oben in «Heute dran» (`upcomingExams`).
