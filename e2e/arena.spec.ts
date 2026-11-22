@@ -2,8 +2,9 @@ import { expect, test } from '@playwright/test';
 import { expectAccessible, register } from './helpers.ts';
 
 test('Arena: 3D-Spiele ab 13, Familien-Rangliste, Level in Kugelbahn, Orbit und Kettenreaktion und Ausblenden durch Eltern', async ({ page }) => {
-  // Several 3D games one after the other – software rendering in the test browser takes its time.
-  test.setTimeout(180_000);
+  // Several 3D games one after the other – software rendering in the test browser takes its time, and the games
+  // advance at most 0.05 s per frame, so without a graphics card they run in slow motion.
+  test.setTimeout(300_000);
   await register(page, 'Lea');
   const areas = page.getByRole('radiogroup', { name: 'Spielart' });
   await expect(areas.getByRole('radio')).toHaveText(['Zusammen', 'Allein', 'Arena']);
@@ -37,9 +38,9 @@ test('Arena: 3D-Spiele ab 13, Familien-Rangliste, Level in Kugelbahn, Orbit und 
   await expect(page.getByRole('radio', { name: 'Level 2, noch gesperrt' })).toBeDisabled();
   await page.getByRole('button', { name: /Level 1 spielen/ }).click();
   // Once the clock runs (after loading and the countdown), roll down.
-  await expect(page.locator('.arena-hud')).not.toContainText('0.0', { timeout: 15_000 });
+  await expect(page.locator('.arena-hud')).not.toContainText('0.0', { timeout: 40_000 });
   await page.keyboard.down('ArrowDown');
-  await expect(page.getByText(/Geschafft!/)).toBeVisible({ timeout: 8000 });
+  await expect(page.getByText(/Geschafft!/)).toBeVisible({ timeout: 30_000 });
   await page.keyboard.up('ArrowDown');
   await expect(page.getByRole('button', { name: 'Level 2' })).toBeVisible({ timeout: 6000 });
   await page.getByRole('link', { name: 'Arena' }).click();
@@ -57,7 +58,7 @@ test('Arena: 3D-Spiele ab 13, Familien-Rangliste, Level in Kugelbahn, Orbit und 
   await page.mouse.down();
   await page.mouse.move(cx, cy + 120, { steps: 5 });
   await page.mouse.up();
-  await expect(page.getByText('Angekommen!')).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText('Angekommen!')).toBeVisible({ timeout: 30_000 });
   await expect(page.getByRole('button', { name: 'Level 2' })).toBeVisible({ timeout: 6000 });
 
   // Kettenreaktion: place a ramp under the ball and let it go – level 1 is solved.
@@ -66,7 +67,7 @@ test('Arena: 3D-Spiele ab 13, Familien-Rangliste, Level in Kugelbahn, Orbit und 
   await page.getByRole('button', { name: 'Feld 2, Reihe 6: frei' }).click();
   await expect(page.getByRole('radio', { name: 'Rampe, noch 0' })).toBeChecked();
   await page.getByRole('button', { name: 'Los' }).click();
-  await expect(page.getByText('Kettenreaktion! 🎉')).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText('Kettenreaktion! 🎉')).toBeVisible({ timeout: 30_000 });
   await expect(page.getByRole('button', { name: 'Level 2' })).toBeVisible({ timeout: 6000 });
 
   // Pistenjagd and Beat-Bahn start and can be left.
