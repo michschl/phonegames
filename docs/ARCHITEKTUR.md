@@ -410,14 +410,21 @@ schlecht in Karten fassen lässt.
 - **Spiele:** Die Regeln stehen getestet ausserhalb der 3D-Szenen – Pisten (`makeCourse`, kein Hindernis in einem
   Tor), Kugelbahn-Level (`kugelLevel`, `solvable` prüft per Breitensuche mit Schalterzustand), Songs der Beat-Bahn
   (`makeSong`, `judge`: ±60 ms «Perfekt», ±130 ms «Gut»), Aufgaben des Raumdenkers (`project`, die 24 Drehungen,
-  `sameShape`; Spiegelbilder nur aus chiralen Formen). Die Beat-Bahn plant Töne über `AudioContext.currentTime`
-  voraus und rechnet Bild und Tippen auf dieselbe Uhr (inkl. Ausgabelatenz). Der Geist der Pistenjagd liegt nur im
-  Gerät (`localStorage`).
+  `sameShape`; Spiegelbilder nur aus chiralen Formen), Drohnen-Parcours (`drone.ts`: Tore auf festen Bahnen, Flugmodell
+  «Einfach»/«Profi»), Golfinsel (`golf.ts`: Löcher als Zeichenraster, `playable` prüft jedes Loch), Orbit (`orbit.ts`:
+  Schwerkraft-Schritt, den Spiel und Vorschau gleich rechnen; `solve` sucht für jedes erzeugte Level einen Abschuss)
+  und Kettenreaktion (`chain.ts`: 2D-Physik mit Kugeln, Rampen, Federn, Brettern, Dominosteinen, Schaltern und Toren
+  in festen 1/240-s-Schritten; jedes Level trägt eine Lösung, die der Test nachspielt – ohne Teile muss es scheitern,
+  mit der Lösung ins Ziel mit beiden Sternen). Die Beat-Bahn plant Töne über `AudioContext.currentTime` voraus und
+  rechnet Bild und Tippen auf dieselbe Uhr (inkl. Ausgabelatenz). Die Geister von Pistenjagd und Drohne liegen nur
+  im Gerät (`localStorage`). In Kettenreaktion liegt über dem 3D-Bild ein Raster aus Knöpfen, das jedes Bild an die
+  Projektion des Spielfelds angepasst wird – so lässt es sich auch mit Tastatur und Screenreader bauen.
 - **Skins** kosten Münzen, solange «Belohnungen» an ist (`unlock`, z. B. `kugel:lava`); sonst sind alle frei.
 - **Familien-Rangliste** (`lib/ranking.ts`, `components/FamilyRanking.tsx`): Rekorde stehen in den Brieftaschen
   (`CoinWallet.best`), die Rangliste zeigt für einen Schlüssel (z. B. `memo:2`, `piste:1`, `kugel:level`) alle
   Personen des Kontos, Gleichstände teilen den Platz. Sie steht auf Start- und Ergebnisseite aller Einzelspiele
-  («Allein» pro Altersstufe, «Arena» pro Piste bzw. Stil; Kugelbahn: Level geschafft).
+  («Allein» pro Altersstufe, «Arena» pro Piste, Stil, Strecke bzw. Insel; Kugelbahn, Orbit, Kettenreaktion: Level
+  geschafft, dazu die Punkte pro Level).
 - **Gemeinschaftsspiele** mit Wertung (`scored` in der Spieldefinition) melden ihre Punkte pro Person mit
   `useReportScores` (`games/shared/results.ts`); in Teamspielen bekommt die Person die Punkte, die ihr Team holte,
   während sie erklärte oder darstellte, den Sieg das ganze Siegerteam; «Nachts im Dorf» zählt nur Siege. Beim

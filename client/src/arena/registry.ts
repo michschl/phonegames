@@ -198,6 +198,33 @@ export const ARENA_GAMES: ArenaGame[] = [
     levels: 20,
     Play: lazy(() => import('./orbit/OrbitGame.tsx')),
   },
+  {
+    id: 'kette',
+    name: 'Kettenreaktion',
+    tagline: 'Bauen, loslassen, staunen',
+    description: 'Ein Physik-Rätsel im Guckkasten: Setz Rampen, Federn, Bretter und Dominosteine so, dass die Kugel ins Ziel kommt – manchmal über Schalter, Tore und eine zweite Kugel. 10 Level.',
+    emoji: '🧩',
+    colors: ['#ff8a3d', '#3fc1a5'],
+    skills: ['Ursache und Wirkung', 'Kreativität'],
+    rules: [
+      'Unten ein Teil wählen und auf ein freies Feld tippen. Nochmals tippen dreht die Rampe oder nimmt das Teil weg.',
+      'Federn und Dominosteine brauchen einen Block darunter. Ein Schalter öffnet alle gestreiften Tore.',
+      '«Los» lässt die Kugel fallen. Klappt es nicht, baust du weiter – die Teile bleiben liegen.',
+      'Sterne und übrig gebliebene Teile geben Extrapunkte. Nach zwei Versuchen gibt es Tipps.',
+    ],
+    duration: 'je Level 2 Min.',
+    tilt: false,
+    skinLabel: 'Kugel',
+    skins: [
+      { id: 'rot', name: 'Kirsche', color: '#ff4f6d', accent: '#ffd23f', price: 0 },
+      { id: 'gruen', name: 'Limette', color: '#7ed957', accent: '#ffffff', price: 25 },
+      { id: 'lila', name: 'Murmel', color: '#a46bff', accent: '#ffd23f', price: 50 },
+      { id: 'gold', name: 'Gold', color: '#ffc107', accent: '#ffffff', price: 100 },
+    ],
+    unit: 'Level',
+    levels: 10,
+    Play: lazy(() => import('./kette/ChainGame.tsx')),
+  },
 ];
 
 export function getArenaGame(id: string | undefined): ArenaGame | undefined {

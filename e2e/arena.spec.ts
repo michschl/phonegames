@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { expectAccessible, register } from './helpers.ts';
 
-test('Arena: 3D-Spiele ab 13, Familien-Rangliste, Kugelbahn- und Orbit-Level und Ausblenden durch Eltern', async ({ page }) => {
+test('Arena: 3D-Spiele ab 13, Familien-Rangliste, Level in Kugelbahn, Orbit und Kettenreaktion und Ausblenden durch Eltern', async ({ page }) => {
   // Several 3D games one after the other – software rendering in the test browser takes its time.
   test.setTimeout(180_000);
   await register(page, 'Lea');
@@ -9,7 +9,7 @@ test('Arena: 3D-Spiele ab 13, Familien-Rangliste, Kugelbahn- und Orbit-Level und
   await expect(areas.getByRole('radio')).toHaveText(['Zusammen', 'Allein', 'Arena']);
   await areas.getByRole('radio', { name: 'Arena' }).click();
   await expect(page).toHaveURL('/arena');
-  await expect(page.locator('.arena-tile')).toHaveCount(7);
+  await expect(page.locator('.arena-tile')).toHaveCount(8);
   await expectAccessible(page);
 
   // Another person of the family already has a record in the Raumdenker.
@@ -58,6 +58,15 @@ test('Arena: 3D-Spiele ab 13, Familien-Rangliste, Kugelbahn- und Orbit-Level und
   await page.mouse.move(cx, cy + 120, { steps: 5 });
   await page.mouse.up();
   await expect(page.getByText('Angekommen!')).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByRole('button', { name: 'Level 2' })).toBeVisible({ timeout: 6000 });
+
+  // Kettenreaktion: place a ramp under the ball and let it go – level 1 is solved.
+  await page.goto('/arena/kette');
+  await page.getByRole('button', { name: /Level 1 spielen/ }).click();
+  await page.getByRole('button', { name: 'Feld 2, Reihe 6: frei' }).click();
+  await expect(page.getByRole('radio', { name: 'Rampe, noch 0' })).toBeChecked();
+  await page.getByRole('button', { name: 'Los' }).click();
+  await expect(page.getByText('Kettenreaktion! 🎉')).toBeVisible({ timeout: 10_000 });
   await expect(page.getByRole('button', { name: 'Level 2' })).toBeVisible({ timeout: 6000 });
 
   // Pistenjagd and Beat-Bahn start and can be left.
