@@ -372,6 +372,19 @@ export function RewardsPage() {
         </>
       )}
 
+      <Section title="Arena (ab 13)">
+        <div className="list">
+          <div className="list__item list__item--toggle">
+            <Toggle
+              label="Arena anzeigen"
+              description={rewards.arena ? '3D-Spiele für Jugendliche im Tab «Spiele».' : 'Ausgeblendet – auf allen Geräten dieses Kontos.'}
+              checked={rewards.arena}
+              onChange={(arena) => saveRewards({ arena })}
+            />
+          </div>
+        </div>
+      </Section>
+
       <Section title="Kontostand">
         {people.length === 0 ? (
           <p className="learn-hub__calm">Noch niemand. Wer im Lernen unter «Wer lernt?» steht, erscheint hier.</p>

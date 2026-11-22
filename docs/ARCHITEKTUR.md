@@ -157,7 +157,7 @@ aktiv. Mit einem Infomaniak-VPS liegen die Daten in der Schweiz.
 | `learn_documents` | `user_id`, `id`, `topic_id`, `kind` (`quiz`/`tasks`/`exam`), `status` (`pending`/`ready`/`failed`), `data` (JSON: Titel, Anleitung, Dauer, Schwierigkeit, Aufgaben mit Musterlösungen, Ergebnisse), Zeitstempel – nicht im Sync, sondern über `/api/tasks/documents` |
 | `task_usage` | `user_id`, `month`, `count` – Monatslimit der Unterlagen |
 | `coin_wallets` | `user_id`, `id` (aus dem Namen), `data` (JSON: Name, Münzen verdient/ausgegeben **pro Gerät**, letzte 40 Buchungen, Gekauftes, Rekorde), `updated_at`, `deleted` |
-| `reward_settings` | `user_id`, `data` (JSON: Münzen an/aus, Hash des Codes, Münzen pro Karte/Punkt, Tageslimit, Preis pro Runde), `updated_at` |
+| `reward_settings` | `user_id`, `data` (JSON: Münzen an/aus, Hash des Codes, Münzen pro Karte/Punkt, Tageslimit, Preis pro Runde, Arena sichtbar), `updated_at` |
 | `learn_shares` | `id` (zufällig, 128 Bit), `owner_id`, `stack_id` (ein Link pro Stapel), `data` (JSON: Kopie der Karten ohne Lernstand), `imports`, `signups`, Zeitstempel |
 
 Migrationen stehen in [`server/src/db.ts`](../server/src/db.ts) und laufen beim Start automatisch. Neue
@@ -395,3 +395,26 @@ schlecht in Karten fassen lässt.
 - **Einstellungen** (`RewardSettings`, letzte Änderung gewinnt) gelten auf allen Geräten. Der Code ist eine
   Kindersicherung, kein Passwort: gespeichert als Hash mit Salz (`lib/rewards.ts`), geprüft im Gerät (auch offline),
   geöffnet für 10 Minuten. Wer ihn vergessen hat, entfernt ihn mit dem Passwort des Kontos.
+
+## Arena (3D-Spiele ab 13) und Familien-Rangliste
+
+- **Bereich:** «Arena» ist der dritte Teil von «Zusammen | Allein | Arena» (`/arena`, `/arena/:id`,
+  `pages/ArenaPages.tsx`). Eltern blenden sie unter «Belohnungen» aus (`RewardSettings.arena`, gilt auf allen
+  Geräten des Kontos und hinter dem Code); dann leitet `/arena` auf «Allein» um.
+- **3D:** three.js (Version fest in `package.json`) liegt in einem eigenen Teil des Bundles, den nur die Spiele
+  laden; die Seiten fragen die 3D-Fähigkeit über `arena/support.ts` ab, ohne three.js zu laden.
+  `useArenaScene` (`arena/engine.ts`) erstellt Renderer, Szene und Kamera, folgt der Grösse, senkt die
+  Auflösung, wenn Bilder länger als 26 ms brauchen (und hebt sie wieder), und gibt beim Verlassen Geometrien,
+  Materialien und den WebGL-Kontext frei. Gesteuert wird mit dem Finger (Ziehen ab der Berührung), Pfeiltasten oder
+  durch Neigen (`useSteer`, relativ zur Haltung beim Start; iOS fragt einmal um Erlaubnis).
+- **Spiele:** Die Regeln stehen getestet ausserhalb der 3D-Szenen – Pisten (`makeCourse`, kein Hindernis in einem
+  Tor), Kugelbahn-Level (`kugelLevel`, `solvable` prüft per Breitensuche mit Schalterzustand), Songs der Beat-Bahn
+  (`makeSong`, `judge`: ±60 ms «Perfekt», ±130 ms «Gut»), Aufgaben des Raumdenkers (`project`, die 24 Drehungen,
+  `sameShape`; Spiegelbilder nur aus chiralen Formen). Die Beat-Bahn plant Töne über `AudioContext.currentTime`
+  voraus und rechnet Bild und Tippen auf dieselbe Uhr (inkl. Ausgabelatenz). Der Geist der Pistenjagd liegt nur im
+  Gerät (`localStorage`).
+- **Skins** kosten Münzen, solange «Belohnungen» an ist (`unlock`, z. B. `kugel:lava`); sonst sind alle frei.
+- **Familien-Rangliste** (`lib/ranking.ts`, `components/FamilyRanking.tsx`): Rekorde stehen in den Brieftaschen
+  (`CoinWallet.best`), die Rangliste zeigt für einen Schlüssel (z. B. `memo:2`, `piste:1`, `kugel:level`) alle
+  Personen des Kontos, Gleichstände teilen den Platz. Sie steht auf Start- und Ergebnisseite aller Einzelspiele
+  («Allein» pro Altersstufe, «Arena» pro Piste bzw. Stil; Kugelbahn: Level geschafft).

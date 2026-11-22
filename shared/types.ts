@@ -273,6 +273,8 @@ export interface RewardSettings {
   dailyMax: number;
   /** Coins for a round of a game of «Allein spielen». */
   pricePerRound: number;
+  /** «Arena» (3D games from 13) shown in the «Spiele» tab – parents can hide it. Older settings: shown. */
+  arena: boolean;
   updatedAt: number;
 }
 

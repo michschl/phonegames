@@ -30,7 +30,7 @@ interface SettingsState {
   /** Lernen: the area shown last – «Karten» or «Aufgaben» (the tab opens it again). */
   learnArea: 'karten' | 'aufgaben';
   /** The «Spiele» tab opens the area used last: playing together or alone. */
-  playArea: 'zusammen' | 'allein';
+  playArea: 'zusammen' | 'allein' | 'arena';
   /** Aufgaben: the school level chosen last for a new topic. */
   topicLevel: string | null;
   /** Lernen: which way the vocabulary of a stack is asked (stack id → direction), «forward» if missing. */
@@ -47,7 +47,7 @@ interface SettingsState {
   setLearnDirection(stackId: string, direction: LearnDirection): void;
   clearLearnerNames(): void;
   setLearnArea(area: 'karten' | 'aufgaben'): void;
-  setPlayArea(area: 'zusammen' | 'allein'): void;
+  setPlayArea(area: 'zusammen' | 'allein' | 'arena'): void;
   setTopicLevel(level: string): void;
 }
 
