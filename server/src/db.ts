@@ -129,6 +129,18 @@ const MIGRATIONS: string[] = [
   ALTER TABLE users ADD COLUMN terms_version TEXT;
   ALTER TABLE users ADD COLUMN terms_accepted_at INTEGER;
   `,
+  `
+  -- «Aufgaben»: larger topics (learning goals with their content), synchronised like the stacks.
+  CREATE TABLE learn_topics (
+    user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    id         TEXT NOT NULL,
+    data       TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    deleted    INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (user_id, id)
+  );
+  `,
 ];
 
 export function openDatabase(file: string): Database {

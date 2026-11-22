@@ -4,6 +4,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router';
 import { Icon, type IconName } from './Icon.tsx';
 import { haptic } from '../lib/device.ts';
 import { useDueTotal } from '../store/learners.ts';
+import { useSettings } from '../store/settings.ts';
 import { dismissToast, useUi } from '../store/ui.ts';
 
 type ShapeKind = 'star' | 'squiggle' | 'ring' | 'triangle' | 'plus' | 'dot';
@@ -56,6 +57,8 @@ const TABS: { to: string; label: string; icon: IconName; color: string }[] = [
 
 export function TabBar() {
   const { pathname } = useLocation();
+  // «Lernen» opens the area used last: Karten or Aufgaben.
+  const learnArea = useSettings((s) => s.learnArea);
   // Cards to repeat today – shown as a red badge on «Lernen».
   const due = useDueTotal();
   const active = Math.max(
@@ -72,7 +75,7 @@ export function TabBar() {
       {TABS.map((tab) => (
         <NavLink
           key={tab.to}
-          to={tab.to}
+          to={tab.to === '/lernen' && learnArea === 'aufgaben' ? '/lernen/aufgaben' : tab.to}
           end={tab.to === '/'}
           aria-label={tab.to === '/lernen' && due > 0 ? `${tab.label}, ${due} ${due === 1 ? 'Karte' : 'Karten'} fällig` : undefined}
           className="tabbar__item"

@@ -15,6 +15,7 @@ import { passkeyRoutes, type WebAuthnConfig } from './routes/passkeys.ts';
 import { TTS_VOICES, ttsRoutes, type TtsConfig } from './routes/tts.ts';
 import { learnRoutes, type LearnConfig } from './routes/learn.ts';
 import { shareRoutes } from './routes/shares.ts';
+import { taskRoutes } from './routes/tasks.ts';
 import { billingRoutes } from './routes/billing.ts';
 import { refreshSubscription, type BillingConfig } from './billing.ts';
 
@@ -200,6 +201,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   await app.register(accountRoutes, { prefix: '/api/account', rateLimit: options.rateLimit ?? true, billing });
   await app.register(syncRoutes, { prefix: '/api' });
   await app.register(learnRoutes, { prefix: '/api/learn', rateLimit: options.rateLimit ?? true, learn: options.learn ?? null });
+  await app.register(taskRoutes, { prefix: '/api/tasks', rateLimit: options.rateLimit ?? true, learn: options.learn ?? null });
   await app.register(shareRoutes, { prefix: '/api/shares', rateLimit: options.rateLimit ?? true });
 
   if (options.serveClient && options.clientDir) {

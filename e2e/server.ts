@@ -51,6 +51,18 @@ const CREATIVE = {
   removed_personal_data: false,
 };
 
+/** Learning goals of a topic of «Aufgaben». */
+const TOPIC = {
+  title: 'Die Römer',
+  subject: 'Geschichte',
+  goals: [
+    { text: 'Du kannst die Gründungssage Roms erzählen.', content: 'Romulus und Remus, 753 v. Chr., die Wölfin.', uncertain: '' },
+    { text: 'Du kannst erklären, wie die Römische Republik regiert wurde.', content: 'Senat, zwei Konsuln, Volksversammlung.', uncertain: '' },
+    { text: 'Du kannst Spuren der Römer in der Schweiz nennen.', content: 'Augusta Raurica, Aventicum, Vindonissa.', uncertain: 'Foto unscharf' },
+  ],
+  removed_personal_data: false,
+};
+
 /** The second look at invented cards finds the wrong one. */
 const CHECK = { checks: [{ index: 1, correct: false, reason: '«le jardin» heisst «der Garten».' }] };
 
@@ -59,7 +71,13 @@ const ai = http.createServer((req, res) => {
   req.on('data', (chunk) => (body += chunk));
   req.on('end', () => {
     const system = String(JSON.parse(body || '{}')?.messages?.[0]?.content ?? '');
-    const answer = system.includes('kritische Lehrperson') ? CHECK : system.includes('NEUE AUFGABEN') ? CREATIVE : EXACT;
+    const answer = system.includes('Lernziele der Prüfung')
+      ? TOPIC
+      : system.includes('kritische Lehrperson')
+        ? CHECK
+        : system.includes('NEUE AUFGABEN')
+          ? CREATIVE
+          : EXACT;
     res.writeHead(200, { 'Content-Type': 'application/json' }).end(
       JSON.stringify({
         choices: [{ index: 0, finish_reason: 'stop', message: { role: 'assistant', content: JSON.stringify(answer) } }],

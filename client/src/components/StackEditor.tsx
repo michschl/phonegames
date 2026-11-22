@@ -9,7 +9,7 @@ import { emptyCard, type EditorCard, type EditorValue } from '../store/learnDraf
 import { withUndo } from '../store/undo.ts';
 
 /** Text area that grows with its content (one line by default). */
-function AutoTextarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+export function AutoTextarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   const ref = useRef<HTMLTextAreaElement>(null);
   useLayoutEffect(() => {
     const el = ref.current;

@@ -14,6 +14,7 @@ import type {
   LearnShareStack,
   LearnUsage,
   PasskeyInfo,
+  TopicDraftResponse,
   PublicUser,
   SyncPayload,
   SyncResponse,
@@ -114,6 +115,9 @@ export const api = {
   deleteShare: (id: string) => request<void>('DELETE', `/api/shares/${encodeURIComponent(id)}`),
   sharePreview: (id: string) => request<LearnSharePreview>('GET', `/api/shares/${encodeURIComponent(id)}`),
   importShare: (id: string) => request<{ stack: LearnShareStack }>('POST', `/api/shares/${encodeURIComponent(id)}/import`, {}),
+  /** «Aufgaben»: learning goals of a topic from photos and/or keywords. Takes a while – the AI reads everything. */
+  topicDraft: (body: { images: string[]; text: string; subject: string; level: string }) =>
+    request<TopicDraftResponse>('POST', '/api/tasks/topic', body),
   /** Stripe's payment page for the yearly subscription. */
   billingCheckout: () => request<{ url: string }>('POST', '/api/billing/checkout', {}),
   billingConfirm: (sessionId: string) => request<{ user: PublicUser; confirmed: boolean }>('POST', '/api/billing/confirm', { sessionId }),

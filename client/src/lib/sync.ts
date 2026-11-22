@@ -35,6 +35,7 @@ export function syncNow(): Promise<boolean> {
         groups: Object.values(state.groups),
         stacks: Object.values(state.stacks),
         progress: Object.values(state.progress),
+        topics: Object.values(state.topics ?? {}),
       });
       // The user might have logged out while the request was running.
       if (useAuth.getState().user?.id !== useData.getState().ownerId) return false;

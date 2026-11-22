@@ -8,6 +8,7 @@ import {
   getGroups,
   getProgress,
   getStacks,
+  getTopics,
   listShares,
   toShareInfo,
   getLibrary,
@@ -99,6 +100,7 @@ export const accountRoutes: FastifyPluginAsync<{ rateLimit: boolean; billing: Bi
       groups: getGroups(app.db, user.id).filter((group) => !group.deleted),
       learnStacks: getStacks(app.db, user.id).filter((stack) => !stack.deleted),
       learnProgress: getProgress(app.db, user.id).filter((entry) => !entry.deleted),
+      topics: getTopics(app.db, user.id).filter((topic) => !topic.deleted),
       learnShares: listShares(app.db, user.id).map((share) => ({ ...toShareInfo(share), cards: share.stack.cards.length })),
       passkeys: listPasskeys(app.db, user.id).map(toPasskeyInfo),
     };

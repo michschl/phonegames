@@ -2411,3 +2411,120 @@
 .consent + .notice {
   margin-top: 18px;
 }
+
+/* ============================================================= Aufgaben */
+
+.field__select {
+  flex: 1;
+  width: 0;
+  min-width: 0;
+  height: 52px;
+  padding: 0 14px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 17px;
+  font-weight: 600;
+  appearance: auto;
+}
+
+.goal-row__content {
+  font-size: 14.5px;
+  color: var(--ink-2);
+}
+
+/* «Karten | Aufgaben» at the top of the «Lernen» tab. */
+.learn-area {
+  margin: 4px 0 8px;
+}
+
+.exam-pill {
+  display: inline-block;
+  justify-self: start;
+  margin-top: 4px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  background: var(--yellow);
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 800;
+}
+
+.topic-notes {
+  min-height: 96px;
+}
+
+.topic-exam {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 0;
+  font-weight: 800;
+  color: var(--ink-2);
+}
+
+.topic-exam .exam-pill {
+  margin-top: 0;
+}
+
+/* The learning goals of a topic – tap one to see its content. */
+.goal-view {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.goal-view details {
+  border-radius: var(--radius);
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow-sm);
+}
+
+.goal-view summary {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+  cursor: pointer;
+  list-style: none;
+}
+
+.goal-view summary::-webkit-details-marker {
+  display: none;
+}
+
+.goal-view__num {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--cyan-soft);
+  font-size: 12.5px;
+  font-weight: 900;
+}
+
+.goal-view__content {
+  margin: 0;
+  padding: 0 14px 14px 50px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  white-space: pre-line;
+}
+
+.goal-view__content.is-empty {
+  color: var(--muted);
+  font-style: italic;
+}

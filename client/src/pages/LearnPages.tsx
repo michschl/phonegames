@@ -11,6 +11,7 @@ import { ActionSheet, Button, EmptyState, IconButton, Segmented } from '../compo
 import { OptionRow } from '../games/shared/settings.tsx';
 import { BoxRow } from '../games/spickzettel/BoxRow.tsx';
 import { DirectionPicker } from '../games/spickzettel/Direction.tsx';
+import { LearnAreaSwitch } from './TaskPages.tsx';
 import { spickzettel, type SpickzettelSettings } from '../games/spickzettel/index.tsx';
 import { isSoloMode, MODES, SITUATIONS, soloLearnPath } from '../games/spickzettel/modes.ts';
 import '../games/spickzettel/spickzettel.css';
@@ -118,6 +119,7 @@ export function LearnHubPage() {
 
   return (
     <Page title="Lernen" subtitle={all.length > 0 ? 'Schulstoff als Karten – allein oder zusammen.' : undefined}>
+      <LearnAreaSwitch area="karten" />
       {all.length === 0 ? (
         <LearnIntro />
       ) : (

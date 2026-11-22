@@ -1,5 +1,6 @@
 import type { FastifyBaseLogger, FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
+import type { Database } from '../db.ts';
 import { HttpError } from '../http.ts';
 import { countLearnUsage, getLearnUsage, getTotalLearnUsage } from '../repo.ts';
 import {
@@ -32,9 +33,9 @@ export interface LearnConfig {
   timeoutMs?: number;
 }
 
-const IMAGE = /^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/]+={0,2})$/;
+export const IMAGE = /^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/]+={0,2})$/;
 /** ~1.6 MB per photo after base64 – the app sends them downscaled to about 2000 px. */
-const MAX_IMAGE_CHARS = 2_200_000;
+export const MAX_IMAGE_CHARS = 2_200_000;
 
 const extractSchema = z.object({
   images: z
@@ -57,7 +58,7 @@ export function currentMonth(now = new Date()): string {
   return `${parts.find((p) => p.type === 'year')!.value}-${parts.find((p) => p.type === 'month')!.value}`;
 }
 
-function nextMonthStart(month: string): string {
+export function nextMonthStart(month: string): string {
   const [year, mon] = month.split('-').map(Number) as [number, number];
   return mon === 12 ? `${year + 1}-01-01` : `${year}-${String(mon + 1).padStart(2, '0')}-01`;
 }
@@ -153,7 +154,7 @@ ${BASE_RULES}`;
 const KINDS: readonly LearnCardKind[] = ['translation', 'definition', 'qa', 'number', 'cloze'];
 const MODES: readonly LearnMode[] = ['blitz', 'duell', 'kasten', 'schaetzen', 'luecke'];
 
-const text = (value: unknown, max: number = LIMITS.cardText): string =>
+export const text = (value: unknown, max: number = LIMITS.cardText): string =>
   typeof value === 'string' ? value.replace(/\s+/g, ' ').trim().slice(0, max) : '';
 
 const texts = (value: unknown, max: number): string[] =>
@@ -227,10 +228,10 @@ export function toDraft(raw: unknown, generated = false): LearnDraft {
 
 /* ----------------------------------------------------------------- calls */
 
-class UpstreamError extends Error {}
+export class UpstreamError extends Error {}
 
 /** One chat completion; returns the parsed JSON answer. Requests are never logged – they may contain photos. */
-async function chat(config: LearnConfig, body: Record<string, unknown>, what: string, log: FastifyBaseLogger): Promise<unknown> {
+export async function chat(config: LearnConfig, body: Record<string, unknown>, what: string, log: FastifyBaseLogger): Promise<unknown> {
   const url = `${config.url.replace(/\/$/, '')}/2/ai/${encodeURIComponent(config.productId)}/openai/v1/chat/completions`;
   let response: Response;
   try {
@@ -351,13 +352,43 @@ async function checkCards(config: LearnConfig, cards: LearnDraftCard[], log: Fas
 }
 
 /** Checks the first bytes, so only real images are passed on. */
-function looksLikeImage(dataUrl: string): boolean {
+export function looksLikeImage(dataUrl: string): boolean {
   const match = IMAGE.exec(dataUrl);
   if (!match) return false;
   const head = Buffer.from(match[2]!.slice(0, 24), 'base64');
   if (match[1] === 'jpeg') return head[0] === 0xff && head[1] === 0xd8;
   if (match[1] === 'png') return head.subarray(0, 4).toString('hex') === '89504e47';
   return head.subarray(0, 4).toString('latin1') === 'RIFF' && head.subarray(8, 12).toString('latin1') === 'WEBP';
+}
+
+/** Analyses (photos of stacks and topics) left this month for a person. */
+export function learnUsage(db: Database, config: LearnConfig | null, userId: string): LearnUsage {
+  const month = currentMonth();
+  const limitPerMonth = config?.monthlyLimit ?? 0;
+  const used = getLearnUsage(db, userId, month);
+  return {
+    available: !!config,
+    used,
+    limit: limitPerMonth,
+    remaining: Math.max(0, limitPerMonth - used),
+    resetsOn: nextMonthStart(month),
+    maxPhotos: LIMITS.learnPhotos,
+  };
+}
+
+/** Throws when the person or all accounts together have used up this month's analyses. */
+export function assertAnalysisLeft(db: Database, config: LearnConfig, userId: string): void {
+  const usage = learnUsage(db, config, userId);
+  if (usage.remaining <= 0) {
+    throw new HttpError(
+      429,
+      'learn_limit',
+      `Du hast diesen Monat alle ${usage.limit} Auswertungen gebraucht. Ab dem ${formatDay(usage.resetsOn)} geht es wieder.`,
+    );
+  }
+  if (getTotalLearnUsage(db, currentMonth()) >= config.globalMonthlyLimit) {
+    throw new HttpError(503, 'learn_busy', 'Die KI-Auswertung ist für diesen Monat ausgeschöpft. Versuch es nächsten Monat wieder.');
+  }
 }
 
 /* ---------------------------------------------------------------- routes */
@@ -368,19 +399,7 @@ export const learnRoutes: FastifyPluginAsync<{ rateLimit: boolean; learn: LearnC
   });
   const running = new Set<string>();
 
-  const usageFor = (userId: string): LearnUsage => {
-    const month = currentMonth();
-    const limitPerMonth = opts.learn?.monthlyLimit ?? 0;
-    const used = getLearnUsage(app.db, userId, month);
-    return {
-      available: !!opts.learn,
-      used,
-      limit: limitPerMonth,
-      remaining: Math.max(0, limitPerMonth - used),
-      resetsOn: nextMonthStart(month),
-      maxPhotos: LIMITS.learnPhotos,
-    };
-  };
+  const usageFor = (userId: string): LearnUsage => learnUsage(app.db, opts.learn, userId);
 
   app.get('/usage', { preHandler: app.requireAccess, config: limit(120) }, async (request): Promise<LearnUsage> =>
     usageFor(request.user!.id),
@@ -448,7 +467,7 @@ export const learnRoutes: FastifyPluginAsync<{ rateLimit: boolean; learn: LearnC
   );
 };
 
-function formatDay(isoDay: string): string {
+export function formatDay(isoDay: string): string {
   const [year, month, day] = isoDay.split('-').map(Number) as [number, number, number];
   return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString('de-CH', {
     day: 'numeric',

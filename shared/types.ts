@@ -217,6 +217,69 @@ export interface SyncPayload {
   groups: PlayerGroup[];
   stacks: LearnStack[];
   progress: LearnProgress[];
+  /** Topics of «Aufgaben» – older app versions send none. */
+  topics?: LearnTopic[];
+}
+
+/* ------------------------------------------------- Aufgaben (larger topics) */
+
+/** School levels in Switzerland – the AI writes for the level (Lehrplan 21). */
+export const TOPIC_LEVELS = [
+  '1. Klasse',
+  '2. Klasse',
+  '3. Klasse',
+  '4. Klasse',
+  '5. Klasse',
+  '6. Klasse',
+  '1. Sek',
+  '2. Sek',
+  '3. Sek',
+  'Gymnasium',
+  'Berufsschule',
+  'Erwachsene',
+] as const;
+
+/** One learning goal of a topic («Du kannst …») with the core content it is about. */
+export interface TopicGoal {
+  id: string;
+  text: string;
+  /** The facts, terms and rules behind the goal – what tests and tasks are made of. */
+  content: string;
+}
+
+/**
+ * A larger topic for a test («Die Römer», «Bruchrechnen»): learning goals with their content, made
+ * from photos or keywords. Printable tests, tasks and practice exams are made from it.
+ */
+export interface LearnTopic {
+  id: string;
+  title: string;
+  subject: string;
+  /** One of TOPIC_LEVELS (or what an older/other version sent). */
+  level: string;
+  goals: TopicGoal[];
+  /** The keywords or notes the topic was made from. */
+  notes: string;
+  /** Day of the test (YYYY-MM-DD), or null. */
+  examDate: string | null;
+  source: 'photo' | 'text';
+  createdAt: number;
+  updatedAt: number;
+  deleted: boolean;
+}
+
+/** A topic as suggested by the AI – reviewed before saving. */
+export interface TopicDraft {
+  title: string;
+  subject: string;
+  level: string;
+  goals: { text: string; content: string; uncertain: string }[];
+  removedPersonalData: boolean;
+}
+
+export interface TopicDraftResponse {
+  draft: TopicDraft;
+  usage: LearnUsage;
 }
 
 export interface SyncResponse extends SyncPayload {
@@ -258,4 +321,9 @@ export const LIMITS = {
   cardText: 300,
   stackTitleMax: 80,
   learnPhotos: 6,
+  topics: 200,
+  goalsPerTopic: 20,
+  goalText: 300,
+  goalContent: 1500,
+  topicNotes: 2000,
 } as const;

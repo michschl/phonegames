@@ -4,6 +4,7 @@ import { randomToken, sha256 } from './security.ts';
 import { TOMBSTONE_TTL_MS, shouldReplace } from '../../shared/sync.ts';
 import { TERMS_VERSION } from '../../shared/legal.ts';
 import type {
+  LearnTopic,
   LearnProgress,
   LearnShareInfo,
   LearnShareStack,
@@ -440,6 +441,20 @@ interface ProgressRow {
 }
 
 type StackData = Pick<LearnStack, 'title' | 'subject' | 'languages' | 'cards' | 'suggestedModes' | 'source'>;
+type TopicData = Pick<LearnTopic, 'title' | 'subject' | 'level' | 'goals' | 'notes' | 'examDate' | 'source'>;
+
+export function getTopics(db: Database, userId: string): LearnTopic[] {
+  const rows = db
+    .prepare('SELECT id, data, created_at, updated_at, deleted FROM learn_topics WHERE user_id = ? ORDER BY created_at')
+    .all(userId) as unknown as StackRow[];
+  return rows.map((row) => ({
+    id: row.id,
+    ...(JSON.parse(row.data) as TopicData),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    deleted: row.deleted === 1,
+  }));
+}
 type ProgressData = Pick<LearnProgress, 'player' | 'cards' | 'days' | 'removed'>;
 
 export function getStacks(db: Database, userId: string): LearnStack[] {
@@ -621,6 +636,27 @@ export function syncUserData(db: Database, userId: string, incoming: SyncPayload
       upsertStack.run(userId, stack.id, JSON.stringify(data), stack.createdAt, stack.updatedAt, stack.deleted ? 1 : 0);
     }
 
+    const topics = new Map(getTopics(db, userId).map((topic) => [topic.id, topic]));
+    const upsertTopic = db.prepare(
+      `INSERT INTO learn_topics (user_id, id, data, created_at, updated_at, deleted) VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT (user_id, id) DO UPDATE SET
+         data = excluded.data, created_at = excluded.created_at, updated_at = excluded.updated_at, deleted = excluded.deleted`,
+    );
+    for (const raw of incoming.topics ?? []) {
+      const topic = { ...raw, updatedAt: clamp(raw.updatedAt) };
+      if (!shouldReplace(topics.get(topic.id), topic)) continue;
+      const data: TopicData = {
+        title: topic.title,
+        subject: topic.subject,
+        level: topic.level,
+        goals: topic.deleted ? [] : topic.goals,
+        notes: topic.deleted ? '' : topic.notes,
+        examDate: topic.examDate,
+        source: topic.source,
+      };
+      upsertTopic.run(userId, topic.id, JSON.stringify(data), topic.createdAt, topic.updatedAt, topic.deleted ? 1 : 0);
+    }
+
     const progress = new Map(getProgress(db, userId).map((entry) => [entry.id, entry]));
     const upsertProgress = db.prepare(
       `INSERT INTO learn_progress (user_id, id, stack_id, data, updated_at, deleted) VALUES (?, ?, ?, ?, ?, ?)
@@ -641,7 +677,7 @@ export function syncUserData(db: Database, userId: string, incoming: SyncPayload
     }
 
     const cutoff = now - TOMBSTONE_TTL_MS;
-    for (const table of ['library', 'player_groups', 'learn_stacks', 'learn_progress']) {
+    for (const table of ['library', 'player_groups', 'learn_stacks', 'learn_progress', 'learn_topics']) {
       db.prepare(`DELETE FROM ${table} WHERE user_id = ? AND deleted = 1 AND updated_at < ?`).run(userId, cutoff);
     }
   });
@@ -651,5 +687,6 @@ export function syncUserData(db: Database, userId: string, incoming: SyncPayload
     groups: getGroups(db, userId),
     stacks: getStacks(db, userId),
     progress: getProgress(db, userId),
+    topics: getTopics(db, userId),
   };
 }
