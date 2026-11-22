@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import type { LearnCard, LearnProgress, LearnStack, Player } from '../../../../shared/types.ts';
 import { Button } from '../../components/ui.tsx';
+import { CoinGain } from '../../components/Coins.tsx';
 import { sound } from '../../lib/audio.ts';
 import { confetti } from '../../lib/confetti.ts';
 import { haptic } from '../../lib/device.ts';
 import { checkTypedAnswer, clozeCards, isDue, progressId, splitGap } from '../../lib/learn.ts';
 import { normalize, shuffle } from '../../lib/util.ts';
-import { useData, useProgress } from '../../store/data.ts';
+import { useData, useRewards, useProgress } from '../../store/data.ts';
 import { Actions, GameShell, Headline, Stage } from '../shared/GameShell.tsx';
 import { PlayerPicker } from '../shared/players.tsx';
 import { cardLine } from './cloze.tsx';
@@ -73,6 +74,7 @@ export function Lueckentext({
   const [learner, setLearner] = useState<Player | null>(players.length === 1 ? players[0]! : null);
   const progress = useProgress(stack.id, learner?.name);
   const recordAnswer = useData((s) => s.recordAnswer);
+  const rewards = useRewards();
   const tiles = useKastenTiles(stack.id);
   const typing = settings.clozeInput === 'type';
 
@@ -320,6 +322,7 @@ export function Lueckentext({
               {right} von {results.length} Lücken
             </span>
           </div>
+          <CoinGain learner={learner?.name} amount={right * rewards.perCard} reason={`Lückentext «${stack.title}»`} />
           {results.some((r) => !r.right) ? (
             <>
               <p className="gs-text">Diese Lücken sind zurück im Kartenkasten (Fach 1) – zum Üben:</p>

@@ -1,19 +1,22 @@
 import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { Icon } from '../components/Icon.tsx';
 import { Page, Section } from '../components/Layout.tsx';
 import { Avatar, Button, ConfirmSheet, Sheet, TextField, Toggle } from '../components/ui.tsx';
 import { api, errorMessage } from '../lib/api.ts';
+import { useAuthOptions } from '../lib/authOptions.ts';
+import { formatPrice, subscriptionSummary } from '../lib/subscription.ts';
 import { isIos, isStandalone, setHapticsEnabled } from '../lib/device.ts';
 import { speechAvailable, stopSpeaking } from '../lib/speech.ts';
 import { VoicePicker } from '../components/VoicePicker.tsx';
 import { PasskeySettings } from '../components/PasskeySettings.tsx';
+import { LegalLinks } from '../legal/LegalPages.tsx';
 import { applyUpdate, checkForUpdate, promptInstall, usePwa } from '../lib/pwa.ts';
 import { deleteAccount, logout, updateProfile } from '../lib/session.ts';
 import { syncNow } from '../lib/sync.ts';
 import { AVATAR_EMOJIS, formatRelative, PLAYER_COLORS } from '../lib/util.ts';
 import { useAuth } from '../store/auth.ts';
-import { useData, useHasPendingChanges } from '../store/data.ts';
+import { useData, useHasPendingChanges, useRewards } from '../store/data.ts';
 import { useSettings } from '../store/settings.ts';
 import { toast, useUi } from '../store/ui.ts';
 import { LIMITS } from '../../../shared/types.ts';
@@ -38,6 +41,7 @@ async function lookForUpdate() {
 
 export function AccountPage() {
   const user = useAuth((s) => s.user)!;
+  const rewards = useRewards();
   const navigate = useNavigate();
   const [sheet, setSheet] = useState<null | 'avatar' | 'profile' | 'password' | 'delete' | 'logout' | 'ios' | 'voice'>(null);
   const close = () => setSheet(null);
@@ -101,7 +105,26 @@ export function AccountPage() {
         </div>
       </Section>
 
+      {user.plan === 'paid' && user.subscription && <SubscriptionSection />}
+
       <PasskeySettings />
+
+      <Section title="Familie">
+        <div className="list">
+          <Link to="/belohnungen" className="list__item" viewTransition>
+            <span className="list__coin" aria-hidden="true">
+              🪙
+            </span>
+            <span className="list__label">
+              Belohnungen
+              <small className="list__sub">
+                {rewards.enabled ? `Münzen fürs Lernen: an · ${rewards.pricePerRound} pro Runde` : 'Münzen fürs Lernen: aus'}
+              </small>
+            </span>
+            <Icon name="next" size={18} />
+          </Link>
+        </div>
+      </Section>
 
       <Section title="App">
         <div className="list">
@@ -155,6 +178,7 @@ export function AccountPage() {
           Konto löschen
         </Button>
         <p className="app-version">Phonegames v{__APP_VERSION__} · Mit ❤️ in der Schweiz gehostet</p>
+        <LegalLinks />
         <button type="button" className="app-version__check" onClick={() => void lookForUpdate()}>
           Nach Updates suchen
         </button>
@@ -218,6 +242,64 @@ export function AccountPage() {
         </div>
       </Sheet>
     </Page>
+  );
+}
+
+/**
+ * «Abo» in «Konto»: how the subscription runs, and Stripe's customer portal to cancel it, change the
+ * payment method or get receipts. (Taking out a subscription happens on «Abo» – without one, the app
+ * does not open at all.)
+ */
+function SubscriptionSection() {
+  const user = useAuth((s) => s.user)!;
+  const subscription = user.subscription!;
+  const billing = useAuthOptions()?.billing;
+  const online = useUi((s) => s.online);
+  const [params, setParams] = useSearchParams();
+  const [busy, setBusy] = useState(false);
+
+  // Back from the customer portal: ask Stripe what changed.
+  useEffect(() => {
+    if (params.get('abo') !== '1') return;
+    setParams({}, { replace: true });
+    api
+      .billingRefresh()
+      .then(({ user: updated }) => useAuth.setState({ user: updated }))
+      .catch(() => undefined);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const manage = async () => {
+    setBusy(true);
+    try {
+      const { url } = await api.billingPortal();
+      window.location.assign(url);
+    } catch (err) {
+      toast(errorMessage(err), { tone: 'error' });
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Section title="Abo">
+      <div className="list">
+        <div className="list__item subscription-row">
+          <Icon name="ticket" />
+          <span className="list__label">
+            {subscriptionSummary(subscription, formatPrice(billing?.pricePerYear ?? 500))}
+          </span>
+        </div>
+        {subscription.manageable && (
+          <button type="button" className="list__item" disabled={busy || !online} onClick={() => void manage()}>
+            <Icon name="settings" />
+            <span className="list__label">
+              Abo verwalten
+              <small className="list__sub">Kündigen, Zahlungsart, Quittungen – bei Stripe</small>
+            </span>
+            <Icon name="next" size={18} />
+          </button>
+        )}
+      </div>
+    </Section>
   );
 }
 

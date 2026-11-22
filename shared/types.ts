@@ -16,6 +16,34 @@ export interface PublicUser {
   passkeys: number;
   /** The user dismissed the hint to set up a passkey (for good, on all devices). */
   passkeyHintDismissed: boolean;
+  /** free = no payment (invitation code, accounts from before the subscription), paid = yearly subscription. */
+  plan: 'free' | 'paid';
+  /** May use the app: a free account or a subscription that runs (also in the trial). */
+  access: boolean;
+  /** The subscription of a paid account – null for free accounts. */
+  subscription: SubscriptionInfo | null;
+  /** Agreed to the current terms of use and privacy notice (shared/legal.ts) – else the app asks first. */
+  termsAccepted: boolean;
+  /** When the person agreed to them, or null. */
+  termsAcceptedAt: number | null;
+}
+
+/**
+ * Stripe's state of a subscription: none = never subscribed, trialing = free days, active = paid,
+ * past_due = the payment failed (Stripe tries again), canceled = ended.
+ */
+export type SubscriptionStatus = 'none' | 'trialing' | 'active' | 'past_due' | 'canceled';
+
+export interface SubscriptionInfo {
+  status: SubscriptionStatus;
+  /** End of the trial or of the paid year (ms) – when it renews or ends. */
+  until: number | null;
+  /** Cancelled: runs until `until`, then ends. */
+  cancelAtPeriodEnd: boolean;
+  /** The free trial has not been used yet. */
+  trialAvailable: boolean;
+  /** Payment details are stored at Stripe – «Abo verwalten» opens the customer portal. */
+  manageable: boolean;
 }
 
 /** A passkey as shown in the account settings (no key material). */
@@ -177,8 +205,6 @@ export interface LearnSharePreview {
   cardCount: number;
   /** The first cards as a teaser. */
   sample: { prompt: string; answer: string }[];
-  /** The link still works as an invitation (registering without a code). */
-  invites: boolean;
 }
 
 export interface LearnExtractResponse {
@@ -191,6 +217,214 @@ export interface SyncPayload {
   groups: PlayerGroup[];
   stacks: LearnStack[];
   progress: LearnProgress[];
+  /** Topics of «Aufgaben» – older app versions send none. */
+  topics?: LearnTopic[];
+  /** Coins and records of «Allein spielen», one per person – merged without losing a coin (see shared/coins.ts). */
+  wallets?: CoinWallet[];
+  /** «Belohnungen»: coins on or off, how many and what things cost. Null = never set. */
+  rewards?: RewardSettings | null;
+}
+
+/* ------------------------------------------------------ coins («Belohnungen») */
+
+export interface CoinEvent {
+  id: string;
+  at: number;
+  /** Positive = earned or given, negative = spent or taken. */
+  amount: number;
+  /** «Kartenkasten «Unité 5»», «Phoni-Rennen», «Geschenk» … */
+  reason: string;
+}
+
+/**
+ * Coins of one person (a name of «Wer lernt?»). Every device counts what it adds and spends in its own
+ * entry, so two devices changing the balance at the same time never lose a coin when merged.
+ */
+export interface CoinWallet {
+  /** learnerId(name). */
+  id: string;
+  learner: string;
+  /** Device id → coins earned (or given) on that device. */
+  earned: Record<string, number>;
+  /** Device id → coins spent (or taken) on that device. */
+  spent: Record<string, number>;
+  /** The latest events, oldest first. */
+  history: CoinEvent[];
+  /** Bought things, e.g. «auto:blitz». */
+  unlocks: string[];
+  /** Best score per game and age level, e.g. «memo:2» → 840. */
+  best: Record<string, number>;
+  updatedAt: number;
+  deleted: boolean;
+}
+
+/** «Belohnungen» – set by parents (optionally behind a code), the same on every device. */
+export interface RewardSettings {
+  /** Coins on: learning earns coins, a round of «Allein spielen» costs coins. */
+  enabled: boolean;
+  /** Hash of the code that protects these settings, or empty. Not a password – a lock for children. */
+  codeHash: string;
+  codeSalt: string;
+  /** Coins per card known in the Kartenkasten or gap filled in the Lückentext. */
+  perCard: number;
+  /** Coins per point in a test, task sheet or practice exam of «Aufgaben». */
+  perPoint: number;
+  /** At most this many coins per person and day from learning (0 = no limit). */
+  dailyMax: number;
+  /** Coins for a round of a game of «Allein spielen». */
+  pricePerRound: number;
+  updatedAt: number;
+}
+
+/* ------------------------------------------------- Aufgaben (larger topics) */
+
+/** School levels in Switzerland – the AI writes for the level (Lehrplan 21). */
+export const TOPIC_LEVELS = [
+  '1. Klasse',
+  '2. Klasse',
+  '3. Klasse',
+  '4. Klasse',
+  '5. Klasse',
+  '6. Klasse',
+  '1. Sek',
+  '2. Sek',
+  '3. Sek',
+  'Gymnasium',
+  'Berufsschule',
+  'Erwachsene',
+] as const;
+
+/** One learning goal of a topic («Du kannst …») with the core content it is about. */
+export interface TopicGoal {
+  id: string;
+  text: string;
+  /** The facts, terms and rules behind the goal – what tests and tasks are made of. */
+  content: string;
+}
+
+/**
+ * A larger topic for a test («Die Römer», «Bruchrechnen»): learning goals with their content, made
+ * from photos or keywords. Printable tests, tasks and practice exams are made from it.
+ */
+export interface LearnTopic {
+  id: string;
+  title: string;
+  subject: string;
+  /** One of TOPIC_LEVELS (or what an older/other version sent). */
+  level: string;
+  goals: TopicGoal[];
+  /** The keywords or notes the topic was made from. */
+  notes: string;
+  /** Day of the test (YYYY-MM-DD), or null. */
+  examDate: string | null;
+  source: 'photo' | 'text';
+  createdAt: number;
+  updatedAt: number;
+  deleted: boolean;
+}
+
+/** A topic as suggested by the AI – reviewed before saving. */
+export interface TopicDraft {
+  title: string;
+  subject: string;
+  level: string;
+  goals: { text: string; content: string; uncertain: string }[];
+  removedPersonalData: boolean;
+}
+
+export interface TopicDraftResponse {
+  draft: TopicDraft;
+  usage: LearnUsage;
+}
+
+/** quiz = Wissenstest, tasks = Übungsaufgaben, exam = Probeprüfung. */
+export type TaskDocKind = 'quiz' | 'tasks' | 'exam';
+export type TaskDifficulty = 'easy' | 'mixed' | 'hard';
+/**
+ * choice = one of several answers, truefalse = «richtig» or «falsch», short = a word, number or short
+ * phrase, open = explain, justify, calculate (written out, checked with the sample solution).
+ */
+export type DocTaskType = 'choice' | 'truefalse' | 'short' | 'open';
+
+/** One task of a printable test, task sheet or practice exam. */
+export interface DocTask {
+  id: string;
+  type: DocTaskType;
+  /** The learning goal it is about (TopicGoal.id), or null. */
+  goalId: string | null;
+  prompt: string;
+  /** Answers to choose from (choice). */
+  options: string[];
+  /** choice: the right option; truefalse: «richtig»/«falsch»; short: the answer; open: the core of the solution. */
+  answer: string;
+  /** Other answers that count (short). */
+  accepted: string[];
+  /** Sample solution: the way to the answer, why it is right, what gives how many points. */
+  solution: string;
+  points: number;
+  /** Lines of space for the answer on paper. */
+  lines: number;
+  /** The check found a doubt that could not be fixed – shown in the preview, or empty. */
+  doubt: string;
+}
+
+/** A person solved a document (in the app or on paper): points per task. */
+export interface DocAttempt {
+  id: string;
+  at: number;
+  /** app = solved in the app, paper = points entered after solving on paper. */
+  mode: 'app' | 'paper';
+  /** Who solved it (a name of «Wer lernt?»), or empty. */
+  learner: string;
+  /** Task id → points reached. */
+  scores: Record<string, number>;
+}
+
+/** Lernkarten from the learning goals of a topic – reviewed like a photo analysis before saving. */
+export interface TopicCardsRequest {
+  topic: Pick<LearnTopic, 'title' | 'subject' | 'level' | 'goals'>;
+  goalIds: string[];
+  count: number;
+}
+
+/** A test, task sheet or practice exam made by the AI from the learning goals of a topic. */
+export interface TaskDocument {
+  id: string;
+  topicId: string;
+  kind: TaskDocKind;
+  /** pending = the AI is still writing, failed = it did not work (see error). */
+  status: 'pending' | 'ready' | 'failed';
+  error: string;
+  title: string;
+  /** Instructions on top of the sheet. */
+  intro: string;
+  durationMin: number;
+  difficulty: TaskDifficulty;
+  /** The learning goals the tasks are about. */
+  goalIds: string[];
+  tasks: DocTask[];
+  attempts: DocAttempt[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface TaskDocRequest {
+  topicId: string;
+  /** The topic as the app has it – also when it is not synchronised yet. */
+  topic: Pick<LearnTopic, 'title' | 'subject' | 'level' | 'goals'>;
+  kind: TaskDocKind;
+  durationMin: 15 | 30 | 45;
+  difficulty: TaskDifficulty;
+  goalIds: string[];
+}
+
+/** Documents left this month. */
+export interface TaskUsage {
+  available: boolean;
+  used: number;
+  limit: number;
+  remaining: number;
+  resetsOn: string;
 }
 
 export interface SyncResponse extends SyncPayload {
@@ -205,6 +439,11 @@ export interface AuthOptions {
   passkeys: { rpID: string } | null;
   /** Narrator voices rendered on the server, or null when no TTS service is configured. */
   tts: { voices: { id: string; name: string }[] } | null;
+  /**
+   * The yearly subscription (Stripe), or null when the server takes no payments – then registering
+   * needs an invitation code (if codes are set).
+   */
+  billing: { pricePerYear: number; currency: 'CHF'; trialDays: number } | null;
 }
 
 export interface ApiErrorBody {
@@ -227,6 +466,17 @@ export const LIMITS = {
   cardText: 300,
   stackTitleMax: 80,
   learnPhotos: 6,
-  /** Accounts that may be created with one shared link. */
-  shareSignups: 50,
+  topics: 200,
+  goalsPerTopic: 20,
+  goalText: 300,
+  goalContent: 1500,
+  topicNotes: 2000,
+  tasksPerDocument: 40,
+  attemptsPerDocument: 20,
+  wallets: 50,
+  walletHistory: 40,
+  walletDevices: 30,
+  walletUnlocks: 40,
+  walletBest: 60,
+  coinReason: 80,
 } as const;

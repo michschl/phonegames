@@ -35,6 +35,9 @@ export function syncNow(): Promise<boolean> {
         groups: Object.values(state.groups),
         stacks: Object.values(state.stacks),
         progress: Object.values(state.progress),
+        topics: Object.values(state.topics ?? {}),
+        wallets: Object.values(state.wallets ?? {}),
+        rewards: state.rewards ?? null,
       });
       // The user might have logged out while the request was running.
       if (useAuth.getState().user?.id !== useData.getState().ownerId) return false;
@@ -44,6 +47,9 @@ export function syncNow(): Promise<boolean> {
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
         handleSessionExpired();
+      } else if (error instanceof ApiError && error.status === 402) {
+        // Subscription ended – the app shows «Abo» (see session.ts), the data stays on the server.
+        useUi.setState({ syncStatus: 'idle' });
       } else {
         useUi.setState({ syncStatus: error instanceof OfflineError ? 'offline' : 'error' });
       }

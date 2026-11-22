@@ -8,10 +8,10 @@ import { LIMITS, type LearnShareInfo, type LearnSharePreview, type LearnShareSta
 /**
  * Sharing learning stacks by link. The link carries an unguessable id (128 bit);
  * there is no list or search of shared stacks. Anybody with the link sees a short
- * preview, signed-in people can take over a copy. While registration needs an
- * invitation code, the link counts as one (up to LIMITS.shareSignups accounts).
+ * preview, signed-in people can take over a copy. The link is no invitation: new
+ * accounts through it need the subscription (or an invitation code).
  */
-export const shareRoutes: FastifyPluginAsync<{ rateLimit: boolean; inviteRequired: boolean }> = async (app, opts) => {
+export const shareRoutes: FastifyPluginAsync<{ rateLimit: boolean }> = async (app, opts) => {
   const limit = (max: number) => ({
     rateLimit: opts.rateLimit ? { max, timeWindow: '15 minutes' } : (false as const),
   });
@@ -28,7 +28,7 @@ export const shareRoutes: FastifyPluginAsync<{ rateLimit: boolean; inviteRequire
   }));
 
   /** Share a stack – or update the cards behind its existing link. */
-  app.post('/', { preHandler: app.requireAuth, config: limit(60), bodyLimit: 2 * 1024 * 1024 }, async (request) => {
+  app.post('/', { preHandler: app.requireAccess, config: limit(60), bodyLimit: 2 * 1024 * 1024 }, async (request) => {
     const body = shareSchema.parse(request.body);
     const userId = request.user!.id;
     const existing = listShares(app.db, userId);
@@ -57,12 +57,11 @@ export const shareRoutes: FastifyPluginAsync<{ rateLimit: boolean; inviteRequire
       subject: share.stack.subject,
       cardCount: share.stack.cards.length,
       sample: share.stack.cards.slice(0, 3).map(({ prompt, answer }) => ({ prompt, answer })),
-      invites: opts.inviteRequired && share.signups < LIMITS.shareSignups,
     };
   });
 
   /** Take over a copy of the cards. */
-  app.post('/:id/import', { preHandler: app.requireAuth, config: limit(60) }, async (request): Promise<{ stack: LearnShareStack }> => {
+  app.post('/:id/import', { preHandler: app.requireAccess, config: limit(60) }, async (request): Promise<{ stack: LearnShareStack }> => {
     const { id } = shareIdSchema.parse(request.params);
     const share = find(id);
     if (share.ownerId !== request.user!.id) countShareImport(app.db, share.id);

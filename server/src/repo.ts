@@ -2,7 +2,14 @@ import type { Database } from './db.ts';
 import { transaction } from './db.ts';
 import { randomToken, sha256 } from './security.ts';
 import { TOMBSTONE_TTL_MS, shouldReplace } from '../../shared/sync.ts';
+import { TERMS_VERSION } from '../../shared/legal.ts';
+import { cleanRewards, cleanWallet, mergeWallet } from '../../shared/coins.ts';
+import { LIMITS } from '../../shared/types.ts';
 import type {
+  CoinWallet,
+  RewardSettings,
+  TaskDocument,
+  LearnTopic,
   LearnProgress,
   LearnShareInfo,
   LearnShareStack,
@@ -12,6 +19,7 @@ import type {
   Player,
   PlayerGroup,
   PublicUser,
+  SubscriptionStatus,
   SyncPayload,
 } from '../../shared/types.ts';
 
@@ -30,15 +38,42 @@ interface UserRow {
   updated_at: number;
   passkey_hint_dismissed: number;
   passkey_count: number;
+  plan: string;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  subscription_status: string;
+  subscription_until: number | null;
+  subscription_cancel_at_end: number;
+  subscription_checked_at: number | null;
+  trial_used: number;
+  terms_version: string | null;
+  terms_accepted_at: number | null;
 }
 
 const SELECT_USER = 'SELECT u.*, (SELECT COUNT(*) FROM passkeys p WHERE p.user_id = u.id) AS passkey_count FROM users u';
 
 export interface UserRecord extends PublicUser {
   passwordHash: string;
+  stripe: { customerId: string | null; subscriptionId: string | null; checkedAt: number | null };
+}
+
+/**
+ * A running subscription keeps access a little past its end: Stripe renews at the end of the period,
+ * and the app asks Stripe only then (see billing.ts) – an outage must not lock anybody out.
+ */
+export const ACCESS_GRACE_MS = 3 * 24 * 60 * 60 * 1000;
+
+const STATUSES: readonly SubscriptionStatus[] = ['none', 'trialing', 'active', 'past_due', 'canceled'];
+
+export function hasAccess(plan: PublicUser['plan'], status: SubscriptionStatus, until: number | null, now = Date.now()): boolean {
+  if (plan === 'free') return true;
+  if (status !== 'trialing' && status !== 'active') return false;
+  return until === null || until + ACCESS_GRACE_MS > now;
 }
 
 function toUser(row: UserRow): UserRecord {
+  const plan = row.plan === 'paid' ? 'paid' : 'free';
+  const status = (STATUSES as readonly string[]).includes(row.subscription_status) ? (row.subscription_status as SubscriptionStatus) : 'none';
   return {
     id: row.id,
     email: row.email,
@@ -48,12 +83,27 @@ function toUser(row: UserRow): UserRecord {
     createdAt: row.created_at,
     passkeys: row.passkey_count,
     passkeyHintDismissed: row.passkey_hint_dismissed === 1,
+    plan,
+    access: hasAccess(plan, status, row.subscription_until),
+    subscription:
+      plan === 'paid'
+        ? {
+            status,
+            until: row.subscription_until,
+            cancelAtPeriodEnd: row.subscription_cancel_at_end === 1,
+            trialAvailable: row.trial_used === 0,
+            manageable: !!row.stripe_customer_id,
+          }
+        : null,
+    termsAccepted: row.terms_version === TERMS_VERSION,
+    termsAcceptedAt: row.terms_accepted_at,
     passwordHash: row.password_hash,
+    stripe: { customerId: row.stripe_customer_id, subscriptionId: row.stripe_subscription_id, checkedAt: row.subscription_checked_at },
   };
 }
 
 export function toPublicUser(user: UserRecord): PublicUser {
-  const { passwordHash: _hash, ...rest } = user;
+  const { passwordHash: _hash, stripe: _stripe, ...rest } = user;
   return rest;
 }
 
@@ -71,14 +121,79 @@ export function findUserById(db: Database, id: string): UserRecord | null {
 
 export function createUser(
   db: Database,
-  user: { id: string; email: string; name: string; avatar: string; color: string; passwordHash: string },
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    avatar: string;
+    color: string;
+    passwordHash: string;
+    plan: PublicUser['plan'];
+    /** The version of the terms agreed to when registering, or null (older app versions). */
+    termsVersion: string | null;
+  },
 ): UserRecord {
   const now = Date.now();
   db.prepare(
-    `INSERT INTO users (id, email, name, avatar, color, password_hash, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-  ).run(user.id, user.email, user.name, user.avatar, user.color, user.passwordHash, now, now);
+    `INSERT INTO users (id, email, name, avatar, color, password_hash, plan, terms_version, terms_accepted_at, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    user.id,
+    user.email,
+    user.name,
+    user.avatar,
+    user.color,
+    user.passwordHash,
+    user.plan,
+    user.termsVersion,
+    user.termsVersion ? now : null,
+    now,
+    now,
+  );
   return findUserById(db, user.id)!;
+}
+
+/** The person agreed to a version of the terms of use and the privacy notice. */
+export function acceptTerms(db: Database, userId: string, version: string): UserRecord {
+  const now = Date.now();
+  db.prepare('UPDATE users SET terms_version = ?, terms_accepted_at = ?, updated_at = ? WHERE id = ?').run(version, now, now, userId);
+  return findUserById(db, userId)!;
+}
+
+/** What Stripe says about a person's subscription – stored with the account. */
+export interface SubscriptionState {
+  customerId: string;
+  subscriptionId: string | null;
+  status: SubscriptionStatus;
+  until: number | null;
+  cancelAtPeriodEnd: boolean;
+  /** The subscription started with the free trial. */
+  trialUsed: boolean;
+}
+
+export function saveSubscription(db: Database, userId: string, state: SubscriptionState): UserRecord {
+  const now = Date.now();
+  db.prepare(
+    `UPDATE users SET stripe_customer_id = ?, stripe_subscription_id = ?, subscription_status = ?, subscription_until = ?,
+       subscription_cancel_at_end = ?, subscription_checked_at = ?, trial_used = MAX(trial_used, ?), updated_at = ?
+     WHERE id = ?`,
+  ).run(
+    state.customerId,
+    state.subscriptionId,
+    state.status,
+    state.until,
+    Number(state.cancelAtPeriodEnd),
+    now,
+    Number(state.trialUsed),
+    now,
+    userId,
+  );
+  return findUserById(db, userId)!;
+}
+
+/** Remembers that Stripe was asked (also when it did not answer) – at most one question per hour. */
+export function markSubscriptionChecked(db: Database, userId: string): void {
+  db.prepare('UPDATE users SET subscription_checked_at = ? WHERE id = ?').run(Date.now(), userId);
 }
 
 export function updateUser(
@@ -331,6 +446,20 @@ interface ProgressRow {
 }
 
 type StackData = Pick<LearnStack, 'title' | 'subject' | 'languages' | 'cards' | 'suggestedModes' | 'source'>;
+type TopicData = Pick<LearnTopic, 'title' | 'subject' | 'level' | 'goals' | 'notes' | 'examDate' | 'source'>;
+
+export function getTopics(db: Database, userId: string): LearnTopic[] {
+  const rows = db
+    .prepare('SELECT id, data, created_at, updated_at, deleted FROM learn_topics WHERE user_id = ? ORDER BY created_at')
+    .all(userId) as unknown as StackRow[];
+  return rows.map((row) => ({
+    id: row.id,
+    ...(JSON.parse(row.data) as TopicData),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    deleted: row.deleted === 1,
+  }));
+}
 type ProgressData = Pick<LearnProgress, 'player' | 'cards' | 'days' | 'removed'>;
 
 export function getStacks(db: Database, userId: string): LearnStack[] {
@@ -427,6 +556,75 @@ export function countShareSignup(db: Database, id: string): void {
   db.prepare('UPDATE learn_shares SET signups = signups + 1 WHERE id = ?').run(id);
 }
 
+/* ------------------------------------------------------- task documents */
+
+interface DocumentRow {
+  id: string;
+  topic_id: string;
+  kind: string;
+  status: string;
+  data: string;
+  created_at: number;
+  updated_at: number;
+}
+
+type DocumentData = Pick<TaskDocument, 'error' | 'title' | 'intro' | 'durationMin' | 'difficulty' | 'goalIds' | 'tasks' | 'attempts'>;
+
+function toDocument(row: DocumentRow): TaskDocument {
+  return {
+    id: row.id,
+    topicId: row.topic_id,
+    kind: row.kind as TaskDocument['kind'],
+    status: row.status as TaskDocument['status'],
+    ...(JSON.parse(row.data) as DocumentData),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function documentData(doc: TaskDocument): string {
+  const { error, title, intro, durationMin, difficulty, goalIds, tasks, attempts } = doc;
+  return JSON.stringify({ error, title, intro, durationMin, difficulty, goalIds, tasks, attempts } satisfies DocumentData);
+}
+
+/** Stores a document – a new one or a newer state of it. */
+export function saveDocument(db: Database, userId: string, doc: TaskDocument): TaskDocument {
+  db.prepare(
+    `INSERT INTO learn_documents (user_id, id, topic_id, kind, status, data, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT (user_id, id) DO UPDATE SET status = excluded.status, data = excluded.data, updated_at = excluded.updated_at`,
+  ).run(userId, doc.id, doc.topicId, doc.kind, doc.status, documentData(doc), doc.createdAt, doc.updatedAt);
+  return doc;
+}
+
+export function getDocument(db: Database, userId: string, id: string): TaskDocument | null {
+  const row = db.prepare('SELECT * FROM learn_documents WHERE user_id = ? AND id = ?').get(userId, id) as DocumentRow | undefined;
+  return row ? toDocument(row) : null;
+}
+
+/** The documents of a topic, newest first. */
+export function listDocuments(db: Database, userId: string, topicId: string): TaskDocument[] {
+  const rows = db
+    .prepare('SELECT * FROM learn_documents WHERE user_id = ? AND topic_id = ? ORDER BY created_at DESC')
+    .all(userId, topicId) as unknown as DocumentRow[];
+  return rows.map(toDocument);
+}
+
+export function deleteDocument(db: Database, userId: string, id: string): boolean {
+  return Number(db.prepare('DELETE FROM learn_documents WHERE user_id = ? AND id = ?').run(userId, id).changes) > 0;
+}
+
+export function getTaskUsage(db: Database, userId: string, month: string): number {
+  const row = db.prepare('SELECT count FROM task_usage WHERE user_id = ? AND month = ?').get(userId, month) as { count: number } | undefined;
+  return row?.count ?? 0;
+}
+
+export function countTaskUsage(db: Database, userId: string, month: string): void {
+  db.prepare(
+    `INSERT INTO task_usage (user_id, month, count) VALUES (?, ?, 1)
+     ON CONFLICT (user_id, month) DO UPDATE SET count = count + 1`,
+  ).run(userId, month);
+}
+
 /* ------------------------------------------------------------ learn usage */
 
 export function getLearnUsage(db: Database, userId: string, month: string): number {
@@ -512,6 +710,27 @@ export function syncUserData(db: Database, userId: string, incoming: SyncPayload
       upsertStack.run(userId, stack.id, JSON.stringify(data), stack.createdAt, stack.updatedAt, stack.deleted ? 1 : 0);
     }
 
+    const topics = new Map(getTopics(db, userId).map((topic) => [topic.id, topic]));
+    const upsertTopic = db.prepare(
+      `INSERT INTO learn_topics (user_id, id, data, created_at, updated_at, deleted) VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT (user_id, id) DO UPDATE SET
+         data = excluded.data, created_at = excluded.created_at, updated_at = excluded.updated_at, deleted = excluded.deleted`,
+    );
+    for (const raw of incoming.topics ?? []) {
+      const topic = { ...raw, updatedAt: clamp(raw.updatedAt) };
+      if (!shouldReplace(topics.get(topic.id), topic)) continue;
+      const data: TopicData = {
+        title: topic.title,
+        subject: topic.subject,
+        level: topic.level,
+        goals: topic.deleted ? [] : topic.goals,
+        notes: topic.deleted ? '' : topic.notes,
+        examDate: topic.examDate,
+        source: topic.source,
+      };
+      upsertTopic.run(userId, topic.id, JSON.stringify(data), topic.createdAt, topic.updatedAt, topic.deleted ? 1 : 0);
+    }
+
     const progress = new Map(getProgress(db, userId).map((entry) => [entry.id, entry]));
     const upsertProgress = db.prepare(
       `INSERT INTO learn_progress (user_id, id, stack_id, data, updated_at, deleted) VALUES (?, ?, ?, ?, ?, ?)
@@ -531,8 +750,39 @@ export function syncUserData(db: Database, userId: string, incoming: SyncPayload
       upsertProgress.run(userId, entry.id, entry.stackId, JSON.stringify(data), entry.updatedAt, entry.deleted ? 1 : 0);
     }
 
+    // The documents of a topic go a day after the topic (a day leaves time for «Rückgängig» on every device).
+    db.prepare(
+      `DELETE FROM learn_documents WHERE user_id = ? AND topic_id IN
+         (SELECT id FROM learn_topics WHERE user_id = ? AND deleted = 1 AND updated_at < ?)`,
+    ).run(userId, userId, now - 24 * 60 * 60 * 1000);
+
+    // Coins: merged per device – never «last write wins», so no coin gets lost (shared/coins.ts).
+    const wallets = new Map(getWallets(db, userId).map((wallet) => [wallet.id, wallet]));
+    const upsertWallet = db.prepare(
+      `INSERT INTO coin_wallets (user_id, id, data, updated_at, deleted) VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT (user_id, id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at, deleted = excluded.deleted`,
+    );
+    for (const raw of incoming.wallets ?? []) {
+      const wallet = cleanWallet({ ...raw, updatedAt: clamp(raw.updatedAt) });
+      const known = wallets.get(wallet.id);
+      if (!known && wallets.size >= LIMITS.wallets) continue;
+      const merged = mergeWallet(known, wallet);
+      wallets.set(merged.id, merged);
+      upsertWallet.run(userId, merged.id, JSON.stringify(merged), merged.updatedAt, merged.deleted ? 1 : 0);
+    }
+    if (incoming.rewards) {
+      const rewards = cleanRewards({ ...incoming.rewards, updatedAt: clamp(incoming.rewards.updatedAt) });
+      const known = getRewards(db, userId);
+      if (!known || rewards.updatedAt > known.updatedAt) {
+        db.prepare(
+          `INSERT INTO reward_settings (user_id, data, updated_at) VALUES (?, ?, ?)
+           ON CONFLICT (user_id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at`,
+        ).run(userId, JSON.stringify(rewards), rewards.updatedAt);
+      }
+    }
+
     const cutoff = now - TOMBSTONE_TTL_MS;
-    for (const table of ['library', 'player_groups', 'learn_stacks', 'learn_progress']) {
+    for (const table of ['library', 'player_groups', 'learn_stacks', 'learn_progress', 'learn_topics', 'coin_wallets']) {
       db.prepare(`DELETE FROM ${table} WHERE user_id = ? AND deleted = 1 AND updated_at < ?`).run(userId, cutoff);
     }
   });
@@ -542,5 +792,24 @@ export function syncUserData(db: Database, userId: string, incoming: SyncPayload
     groups: getGroups(db, userId),
     stacks: getStacks(db, userId),
     progress: getProgress(db, userId),
+    topics: getTopics(db, userId),
+    wallets: getWallets(db, userId),
+    rewards: getRewards(db, userId),
   };
+}
+
+export function getWallets(db: Database, userId: string): CoinWallet[] {
+  const rows = db.prepare('SELECT data FROM coin_wallets WHERE user_id = ? ORDER BY id').all(userId) as { data: string }[];
+  return rows.map((row) => JSON.parse(row.data) as CoinWallet);
+}
+
+export function getRewards(db: Database, userId: string): RewardSettings | null {
+  const row = db.prepare('SELECT data FROM reward_settings WHERE user_id = ?').get(userId) as { data: string } | undefined;
+  return row ? (JSON.parse(row.data) as RewardSettings) : null;
+}
+
+/** All documents of «Aufgaben» – for the data export. */
+export function listAllDocuments(db: Database, userId: string): TaskDocument[] {
+  const rows = db.prepare('SELECT * FROM learn_documents WHERE user_id = ? ORDER BY created_at').all(userId) as unknown as DocumentRow[];
+  return rows.map(toDocument);
 }

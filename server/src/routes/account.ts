@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
+import { cancelSubscription, type BillingConfig } from '../billing.ts';
 import { HttpError } from '../http.ts';
 import {
   deleteOtherSessions,
@@ -7,18 +8,24 @@ import {
   getGroups,
   getProgress,
   getStacks,
+  getRewards,
+  getTopics,
+  getWallets,
+  listAllDocuments,
   listShares,
   toShareInfo,
   getLibrary,
+  acceptTerms,
   listPasskeys,
   toPasskeyInfo,
   toPublicUser,
   updateUser,
 } from '../repo.ts';
 import { hashPassword, verifyPassword } from '../security.ts';
-import { changePasswordSchema, deleteAccountSchema, updateAccountSchema } from '../schemas.ts';
+import { acceptTermsSchema, changePasswordSchema, deleteAccountSchema, updateAccountSchema } from '../schemas.ts';
+import { TERMS_VERSION } from '../../../shared/legal.ts';
 
-export const accountRoutes: FastifyPluginAsync<{ rateLimit: boolean }> = async (app, opts) => {
+export const accountRoutes: FastifyPluginAsync<{ rateLimit: boolean; billing: BillingConfig | null }> = async (app, opts) => {
   const limit = (max: number) => ({
     rateLimit: opts.rateLimit ? { max, timeWindow: '15 minutes' } : (false as const),
   });
@@ -61,15 +68,38 @@ export const accountRoutes: FastifyPluginAsync<{ rateLimit: boolean }> = async (
     return reply.status(204).send();
   });
 
+  /** Confirms the password – e.g. to reset a forgotten code of «Belohnungen». */
+  app.post('/check-password', { config: limit(10) }, async (request, reply) => {
+    const body = deleteAccountSchema.parse(request.body);
+    if (!(await verifyPassword(body.password, request.user!.passwordHash))) {
+      throw new HttpError(403, 'invalid_password', 'Das Passwort ist falsch.');
+    }
+    return reply.status(204).send();
+  });
+
   app.delete('/', { config: limit(10) }, async (request, reply) => {
     const user = request.user!;
     const body = deleteAccountSchema.parse(request.body);
     if (!(await verifyPassword(body.password, user.passwordHash))) {
       throw new HttpError(403, 'invalid_password', 'Das Passwort ist falsch.');
     }
+    // A running subscription ends with the account – otherwise Stripe would go on charging.
+    const status = user.subscription?.status;
+    if (user.stripe.subscriptionId && status && status !== 'canceled' && status !== 'none') {
+      if (!opts.billing) throw new HttpError(409, 'subscription_running', 'Dein Abo läuft noch. Kündige es zuerst unter «Abo verwalten».');
+      await cancelSubscription(opts.billing, user.stripe.subscriptionId);
+    }
     deleteUser(app.db, user.id); // sessions, passkeys, library and groups are deleted via ON DELETE CASCADE
     app.clearSessionCookie(reply);
     return reply.status(204).send();
+  });
+
+  /** Agreeing to the terms of use and the privacy notice (new accounts agree when registering). */
+  app.post('/terms', { config: limit(30) }, async (request) => {
+    const { version } = acceptTermsSchema.parse(request.body);
+    // An app that is out of date showed older texts – it asks again after its update.
+    if (version > TERMS_VERSION) throw new HttpError(400, 'terms_unknown', 'Diese Version der Bedingungen gibt es nicht.');
+    return { user: toPublicUser(acceptTerms(app.db, request.user!.id, version)) };
   });
 
   /** Data export (Auskunftsrecht nach DSG/DSGVO). */
@@ -82,6 +112,10 @@ export const accountRoutes: FastifyPluginAsync<{ rateLimit: boolean }> = async (
       groups: getGroups(app.db, user.id).filter((group) => !group.deleted),
       learnStacks: getStacks(app.db, user.id).filter((stack) => !stack.deleted),
       learnProgress: getProgress(app.db, user.id).filter((entry) => !entry.deleted),
+      topics: getTopics(app.db, user.id).filter((topic) => !topic.deleted),
+      documents: listAllDocuments(app.db, user.id),
+      coins: getWallets(app.db, user.id).filter((wallet) => !wallet.deleted),
+      rewards: (({ codeHash: _hash, codeSalt: _salt, ...rest }) => rest)(getRewards(app.db, user.id) ?? { codeHash: '', codeSalt: '' }),
       learnShares: listShares(app.db, user.id).map((share) => ({ ...toShareInfo(share), cards: share.stack.cards.length })),
       passkeys: listPasskeys(app.db, user.id).map(toPasskeyInfo),
     };

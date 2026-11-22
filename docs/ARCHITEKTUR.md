@@ -126,8 +126,20 @@ Gespeichert werden nur Name, E-Mail, Passwort-Hash, Avatar, die Spieleliste, die
 Mitspielenden), die Lernstapel und der Lernstand pro Person. Es gibt keine Tracker und keine externen Requests aus dem
 Browser (Schriften sind eingebettet). Fotos für Lernstapel reicht der Server an die Infomaniak AI Tools weiter
 (Rechenzentren in der Schweiz); sie werden weder gespeichert noch protokolliert, nur die erkannten Karten bleiben. Nutzer können
-ihre Daten als JSON exportieren und ihr Konto samt allen Daten selbst löschen. Mit einem Infomaniak-VPS liegen
-die Daten in der Schweiz.
+ihre Daten als JSON exportieren und ihr Konto samt allen Daten selbst löschen. Das Jahresabo läuft über Stripe:
+Zahlungsdaten gibt man nur auf der Zahlungsseite und im Kundenportal von Stripe ein; der Server kennt nur die
+Kunden- und Abo-Nummer bei Stripe, den Status und das Ablaufdatum.
+
+**Rechtstexte:** Impressum, Nutzungsbedingungen (AGB) und Datenschutzerklärung sind öffentliche Seiten
+(`/impressum`, `/agb`, `/datenschutz`, Texte in `client/src/legal/`), verlinkt auf der Startseite, bei Anmeldung,
+Registrierung, Abo, Konto und geteilten Stapeln. Die Betreiberangaben stehen an einer Stelle:
+`client/src/legal/operator.ts`. Bei der Registrierung stimmt man per Checkbox zu; der Server speichert Version
+(`TERMS_VERSION` in `shared/legal.ts`) und Zeitpunkt. Konten ohne Zustimmung zur aktuellen Version – ältere Konten
+oder nach einer Änderung der Texte – sehen vor allem anderen die Seite «Kurz zustimmen» (`/bedingungen`). Wer die
+Texte ändert, setzt `TERMS_VERSION` und `TERMS_DATE` auf das neue Datum. Solange in `operator.ts` noch Platzhalter
+(`[…]`) stehen, ist die Zustimmung ausgeschaltet (`legalReady()`): keine Checkbox bei der Registrierung, keine Seite
+«Kurz zustimmen»; die Platzhalter sind auf den Seiten markiert. Mit den echten Angaben wird sie ohne weitere Änderung
+aktiv. Mit einem Infomaniak-VPS liegen die Daten in der Schweiz.
 
 ## Datenmodell (SQLite)
 
@@ -141,6 +153,11 @@ die Daten in der Schweiz.
 | `learn_stacks` | `user_id`, `id`, `data` (JSON: Titel, Fach, Sprachen, Karten, empfohlene Spielformen, Quelle), `created_at`, `updated_at`, `deleted` |
 | `learn_progress` | `user_id`, `id` (aus Stapel und Personenname abgeleitet), `stack_id`, `data` (JSON: Name, Fach und Fälligkeit pro Karte, Lerntage für die Lernserie), `updated_at`, `deleted` |
 | `learn_usage` | `user_id`, `month` (Kalendermonat in der Schweiz, z. B. `2026-11`), `count` – für das Monatslimit der Foto-Auswertung |
+| `learn_topics` | `user_id`, `id`, `data` (JSON: Titel, Fach, Stufe, Prüfungsdatum, Lernziele mit Kernstoff, Notizen, Quelle), `created_at`, `updated_at`, `deleted` – synchronisiert wie die Stapel |
+| `learn_documents` | `user_id`, `id`, `topic_id`, `kind` (`quiz`/`tasks`/`exam`), `status` (`pending`/`ready`/`failed`), `data` (JSON: Titel, Anleitung, Dauer, Schwierigkeit, Aufgaben mit Musterlösungen, Ergebnisse), Zeitstempel – nicht im Sync, sondern über `/api/tasks/documents` |
+| `task_usage` | `user_id`, `month`, `count` – Monatslimit der Unterlagen |
+| `coin_wallets` | `user_id`, `id` (aus dem Namen), `data` (JSON: Name, Münzen verdient/ausgegeben **pro Gerät**, letzte 40 Buchungen, Gekauftes, Rekorde), `updated_at`, `deleted` |
+| `reward_settings` | `user_id`, `data` (JSON: Münzen an/aus, Hash des Codes, Münzen pro Karte/Punkt, Tageslimit, Preis pro Runde), `updated_at` |
 | `learn_shares` | `id` (zufällig, 128 Bit), `owner_id`, `stack_id` (ein Link pro Stapel), `data` (JSON: Kopie der Karten ohne Lernstand), `imports`, `signups`, Zeitstempel |
 
 Migrationen stehen in [`server/src/db.ts`](../server/src/db.ts) und laufen beim Start automatisch. Neue
@@ -155,8 +172,8 @@ Alle Antworten sind JSON. Fehler haben die Form `{ "error": "code", "message": "
 | --- | --- | --- | --- |
 | `GET /api/health` | – | – | `{ ok, version }` |
 | `GET /api/tts?voice=thorsten&text=…` | ✅ | – | `audio/wav` (ein Satz, max. 300 Zeichen) · `503 tts_unavailable` |
-| `GET /api/auth/options` | – | – | `{ inviteRequired }` |
-| `POST /api/auth/register` | – | `{ name, email, password, inviteCode?, shareId? }` | `201 { user }` + Cookie · `403 invite_required` / `invalid_invite` |
+| `GET /api/auth/options` | – | – | `{ inviteRequired, passkeys, tts, billing }` |
+| `POST /api/auth/register` | – | `{ name, email, password, inviteCode?, shareId?, termsVersion? }` | `201 { user }` + Cookie – mit Code kostenlos (`plan: 'free'`), ohne Code mit Abo (`plan: 'paid'`, `access: false` bis zum Abo) · `403 invite_required` (ohne Stripe) / `invalid_invite` |
 | `POST /api/auth/login` | – | `{ email, password }` | `{ user }` + Cookie |
 | `POST /api/auth/logout` | – | – | `204` |
 | `POST /api/passkeys/login/options` | – | – | WebAuthn-Optionen zum Anmelden |
@@ -165,19 +182,37 @@ Alle Antworten sind JSON. Fehler haben die Form `{ "error": "code", "message": "
 | `POST /api/passkeys/register/options` | ✅ | – | WebAuthn-Optionen zum Einrichten |
 | `POST /api/passkeys/register/verify` | ✅ | `{ response }` | `201 { passkey, user }` |
 | `DELETE /api/passkeys/:id` | ✅ | – | `{ user, remaining }` |
-| `GET /api/auth/me` | ✅ | – | `{ user }` |
+| `GET /api/auth/me` | ✅ | – | `{ user }` – fragt Stripe, wenn das Abojahr abgelaufen ist |
+| `POST /api/billing/checkout` | ✅ | – | `{ url }` der Zahlungsseite von Stripe (beim ersten Mal mit 7 Tagen gratis) · `409 free_plan` / `already_subscribed` |
+| `POST /api/billing/confirm` | ✅ | `{ sessionId }` | `{ user, confirmed }` – nach der Zahlungsseite · `403 checkout_foreign` |
+| `POST /api/billing/portal` | ✅ | – | `{ url }` des Kundenportals von Stripe · `409 no_subscription` |
+| `POST /api/billing/refresh` | ✅ | – | `{ user }` – nach dem Kundenportal |
 | `PATCH /api/account` | ✅ | `{ name?, avatar?, color?, email?, password?, passkeyHintDismissed? }` | `{ user }` |
 | `POST /api/account/password` | ✅ | `{ currentPassword, newPassword }` | `204` |
+| `POST /api/account/terms` | ✅ | `{ version }` | `{ user }` – Zustimmung zu Nutzungsbedingungen und Datenschutzerklärung (`shared/legal.ts`) |
+| `POST /api/account/check-password` | ✅ | `{ password }` | `204` · `403 invalid_password` – setzt einen vergessenen Code von «Belohnungen» zurück |
 | `DELETE /api/account` | ✅ | `{ password }` | `204` |
 | `GET /api/account/export` | ✅ | – | JSON-Datei mit allen Daten |
-| `POST /api/sync` | ✅ | `{ library, groups, stacks, progress }` (ältere Apps ohne `stacks`/`progress` gehen auch) | `{ library, groups, stacks, progress, serverTime }` |
+| `POST /api/sync` | ✅ | `{ library, groups, stacks, progress, topics, wallets, rewards }` (ältere Apps ohne die neueren Felder gehen auch) | `{ library, groups, stacks, progress, topics, wallets, rewards, serverTime }` |
 | `GET /api/learn/usage` | ✅ | – | `{ available, used, limit, remaining, resetsOn, maxPhotos }` |
 | `GET /api/shares/mine` | ✅ | – | `{ shares: LearnShareInfo[] }` |
 | `POST /api/shares` | ✅ | `{ stackId, title, subject, languages, cards, suggestedModes }` | `{ share }` – legt den Link an oder aktualisiert die Karten dahinter |
 | `DELETE /api/shares/:id` | ✅ | – | `204` – der Link funktioniert danach nicht mehr |
-| `GET /api/shares/:id` | – | – | Vorschau `{ title, subject, cardCount, sample, invites }` · `404 share_not_found` |
+| `GET /api/shares/:id` | – | – | Vorschau `{ title, subject, cardCount, sample }` · `404 share_not_found` |
 | `POST /api/shares/:id/import` | ✅ | – | `{ stack }` (Kopie der Karten) |
 | `POST /api/learn/extract` | ✅ | `{ images: string[], mode?: 'exact' \| 'creative', count?: 5–30 }` (1–6 JPEG/PNG/WebP als Data-URL) | `{ draft, usage }` · `429 learn_limit` / `learn_running` · `422 learn_empty` · `502 learn_failed` · `503 learn_unavailable` / `learn_busy` |
+| `POST /api/tasks/topic` | ✅ | `{ images: string[], text, subject, level }` (Fotos und/oder Stichworte) | `{ draft, usage }` – Lernziele mit Kernstoff; zählt wie eine Foto-Auswertung · `429 learn_limit` / `learn_running` · `422 learn_empty` |
+| `GET /api/tasks/usage` | ✅ | – | `{ available, used, limit, remaining, resetsOn }` – Unterlagen in diesem Monat |
+| `GET /api/tasks/documents?topicId=…` | ✅ | – | `{ documents }` eines Themas, neueste zuerst |
+| `GET /api/tasks/documents/:id` | ✅ | – | `{ document }` · `404 document_not_found` |
+| `POST /api/tasks/documents` | ✅ | `{ topicId, topic, kind, durationMin: 15\|30\|45, difficulty, goalIds }` | `{ document, usage }` – sofort mit `status: 'pending'`; die KI schreibt im Hintergrund · `429 task_limit` / `task_running` |
+| `DELETE /api/tasks/documents/:id` | ✅ | – | `204` |
+| `POST /api/tasks/documents/:id/attempts` | ✅ | `{ id, at, mode: 'app'\|'paper', learner, scores }` | `{ document }` – Ergebnis (höchstens 20 pro Unterlage) · `409 document_not_ready` |
+| `DELETE /api/tasks/documents/:id/attempts/:attemptId` | ✅ | – | `{ document }` |
+| `POST /api/tasks/cards` | ✅ | `{ topic, goalIds, count: 5–30 }` | `{ draft, usage }` – Lernkarten zu den Lernzielen, zählt wie eine Foto-Auswertung |
+
+Sync, Lernen, Teilen (anlegen, übernehmen) und die Erzählstimme brauchen zusätzlich ein laufendes Abo oder ein
+kostenloses Konto, sonst `402 subscription_required`. Konto, Export und Löschen gehen immer.
 
 Die Typen stehen in [`shared/types.ts`](../shared/types.ts).
 
@@ -194,7 +229,9 @@ Die Typen stehen in [`shared/types.ts`](../shared/types.ts).
 | `TRUST_PROXY` | in Produktion `true` | `X-Forwarded-*` von Caddy vertrauen (für Rate-Limit nach Client-IP) |
 | `LOG_LEVEL` | `info` / `debug` | Fastify/Pino-Loglevel |
 | `APP_VERSION` | `dev` | Wird im Health-Check und in der App angezeigt |
-| `INVITE_CODES` | – | Einladungscodes, mit Komma getrennt. Gesetzt = Registrierung nur mit Code; leer = offen |
+| `INVITE_CODES` | – | Einladungscodes, mit Komma getrennt. Ein Code gibt ein kostenloses Konto. Ohne Stripe: gesetzt = Registrierung nur mit Code; leer = offen |
+| `STRIPE_SECRET_KEY` | – | Geheimer Stripe-Schlüssel für das Jahresabo (CHF 5, 7 Tage gratis). Ohne Schlüssel kein Abo |
+| `STRIPE_API_URL` | `https://api.stripe.com` | Nur für Tests (Stripe-Attrappe) |
 | `TTS_URL` | – | Piper-Dienst für die Erzählstimme (Docker: `http://tts:5000`). Ohne Wert gibt es nur Gerätestimmen |
 | `APP_ORIGIN` | Dev: `http://localhost:5173,http://localhost:3000` | Öffentliche Adresse der App (Docker: `https://${APP_DOMAIN}`). Passkeys sind an diese Domain gebunden; ohne Wert sind sie in Produktion ausgeschaltet |
 | `INFOMANIAK_AI_TOKEN` | – | API-Token der Infomaniak AI Tools für die Foto-Auswertung. Ohne Token ist sie ausgeschaltet (Abtippen geht weiterhin) |
@@ -202,6 +239,7 @@ Die Typen stehen in [`shared/types.ts`](../shared/types.ts).
 | `LEARN_AI_MODEL` | `Qwen/Qwen3.8-27B-FP8` | Modell mit Bildverständnis |
 | `LEARN_MONTHLY_LIMIT` | `5` | Foto-Auswertungen pro Person und Kalendermonat |
 | `LEARN_GLOBAL_MONTHLY_LIMIT` | `2000` | Notbremse: Auswertungen pro Monat über alle Konten |
+| `TASK_MONTHLY_LIMIT` | `20` | Unterlagen («Aufgaben»: Wissenstests, Übungsaufgaben, Probeprüfungen) pro Person und Kalendermonat |
 | `LEARN_AI_URL` | `https://api.infomaniak.com` | Basis-URL der KI-Schnittstelle (für Tests) |
 
 ## Sound, Grafik & Haptik
@@ -295,8 +333,65 @@ Die Typen stehen in [`shared/types.ts`](../shared/types.ts).
 - **Teilen:** Auf der Stapel-Seite erzeugt «Link teilen» eine Freigabe (`POST /api/shares`) mit zufälliger ID
   (`/s/<id>`) und öffnet das Teilen-Menü des Handys (sonst wird der Link kopiert). Der Server speichert eine Kopie
   der Karten, ohne Lernstand und ohne Namen. Die Vorschau sehen alle mit dem Link (Titel, Fach, Anzahl, drei
-  Beispielkarten, `X-Robots-Tag: noindex`); übernehmen können nur angemeldete Personen – als eigene Kopie. Solange
-  die Registrierung einen Einladungscode braucht, gilt der Link als Einladung, höchstens für 50 neue Konten
-  (`LIMITS.shareSignups`). Nach Registrierung oder Anmeldung über den Link wird der Stapel gleich übernommen. Wer
+  Beispielkarten, `X-Robots-Tag: noindex`); übernehmen können nur angemeldete Personen – als eigene Kopie. Wer noch
+  kein Konto hat, registriert sich normal (mit Abo oder Einladungscode); danach wird der Stapel gleich übernommen. Wer
   teilt, sieht, wie oft übernommen wurde, kann die geteilte Version aktualisieren und die Freigabe beenden.
 
+## Aufgaben (Prüfungsvorbereitung)
+
+Der zweite Bereich im Tab «Lernen» (Konzept: [KONZEPT-AUFGABEN.md](KONZEPT-AUFGABEN.md)) – für Stoff, der sich
+schlecht in Karten fassen lässt.
+
+- **Thema:** Titel, Fach, Stufe, Prüfungsdatum und Lernziele («Du kannst …») mit Kernstoff (`LearnTopic`,
+  synchronisiert wie die Stapel). Die Lernziele schreibt die KI aus Fotos (Lernziel-Blatt, Buchseiten) und/oder
+  Stichworten (`POST /api/tasks/topic`, Prompt `topicPrompt` mit Lehrplan-21-Zyklus der Stufe, `levelHint`); man
+  prüft sie in derselben Ansicht wie beim Bearbeiten (`TopicEditor`). Ohne KI lassen sie sich selbst schreiben.
+- **Unterlagen:** Wissenstest, Übungsaufgaben oder Probeprüfung zu ausgewählten Lernzielen, 15/30/45 Minuten,
+  drei Schwierigkeiten (`documentSize`, `documentPrompt`). `POST /api/tasks/documents` antwortet sofort mit
+  `pending`; ein Hintergrundauftrag lässt die KI schreiben (`toTasks` bereinigt: Antwort einer Auswahlfrage muss
+  unter den Optionen sein, sonst wird es eine Kurzantwort; Punkte, Zeilen, Lernziel-Nummern) und in einem zweiten
+  Aufruf prüfen (`DOC_CHECK_PROMPT`, `applyChecks`: korrigierte Lösungen werden übernommen, sonst bleibt ein
+  «Bitte prüfen»). Die App fragt alle 3 Sekunden nach (`usePollPending`); hängt eine Unterlage länger als
+  5 Minuten, gilt sie als fehlgeschlagen. Nur fertige Unterlagen zählen ans Monatslimit (`TASK_MONTHLY_LIMIT`).
+  Unterlagen liegen auf dem Server und als Kopie im Gerät (`phonegames-documents`), damit sie offline lesbar sind.
+- **PDF:** im Browser mit pdfmake (`lib/taskPdf.ts`, erst bei Bedarf geladen, Schrift Roboto aus dem
+  virtuellen Dateisystem – kein `eval`, läuft unter der CSP). Kopf mit Name/Datum/Punkten (Probeprüfung mit Note),
+  Linien bzw. 5-mm-Häuschen in Mathematik, Musterlösung auf neuer Seite, Notenskala (Note = Punkte ÷ Total × 5 + 1,
+  auf Halbe gerundet). Auf dem Handy über das Teilen-Menü, sonst als Download.
+- **Lösen in der App** (`pages/TaskSolvePages.tsx`): eine Aufgabe pro Seite; Auswahl und «richtig/falsch» per
+  Tipp, Kurzantworten getippt und tolerant geprüft (`autoScore` → `checkTypedAnswer`), ausführliche Aufgaben mit
+  Textfeld und **Notizblatt** (`components/Notepad.tsx`: Finger oder Stift, Druckstärke beim Stift, die Hand auf dem
+  Bildschirm zeichnet nicht, sobald ein Stift erkannt wurde; Radierer entfernt ganze Striche; in Mathematik
+  Häuschen). Antworten bleiben beim Verlassen erhalten (`phonegames-solve`). Nach dem Abgeben zeigt die App die
+  Lösungen; die Punkte der ausführlichen Aufgaben gibt man sich mit der Musterlösung selbst.
+- **Ergebnisse:** `DocAttempt` (`app` oder `paper`, wer, Punkte pro Aufgabe). Auf Papier gelöste Unterlagen
+  bekommen ihre Punkte über «Ergebnis vom Papier eintragen». Ohne Internet wartet ein Ergebnis im Gerät und wird
+  später gesendet (`flushAttempts`). Pro Lernziel zählt das letzte Ergebnis jeder Unterlage (`goalStatus`):
+  ab 80 % «sitzt», ab 50 % «fast», sonst «üben». «Gezielt üben» öffnet eine neue Unterlage mit diesen Lernzielen.
+- **Lernkarten daraus machen:** `POST /api/tasks/cards` schreibt Karten zum Kernstoff (zweiter Prüfaufruf wie bei
+  erfundenen Karten); sie landen in der Prüfansicht von «Neuer Stapel».
+- **Heute dran:** Prüfungen der nächsten 7 Tage stehen oben in «Heute dran» (`upcomingExams`).
+
+## Allein spielen und Belohnungen
+
+- **Bereich:** Der Tab «Spiele» hat oben «Zusammen | Allein» (`PlayAreaSwitch`, `settings.playArea`); `/allein`
+  zeigt die Spiele aus [`client/src/solo/registry.ts`](../client/src/solo/registry.ts), `/allein/:id` Start,
+  Spiel und Ergebnis (`pages/SoloPages.tsx`). Die Spiele laufen im gemeinsamen Spielrahmen (`GameShell`) und
+  bekommen `level` (1 = 6–9, 2 = 8–12 Jahre), die Person und – im Rennen – das Auto; sie melden Punkte, Sterne und
+  eine Zusammenfassung zurück. Die Regeln (Memo-Punkte, Muster-Rätsel, Sortier-Sets, Tempo) stehen getestet in
+  `solo/logic.ts`; das Rennen zeichnet auf ein Canvas.
+- **Münzen** (`shared/coins.ts`): Eine Brieftasche pro Person (`CoinWallet`, Id aus dem Namen wie der Lernstand)
+  zählt verdiente und ausgegebene Münzen **pro Gerät** (`earned[device]`, `spent[device]`). Beim Zusammenführen
+  gilt pro Gerät der grössere Zähler, Verlauf, Gekauftes und Rekorde werden vereinigt (`mergeWallet`) – zwei Handys,
+  die gleichzeitig Münzen gutschreiben, verlieren nichts, und nichts lässt sich durch alte Daten überschreiben.
+  Server und App verwenden dieselbe Funktion; der Server bereinigt die Werte (`cleanWallet`). Die Geräte-Id liegt im
+  `localStorage` (`deviceId`).
+- **Verdienen:** Nach einer Runde im Kartenkasten (ohne Übungsrunden) und im Lückentext gibt es pro gewusste Karte
+  bzw. Lücke `perCard` Münzen, für Ergebnisse in «Aufgaben» (in der App oder vom Papier) `perPoint` pro Punkt
+  (`CoinGain`, `earnCoins`) – höchstens `dailyMax` pro Person und Tag (Geschenke zählen nicht). Nur solange die
+  Münzen an sind.
+- **Ausgeben:** Eine Runde kostet `pricePerRound` (`spendCoins`), Autos im Rennen 30/60/120 (`unlock`). Mit
+  Münzen aus ist alles frei.
+- **Einstellungen** (`RewardSettings`, letzte Änderung gewinnt) gelten auf allen Geräten. Der Code ist eine
+  Kindersicherung, kein Passwort: gespeichert als Hash mit Salz (`lib/rewards.ts`), geprüft im Gerät (auch offline),
+  geöffnet für 10 Minuten. Wer ihn vergessen hat, entfernt ihn mit dem Passwort des Kontos.

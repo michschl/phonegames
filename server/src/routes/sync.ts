@@ -9,7 +9,7 @@ export const syncRoutes: FastifyPluginAsync = async (app) => {
    * tombstones), the server merges them and answers with the merged state.
    */
   // Learning stacks make the payload larger than the default body limit.
-  app.post('/sync', { preHandler: app.requireAuth, bodyLimit: 8 * 1024 * 1024 }, async (request): Promise<SyncResponse> => {
+  app.post('/sync', { preHandler: app.requireAccess, bodyLimit: 8 * 1024 * 1024 }, async (request): Promise<SyncResponse> => {
     const payload = syncSchema.parse(request.body);
     const merged = syncUserData(app.db, request.user!.id, payload);
     return { ...merged, serverTime: Date.now() };

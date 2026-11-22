@@ -4,13 +4,15 @@ import { LIMITS, type LearnMode, type LearnStack, type Player } from '../../../s
 import { Mascot } from '../components/Brand.tsx';
 import { Fold } from '../components/Fold.tsx';
 import { Icon } from '../components/Icon.tsx';
-import { DueRows } from '../components/LearnDue.tsx';
+import { DueRows, ExamRows } from '../components/LearnDue.tsx';
+import { upcomingExams } from '../lib/topics.ts';
 import { LearnerPicker } from '../components/LearnerPicker.tsx';
 import { BottomBar, Page, Section } from '../components/Layout.tsx';
 import { ActionSheet, Button, EmptyState, IconButton, Segmented } from '../components/ui.tsx';
 import { OptionRow } from '../games/shared/settings.tsx';
 import { BoxRow } from '../games/spickzettel/BoxRow.tsx';
 import { DirectionPicker } from '../games/spickzettel/Direction.tsx';
+import { LearnAreaSwitch } from './TaskPages.tsx';
 import { spickzettel, type SpickzettelSettings } from '../games/spickzettel/index.tsx';
 import { isSoloMode, MODES, SITUATIONS, soloLearnPath } from '../games/spickzettel/modes.ts';
 import '../games/spickzettel/spickzettel.css';
@@ -29,7 +31,7 @@ import {
 } from '../lib/learn.ts';
 import { learnerColor, learnerId, sameName } from '../lib/learners.ts';
 import { normalize } from '../lib/util.ts';
-import { useData, useDueByStack, useGroup, useProgress, useStack, useStacks } from '../store/data.ts';
+import { useData, useDueByStack, useGroup, useProgress, useStack, useStacks, useTopics } from '../store/data.ts';
 import { adoptDeviceLearners, useDefaultLearner, useDueList, useLearnDirection, useLearners } from '../store/learners.ts';
 import { useGameSettings, useSettings } from '../store/settings.ts';
 import { deleteStackWithUndo } from '../store/undo.ts';
@@ -115,14 +117,25 @@ export function LearnHubPage() {
     return Number.isFinite(soonest) ? soonest : null;
   }, [progress]);
   const learned = Object.values(progress).some((entry) => !entry.deleted && Object.keys(entry.cards).length > 0);
+  const topics = useTopics();
+  const exams = useMemo(() => upcomingExams(topics), [topics]);
 
   return (
     <Page title="Lernen" subtitle={all.length > 0 ? 'Schulstoff als Karten – allein oder zusammen.' : undefined}>
+      <LearnAreaSwitch area="karten" />
       {all.length === 0 ? (
-        <LearnIntro />
+        <>
+          {exams.length > 0 && (
+            <Section title="Heute dran">
+              <ExamRows exams={exams} />
+            </Section>
+          )}
+          <LearnIntro />
+        </>
       ) : (
         <>
           <Section title="Heute dran">
+            {exams.length > 0 && <ExamRows exams={exams} />}
             {due.length > 0 ? (
               <DueRows entries={due} />
             ) : (

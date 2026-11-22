@@ -1,4 +1,4 @@
-import type { LearnStack, Player, PlayerGroup } from '../../../shared/types.ts';
+import type { LearnStack, LearnTopic, Player, PlayerGroup } from '../../../shared/types.ts';
 import { progressId } from '../lib/learn.ts';
 import { useData } from './data.ts';
 import { toast } from './ui.ts';
@@ -30,6 +30,11 @@ export function deleteStackWithUndo(stack: LearnStack) {
   const progress = Object.values(data.progress).filter((entry) => entry.stackId === stack.id && !entry.deleted);
   data.deleteStack(stack.id);
   undoToast(`«${stack.title}» gelöscht.`, () => useData.getState().restoreStack(stack, progress), `«${stack.title}» ist wieder da.`);
+}
+
+export function deleteTopicWithUndo(topic: LearnTopic) {
+  useData.getState().deleteTopic(topic.id);
+  undoToast(`«${topic.title}» gelöscht.`, () => useData.getState().restoreTopic(topic), `«${topic.title}» ist wieder da.`);
 }
 
 export function deleteGroupWithUndo(group: PlayerGroup) {

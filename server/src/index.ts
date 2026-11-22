@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { buildApp } from './app.ts';
+import { PRICE_PER_YEAR, TRIAL_DAYS } from './billing.ts';
 import { config } from './config.ts';
 import { openDatabase } from './db.ts';
 
@@ -16,15 +17,21 @@ const app = await buildApp({
   inviteCodes: config.inviteCodes,
   tts: config.ttsUrl ? { url: config.ttsUrl, cacheDir: path.join(config.dataDir, 'tts-cache') } : null,
   learn: config.learn.token && config.learn.productId ? config.learn : null,
+  billing: config.billing.secretKey
+    ? { secretKey: config.billing.secretKey, apiUrl: config.billing.apiUrl, pricePerYear: PRICE_PER_YEAR, trialDays: TRIAL_DAYS }
+    : null,
+  appUrl: config.appOrigins[0] ?? null,
   webauthn: config.appOrigins.length
     ? { rpID: new URL(config.appOrigins[0]!).hostname, rpName: 'Phonegames', origins: config.appOrigins }
     : null,
 });
 
 app.log.info(
-  config.inviteCodes.length > 0
-    ? `Registrierung nur mit Einladungscode (${config.inviteCodes.length} Code(s) aktiv)`
-    : 'Registrierung offen für alle (INVITE_CODES nicht gesetzt)',
+  config.billing.secretKey
+    ? `Jahresabo über Stripe aktiv${config.billing.secretKey.startsWith('sk_test_') ? ' (Testmodus)' : ''}; Einladungscodes geben kostenlose Konten (${config.inviteCodes.length})`
+    : config.inviteCodes.length > 0
+      ? `Registrierung nur mit Einladungscode (${config.inviteCodes.length} Code(s) aktiv), kein Abo (STRIPE_SECRET_KEY nicht gesetzt)`
+      : 'Registrierung offen für alle (INVITE_CODES und STRIPE_SECRET_KEY nicht gesetzt)',
 );
 app.log.info(
   config.appOrigins.length

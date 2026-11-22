@@ -1,3 +1,4 @@
+import { legalReady } from '../client/src/legal/operator.ts';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page } from '@playwright/test';
 
@@ -7,10 +8,15 @@ let counter = 0;
 export async function register(page: Page, name = 'Lea'): Promise<string> {
   const email = `e2e-${Date.now()}-${process.pid}-${counter++}@example.ch`;
   await page.goto('/registrieren');
+  // With the subscription the code is optional – it makes the account free.
+  const codeButton = page.getByRole('button', { name: 'Ich habe einen Einladungscode' });
+  await expect(codeButton.or(page.getByLabel('Einladungscode'))).toBeVisible();
+  if (await codeButton.isVisible()) await codeButton.click();
   await page.getByLabel('Einladungscode').fill('PARTY-2026');
   await page.getByLabel('Dein Name').fill(name);
   await page.getByLabel('E-Mail').fill(email);
   await page.getByLabel('Passwort', { exact: true }).fill('passwort123');
+  await acceptTerms(page);
   await page.getByRole('button', { name: 'Los geht’s' }).click();
   await expect(page).toHaveURL('/');
   return email;
@@ -110,3 +116,13 @@ export const PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAEAAAAAwCAIAAAAuKetIAAAAbUlEQVR42u3WsQ2AIBRFUTDOQxzEcRnEOImlsbI0gY5G0PNKKk7yixuv8wgjbwqDDwAAAODdzfVTWtaef7xv2QkBADyLYg4AAADgCy1UFI4TAgDQQgAAAAC/aqHmRnJCAFpICwEAAAAAAAA07wb9wRTrTrr5lAAAAABJRU5ErkJggg==',
   'base64',
 );
+
+/** The operator details are filled in – only then the terms ask for consent (client/src/legal/operator.ts). */
+export const LEGAL_READY = legalReady();
+
+/** Ticks «Ich akzeptiere die Nutzungsbedingungen …» when registering – there is none while the operator details are missing. */
+export async function acceptTerms(page: Page): Promise<void> {
+  const box = page.getByRole('checkbox', { name: /Ich akzeptiere die Nutzungsbedingungen/ });
+  if (LEGAL_READY) await box.check();
+  else await expect(box).toHaveCount(0);
+}

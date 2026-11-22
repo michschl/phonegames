@@ -30,8 +30,14 @@ export const registerSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
   inviteCode: z.string().max(64, 'Der Einladungscode ist zu lang.').optional(),
-  /** A shared stack link counts as an invitation. */
+  /** Registering through a shared stack link (counted for its owner). */
   shareId: z.string().regex(/^[A-Za-z0-9_-]{10,64}$/).optional(),
+  /** The version of the terms of use and privacy notice agreed to (shared/legal.ts). Older apps send none. */
+  termsVersion: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ungültige Version.').optional(),
+});
+
+export const acceptTermsSchema = z.object({
+  version: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ungültige Version.'),
 });
 
 export const loginSchema = z.object({
@@ -136,12 +142,65 @@ export const shareSchema = z.object({
 
 export const shareIdSchema = z.object({ id: z.string().regex(/^[A-Za-z0-9_-]{10,64}$/, 'Ungültiger Link.') });
 
+const isoDay = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ungültiges Datum.');
+
+export const topicGoalSchema = z.object({
+  id,
+  text: z.string().trim().min(1, 'Ein Lernziel ist leer.').max(LIMITS.goalText),
+  content: z.string().trim().max(LIMITS.goalContent),
+});
+
+const learnTopicSchema = z.object({
+  id,
+  title: z.string().trim().min(1, 'Das Thema braucht einen Titel.').max(LIMITS.stackTitleMax),
+  subject: z.string().trim().max(40),
+  level: z.string().trim().max(40),
+  goals: z.array(topicGoalSchema).max(LIMITS.goalsPerTopic),
+  notes: z.string().max(LIMITS.topicNotes),
+  examDate: isoDay.nullable(),
+  source: z.enum(['photo', 'text']),
+  createdAt: timestamp,
+  updatedAt: timestamp,
+  deleted: z.boolean(),
+});
+
 export const syncSchema = z.object({
   library: z.array(libraryItemSchema).max(LIMITS.library * 2),
   groups: z.array(groupSchema).max(LIMITS.groups * 2),
   // Older app versions do not send learning stacks yet.
   stacks: z.array(learnStackSchema).max(LIMITS.stacks * 2).default([]),
   progress: z.array(learnProgressSchema).max(LIMITS.stacks * 2 * LIMITS.playersPerGroup).default([]),
+  topics: z.array(learnTopicSchema).max(LIMITS.topics * 2).default([]),
+  // Checked loosely here and cleaned in shared/coins.ts (cleanWallet, cleanRewards).
+  wallets: z
+    .array(
+      z.object({
+        id: z.string().min(1).max(64),
+        learner: z.string().max(LIMITS.nameMax),
+        earned: z.record(z.string().max(64), z.number()),
+        spent: z.record(z.string().max(64), z.number()),
+        history: z.array(z.object({ id: z.string().max(64), at: z.number(), amount: z.number(), reason: z.string().max(200) })).max(LIMITS.walletHistory * 2),
+        unlocks: z.array(z.string().max(40)).max(LIMITS.walletUnlocks * 2),
+        best: z.record(z.string().max(40), z.number()),
+        updatedAt: timestamp,
+        deleted: z.boolean(),
+      }),
+    )
+    .max(LIMITS.wallets * 2)
+    .default([]),
+  rewards: z
+    .object({
+      enabled: z.boolean(),
+      codeHash: z.string().max(128),
+      codeSalt: z.string().max(64),
+      perCard: z.number(),
+      perPoint: z.number(),
+      dailyMax: z.number(),
+      pricePerRound: z.number(),
+      updatedAt: timestamp,
+    })
+    .nullable()
+    .default(null),
 });
 
 /* ---------------------------------------------------------------- passkeys */

@@ -1,17 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
-import { LIMITS, type LearnExtractMode, type LearnUsage } from '../../../shared/types.ts';
+import type { LearnExtractMode, LearnUsage } from '../../../shared/types.ts';
 import { Mascot } from '../components/Brand.tsx';
 import { Icon } from '../components/Icon.tsx';
 import { BottomBar, Page, Section } from '../components/Layout.tsx';
+import { PhotoGrid, type Photo } from '../components/PhotoGrid.tsx';
 import { ShareStack } from '../components/ShareStack.tsx';
 import { StackEditor, toStackInput } from '../components/StackEditor.tsx';
 import { Button, ConfirmSheet, EmptyState, IconButton, Segmented } from '../components/ui.tsx';
 import { api, ApiError, errorMessage } from '../lib/api.ts';
 import { haptic } from '../lib/device.ts';
-import { parseTextCards, preparePhoto } from '../lib/learn.ts';
+import { parseTextCards } from '../lib/learn.ts';
 import { sound } from '../lib/audio.ts';
-import { createId } from '../lib/util.ts';
 import { useAuth } from '../store/auth.ts';
 import { useData, useStack } from '../store/data.ts';
 import { fromDraft, fromStack, useLearnDraft, type EditorValue } from '../store/learnDraft.ts';
@@ -37,11 +37,6 @@ function dayLabel(isoDay: string): string {
 
 /* ------------------------------------------------------------ new stack */
 
-interface Photo {
-  id: string;
-  url: string;
-}
-
 type Step = 'pick' | 'text' | 'reading' | 'review';
 
 export function NewStackPage() {
@@ -64,9 +59,6 @@ export function NewStackPage() {
   const [textError, setTextError] = useState<string | null>(null);
   const [invalidIndex, setInvalidIndex] = useState<number | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
-  // Two inputs: Android opens only the gallery for a plain multi-file picker, so the camera gets its own.
-  const cameraInput = useRef<HTMLInputElement>(null);
-  const galleryInput = useRef<HTMLInputElement>(null);
   // Remembered per device: take over exactly what is on the photos, or invent new cards on the topic.
   const [photoMode, setPhotoMode] = useGameSettings<{ mode: LearnExtractMode; count: number }>('stapel-fotos', { mode: 'exact', count: 20 });
   const creative = photoMode.mode === 'creative';
@@ -80,26 +72,6 @@ export function NewStackPage() {
   }, [online]);
 
   const updateDraft = (value: EditorValue) => setDraft({ ...value, ownerId: userId });
-
-  const addFiles = async (files: FileList | null) => {
-    if (!files?.length) return;
-    setError(null);
-    const free = LIMITS.learnPhotos - photos.length;
-    const chosen = Array.from(files).slice(0, free);
-    if (files.length > free) toast(`Höchstens ${LIMITS.learnPhotos} Fotos pro Auswertung.`);
-    setPreparing((n) => n + chosen.length);
-    for (const file of chosen) {
-      try {
-        const url = await preparePhoto(file);
-        setPhotos((list) => [...list, { id: createId(), url }]);
-        sound.tap();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Das Foto konnte nicht gelesen werden.');
-      } finally {
-        setPreparing((n) => n - 1);
-      }
-    }
-  };
 
   const analyse = async () => {
     if (photos.length === 0) return;
@@ -194,7 +166,7 @@ export function NewStackPage() {
       >
         <p className="notice notice--info stack-review-note">
           {draft.generated
-            ? `Phoni hat ${cardCount(draft.cards.length)} zum Thema deiner Fotos neu erfunden und nochmals kontrolliert. Auch eine KI irrt sich – bitte prüfe jede Karte.`
+            ? `Phoni hat ${cardCount(draft.cards.length)} zum Thema ${draft.source === 'photo' ? 'deiner Fotos ' : ''}neu erfunden und nochmals kontrolliert. Auch eine KI irrt sich – bitte prüfe jede Karte.`
             : draft.source === 'photo'
               ? `Phoni hat ${cardCount(draft.cards.length)} erkannt.`
               : `${cardCount(draft.cards.length)} erkannt.`}{' '}
@@ -294,62 +266,15 @@ export function NewStackPage() {
   const blocked = !online || unavailable || used;
   return (
     <Page title="Neuer Stapel" subtitle="Fotografiere dein Wörtliblatt oder deine Heftseite." back={LEARN} className="stack-new">
-      <input
-        ref={cameraInput}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        hidden
-        onChange={(e) => {
-          void addFiles(e.target.files);
-          e.target.value = '';
-        }}
-      />
-      <input
-        ref={galleryInput}
-        type="file"
-        accept="image/*"
-        multiple
-        hidden
-        onChange={(e) => {
-          void addFiles(e.target.files);
-          e.target.value = '';
-        }}
-      />
-
       <Section title="Fotos">
-        <div className="photo-grid">
-          {photos.map((photo, i) => (
-            <div key={photo.id} className="photo-tile">
-              <img src={photo.url} alt={`Foto ${i + 1}`} />
-              <button
-                type="button"
-                className="photo-tile__remove"
-                aria-label={`Foto ${i + 1} entfernen`}
-                onClick={() => setPhotos((list) => list.filter((p) => p.id !== photo.id))}
-              >
-                <Icon name="x" size={16} />
-              </button>
-            </div>
-          ))}
-          {Array.from({ length: preparing }, (_, i) => (
-            <div key={`prep-${i}`} className="photo-tile is-loading" aria-label="Foto wird vorbereitet">
-              <span className="spinner" aria-hidden="true" />
-            </div>
-          ))}
-          {photos.length + preparing < LIMITS.learnPhotos && !blocked && (
-            <>
-              <button type="button" className="photo-tile photo-tile--add" onClick={() => cameraInput.current?.click()}>
-                <Icon name="camera" size={28} />
-                <span>{photos.length === 0 ? 'Foto aufnehmen' : 'Weitere Seite'}</span>
-              </button>
-              <button type="button" className="photo-tile photo-tile--add photo-tile--gallery" onClick={() => galleryInput.current?.click()}>
-                <Icon name="image" size={28} />
-                <span>Aus der Galerie</span>
-              </button>
-            </>
-          )}
-        </div>
+        <PhotoGrid
+          photos={photos}
+          setPhotos={setPhotos}
+          preparing={preparing}
+          setPreparing={setPreparing}
+          disabled={blocked}
+          onError={setError}
+        />
 
         {photos.length > 0 && !blocked && (
           <div className="photo-mode">

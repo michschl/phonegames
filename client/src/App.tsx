@@ -4,16 +4,21 @@ import { Backdrop, TabBar, Toaster } from './components/Layout.tsx';
 import { UpdateHint, useAutoUpdate } from './components/UpdateHint.tsx';
 import { EmptyState } from './components/ui.tsx';
 import { setHapticsEnabled } from './lib/device.ts';
-import { refreshSession } from './lib/session.ts';
+import { hasAccess, needsTerms, refreshSession } from './lib/session.ts';
 import { startSyncEngine, syncNow } from './lib/sync.ts';
 import { AccountPage } from './pages/AccountPage.tsx';
-import { LoginPage, RegisterPage, WelcomePage } from './pages/AuthPages.tsx';
+import { LoginPage, RegisterPage, SubscribePage, TermsPage, WelcomePage } from './pages/AuthPages.tsx';
 import { DiscoverPage } from './pages/DiscoverPage.tsx';
 import { GamePlayPage, GameSetupPage } from './pages/GamePages.tsx';
 import { LearnHubPage, LearnPlayPage, StackLearnPage } from './pages/LearnPages.tsx';
 import { GroupEditPage, GroupsPage } from './pages/GroupsPage.tsx';
 import { NewStackPage, StackEditPage } from './pages/StackPages.tsx';
+import { DocumentPage, NewDocumentPage, NewTopicPage, TasksHubPage, TopicEditPage, TopicPage } from './pages/TaskPages.tsx';
+import { PaperResultPage, SolvePage } from './pages/TaskSolvePages.tsx';
+import { RewardsPage } from './pages/RewardsPage.tsx';
+import { SoloGamePage, SoloHubPage } from './pages/SoloPages.tsx';
 import { SharePage } from './pages/SharePage.tsx';
+import { LegalPage } from './legal/LegalPages.tsx';
 import { HomePage } from './pages/HomePage.tsx';
 import { useAuth } from './store/auth.ts';
 import { useSettings } from './store/settings.ts';
@@ -38,7 +43,23 @@ function Root() {
   );
 }
 
+/** Signed in with access to the app – a paid account without a running subscription gets «Abo». */
 function RequireAuth() {
+  const user = useAuth((s) => s.user);
+  if (!user) return <Navigate to="/willkommen" replace />;
+  if (needsTerms(user)) return <Navigate to="/bedingungen" replace />;
+  return hasAccess(user) ? <Outlet /> : <Navigate to="/abo" replace />;
+}
+
+/** Signed in and agreed to the terms, with or without subscription (the subscription page itself). */
+function RequireUser() {
+  const user = useAuth((s) => s.user);
+  if (!user) return <Navigate to="/willkommen" replace />;
+  return needsTerms(user) ? <Navigate to="/bedingungen" replace /> : <Outlet />;
+}
+
+/** Signed in, nothing else (agreeing to the terms). */
+function RequireSignedIn() {
   const user = useAuth((s) => s.user);
   return user ? <Outlet /> : <Navigate to="/willkommen" replace />;
 }
@@ -115,19 +136,31 @@ const router = createBrowserRouter([
         ],
       },
       {
+        element: <RequireSignedIn />,
+        children: [{ path: '/bedingungen', element: <TermsPage /> }],
+      },
+      {
+        element: <RequireUser />,
+        children: [{ path: '/abo', element: <SubscribePage /> }],
+      },
+      {
         element: <RequireAuth />,
         children: [
           {
             element: <TabsLayout />,
             children: [
               { path: '/', element: <HomePage /> },
+              { path: '/allein', element: <SoloHubPage /> },
               { path: '/lernen', element: <LearnHubPage /> },
+              { path: '/lernen/aufgaben', element: <TasksHubPage /> },
               { path: '/entdecken', element: <DiscoverPage /> },
               { path: '/gruppen', element: <GroupsPage /> },
               { path: '/konto', element: <AccountPage /> },
             ],
           },
           { path: '/gruppen/:groupId', element: <GroupEditPage /> },
+          { path: '/belohnungen', element: <RewardsPage /> },
+          { path: '/allein/:gameId', element: <SoloGamePage /> },
           // The stack list moved into the «Lernen» tab.
           { path: '/stapel', element: <Navigate to="/lernen" replace /> },
           { path: '/stapel/neu', element: <NewStackPage /> },
@@ -135,11 +168,22 @@ const router = createBrowserRouter([
           { path: '/spiel/:gameId', element: <GameSetupPage /> },
           { path: '/spiel/:gameId/los', element: <GamePlayPage /> },
           { path: '/lernen/:stackId', element: <StackLearnPage /> },
+          { path: '/aufgaben/neu', element: <NewTopicPage /> },
+          { path: '/aufgaben/:topicId', element: <TopicPage /> },
+          { path: '/aufgaben/:topicId/bearbeiten', element: <TopicEditPage /> },
+          { path: '/aufgaben/:topicId/unterlage', element: <NewDocumentPage /> },
+          { path: '/aufgaben/:topicId/:docId', element: <DocumentPage /> },
+          { path: '/aufgaben/:topicId/:docId/loesen', element: <SolvePage /> },
+          { path: '/aufgaben/:topicId/:docId/ergebnis', element: <PaperResultPage /> },
           { path: '/lernen/:stackId/:mode', element: <LearnPlayPage /> },
         ],
       },
       // Shared learning stacks: for signed-in visitors and as an invitation for new ones.
       { path: '/s/:shareId', element: <SharePage /> },
+      // Legal texts: public, with or without an account.
+      { path: '/impressum', element: <LegalPage doc="impressum" /> },
+      { path: '/agb', element: <LegalPage doc="agb" /> },
+      { path: '/datenschutz', element: <LegalPage doc="datenschutz" /> },
       { path: '*', element: <NotFound /> },
     ],
   },

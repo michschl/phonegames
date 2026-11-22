@@ -1,8 +1,10 @@
 import type { PublicUser } from '../../../shared/types.ts';
-import { api, ApiError } from './api.ts';
+import { api, ApiError, onSubscriptionRequired } from './api.ts';
 import { handleSessionExpired, syncNow } from './sync.ts';
 import { useAuth } from '../store/auth.ts';
+import { legalReady } from '../legal/operator.ts';
 import { useData } from '../store/data.ts';
+import { clearDocuments } from '../store/documents.ts';
 import { useLearnDraft } from '../store/learnDraft.ts';
 
 /** Store the signed-in user and start syncing their data. */
@@ -18,8 +20,10 @@ export async function register(input: {
   email: string;
   password: string;
   inviteCode?: string;
-  /** Registering through a shared stack link (counts as invitation). */
+  /** Registering through a shared stack link. */
   shareId?: string;
+  /** The version of the terms agreed to with the checkbox. */
+  termsVersion?: string;
 }): Promise<PublicUser> {
   const { user } = await api.register(input);
   signIn(user);
@@ -41,15 +45,49 @@ export async function logout(): Promise<void> {
   }
   useAuth.setState({ user: null });
   useData.getState().resetFor(null);
+  clearDocuments();
   useLearnDraft.getState().setDraft(null);
+}
+
+/** The server says the subscription has ended: load the account again – the app then shows «Abo». */
+onSubscriptionRequired(() => {
+  const before = useAuth.getState().user;
+  if (!before) return;
+  api
+    .me()
+    .then(({ user }) => {
+      if (useAuth.getState().user === before) keepUser(user);
+    })
+    .catch(() => undefined);
+});
+
+/**
+ * Stores a fresh copy of the signed-in account – unless the person signed out (or switched accounts)
+ * while the request was on its way; a late answer must not sign them in again.
+ */
+function keepUser(user: PublicUser): void {
+  if (useAuth.getState().user?.id === user.id) useAuth.setState({ user });
+}
+
+/** Has the person agreed to the current terms? Accounts stored by older versions: yes until the server says. */
+export function needsTerms(user: PublicUser | null, ready = legalReady()): boolean {
+  return ready && !!user && user.termsAccepted === false;
+}
+
+/** May the person use the app? Accounts stored by older versions know nothing of the subscription. */
+export function hasAccess(user: PublicUser | null): boolean {
+  return !!user && user.access !== false;
 }
 
 /** Validate the stored session with the server (when online). */
 export async function refreshSession(): Promise<void> {
-  if (!useAuth.getState().user || !navigator.onLine) return;
+  const before = useAuth.getState().user;
+  if (!before || !navigator.onLine) return;
   try {
     const { user } = await api.me();
-    useAuth.setState({ user });
+    // Changed meanwhile (e.g. the subscription was just confirmed): that answer is newer than this one.
+    if (useAuth.getState().user !== before) return;
+    keepUser(user);
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) handleSessionExpired();
   }
@@ -67,5 +105,6 @@ export async function deleteAccount(password: string): Promise<void> {
   await api.deleteAccount({ password });
   useAuth.setState({ user: null });
   useData.getState().resetFor(null);
+  clearDocuments();
   useLearnDraft.getState().setDraft(null);
 }

@@ -4,7 +4,11 @@ import type { LearnSharePreview } from '../../../shared/types.ts';
 import { Mascot } from '../components/Brand.tsx';
 import { Icon } from '../components/Icon.tsx';
 import { Button } from '../components/ui.tsx';
+import { LegalLinks } from '../legal/LegalPages.tsx';
 import { api, ApiError, errorMessage } from '../lib/api.ts';
+import { useAuthOptions } from '../lib/authOptions.ts';
+import { hasAccess } from '../lib/session.ts';
+import { formatPrice, rememberAfterSubscribe } from '../lib/subscription.ts';
 import { sound } from '../lib/audio.ts';
 import { confetti } from '../lib/confetti.ts';
 import { subjectEmoji } from '../lib/learn.ts';
@@ -16,7 +20,7 @@ type State = { kind: 'loading' } | { kind: 'error'; message: string; gone: boole
 
 /**
  * A shared learning stack (`/s/:shareId`). Signed in: take over a copy.
- * Not signed in: preview and the way to an account – the link counts as invitation.
+ * Not signed in: preview and the way to an account (with the subscription or an invitation code).
  */
 export function SharePage() {
   const { shareId = '' } = useParams();
@@ -29,6 +33,8 @@ export function SharePage() {
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [importing, setImporting] = useState(false);
   const autoImported = useRef(false);
+  const billing = useAuthOptions()?.billing;
+  const back = `/s/${shareId}?uebernehmen=1`;
 
   useEffect(() => {
     if (!online) {
@@ -71,7 +77,7 @@ export function SharePage() {
 
   // Coming back from registering or signing in through the link: take it over right away.
   useEffect(() => {
-    if (user && state.kind === 'ready' && params.get('uebernehmen') === '1' && !autoImported.current) {
+    if (user && hasAccess(user) && state.kind === 'ready' && params.get('uebernehmen') === '1' && !autoImported.current) {
       autoImported.current = true;
       void takeOver();
     }
@@ -126,7 +132,21 @@ export function SharePage() {
               )}
             </ul>
 
-            {user ? (
+            {user && !hasAccess(user) ? (
+              <div className="share-page__actions">
+                <p className="share-page__hint">Dein Abo ist abgelaufen. Erneuere es – danach übernimmst du den Stapel.</p>
+                <Button
+                  size="lg"
+                  block
+                  onClick={() => {
+                    rememberAfterSubscribe(back);
+                    navigate('/abo');
+                  }}
+                >
+                  Zum Abo
+                </Button>
+              </div>
+            ) : user ? (
               <div className="share-page__actions">
                 <Button size="lg" block icon="plus" loading={importing} onClick={() => void takeOver()}>
                   In meine Stapel übernehmen
@@ -136,8 +156,10 @@ export function SharePage() {
             ) : (
               <div className="share-page__actions">
                 <p className="share-page__hint">
-                  Lerne die Karten mit dem Kartenkasten oder in der Blitzrunde – mit einem kostenlosen Konto bei Phonegames.
-                  {state.preview.invites && ' Du brauchst keinen Einladungscode.'}
+                  Lerne die Karten mit dem Kartenkasten oder in der Blitzrunde – mit einem Konto bei Phonegames
+                  {billing
+                    ? `: ${billing.trialDays} Tage gratis, danach ${formatPrice(billing.pricePerYear)} pro Jahr.`
+                    : ' (mit Einladungscode).'}
                 </p>
                 <Link to={`/registrieren?teilen=${encodeURIComponent(shareId)}`} className="btn btn--primary btn--lg btn--block" viewTransition>
                   <span>Konto erstellen & übernehmen</span>
@@ -149,6 +171,7 @@ export function SharePage() {
             )}
           </>
         )}
+        <LegalLinks inSheet />
       </div>
     </main>
   );

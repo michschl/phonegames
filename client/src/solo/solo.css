@@ -1,0 +1,447 @@
+/* «Allein spielen» – the games. */
+
+.solo-hud {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin: 4px 0 10px;
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.solo-hud strong {
+  font-size: 19px;
+  font-weight: 900;
+}
+
+.solo-streak {
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  background: var(--yellow);
+  font-weight: 900;
+  animation: solo-pop 0.3s var(--ease-spring);
+}
+
+@keyframes solo-pop {
+  from {
+    transform: scale(0.6);
+  }
+}
+
+/* ------------------------------------------------------------ Memo-Blitz */
+
+.memo-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 10px;
+  max-width: 520px;
+  width: 100%;
+  max-height: 760px;
+  margin: 0 auto;
+}
+
+.memo-card {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  perspective: 600px;
+}
+
+.memo-card__inner {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform 0.35s var(--ease-out);
+}
+
+.memo-card.is-open .memo-card__inner {
+  transform: rotateY(180deg);
+}
+
+.memo-card__back,
+.memo-card__front {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  border: 2.5px solid var(--ink);
+  box-shadow: 0 3px 0 var(--ink);
+  backface-visibility: hidden;
+}
+
+.memo-card__back {
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.35) 0 10%, transparent 11%),
+    repeating-linear-gradient(45deg, #8b5cf6 0 10px, #9d74ff 10px 20px);
+  color: #fff;
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.memo-card__front {
+  background: var(--paper);
+  transform: rotateY(180deg);
+  font-size: clamp(26px, 9vw, 44px);
+}
+
+.memo-card.is-found .memo-card__front {
+  background: var(--lime-soft);
+  animation: solo-pop 0.35s var(--ease-spring);
+}
+
+/* -------------------------------------------------------- Muster-Meister */
+
+.muster {
+  flex: 1;
+  display: grid;
+  align-content: center;
+  gap: 22px;
+  max-width: 560px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.muster__ask {
+  margin: 0;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.muster__row {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin: 0;
+  padding: 14px 10px;
+  border-radius: 20px;
+  border: 2.5px solid var(--ink);
+  background: var(--paper);
+  box-shadow: 0 4px 0 var(--ink);
+  list-style: none;
+}
+
+.muster__item {
+  flex: 1 1 0;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  max-width: 56px;
+  height: 52px;
+  font-size: clamp(22px, 7.4vw, 34px);
+  animation: solo-pop 0.3s var(--ease-spring) both;
+}
+
+.muster__row.is-numbers .muster__item {
+  max-width: 76px;
+  padding: 0 4px;
+  border-radius: 12px;
+  background: var(--surface);
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.muster__item.is-gap {
+  border-radius: 12px;
+  outline: 3px dashed var(--accent, #ff8a3d);
+  outline-offset: 2px;
+}
+
+.muster__options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.muster__option {
+  height: 76px;
+  border-radius: 18px;
+  border: 2.5px solid var(--ink);
+  background: var(--paper);
+  box-shadow: 0 4px 0 var(--ink);
+  color: var(--ink);
+  font-size: 40px;
+  transition:
+    transform 0.1s,
+    box-shadow 0.1s;
+}
+
+.muster__options.is-numbers .muster__option {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.muster__option:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+
+.muster__option.is-right {
+  background: var(--lime);
+}
+
+.muster__option.is-wrong {
+  background: #ffc2cc;
+  animation: solo-shake 0.35s;
+}
+
+.muster__option:disabled {
+  opacity: 1;
+}
+
+@keyframes solo-shake {
+  25% {
+    transform: translateX(-6px);
+  }
+  75% {
+    transform: translateX(6px);
+  }
+}
+
+/* ------------------------------------------------------- Sortier-Rutsche */
+
+.sortier {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  touch-action: none;
+  user-select: none;
+}
+
+.sortier__chute {
+  position: absolute;
+  top: 0;
+  bottom: 110px;
+  left: 50%;
+  width: 120px;
+  transform: translateX(-50%);
+  border-radius: 60px 60px 20px 20px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.25));
+  border: 2.5px dashed rgba(29, 27, 38, 0.25);
+}
+
+.sortier__item {
+  --p: 0;
+  position: absolute;
+  left: 50%;
+  top: calc(var(--p) * (100% - 200px));
+  transform: translateX(-50%);
+  display: grid;
+  place-items: center;
+  min-width: 96px;
+  height: 96px;
+  padding: 0 14px;
+  border-radius: 24px;
+  border: 2.5px solid var(--ink);
+  background: var(--paper);
+  box-shadow: 0 4px 0 var(--ink);
+  font-size: 52px;
+  font-weight: 800;
+  white-space: nowrap;
+  z-index: 2;
+}
+
+.sortier__item.is-word {
+  font-family: var(--font-display);
+  font-size: 26px;
+}
+
+.sortier__item.is-left {
+  transition: all 0.38s var(--ease-out);
+  top: calc(100% - 110px);
+  left: 22%;
+  transform: translateX(-50%) scale(0.4);
+  opacity: 0;
+}
+
+.sortier__item.is-right {
+  transition: all 0.38s var(--ease-out);
+  top: calc(100% - 110px);
+  left: 78%;
+  transform: translateX(-50%) scale(0.4);
+  opacity: 0;
+}
+
+.sortier__item.is-miss {
+  transition: all 0.35s;
+  opacity: 0;
+  transform: translateX(-50%) scale(1.3);
+  background: #ffc2cc;
+}
+
+.sortier__bins {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.sortier__bin {
+  height: 96px;
+  padding: 8px;
+  border-radius: 20px;
+  border: 2.5px solid var(--ink);
+  box-shadow: 0 4px 0 var(--ink);
+  color: var(--ink);
+  font-size: 19px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.sortier__bin.is-left {
+  background: var(--yellow-soft);
+}
+
+.sortier__bin.is-right {
+  background: var(--cyan-soft);
+}
+
+.sortier__bin:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+
+.sortier__bin.is-wrong {
+  background: #ffc2cc;
+  animation: solo-shake 0.35s;
+}
+
+/* -------------------------------------------------------- Farben-Fänger */
+
+.farben-target {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.farben-target.is-new {
+  animation: farben-flash 1s ease-out;
+}
+
+@keyframes farben-flash {
+  0%,
+  40% {
+    transform: scale(1.35);
+  }
+}
+
+.farben-target__swatch {
+  padding: 4px 16px;
+  border-radius: 999px;
+  border: 2.5px solid var(--ink);
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+}
+
+.farben-target__word {
+  font-family: var(--font-display);
+  font-size: 30px;
+  letter-spacing: 0.04em;
+}
+
+.farben-field {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 24px;
+  border: 2.5px solid var(--ink);
+  background: linear-gradient(180deg, #e9f8ff, #fff6e9);
+  touch-action: manipulation;
+}
+
+.farben-bubble {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 2.5px solid rgba(29, 27, 38, 0.8);
+  box-shadow: inset -6px -8px 0 rgba(0, 0, 0, 0.12);
+  color: #fff;
+  cursor: pointer;
+}
+
+.farben-bubble__word {
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+.farben-bubble.is-right {
+  transition: transform 0.25s, opacity 0.25s;
+  transform: translate(-50%, -50%) scale(1.6);
+  opacity: 0;
+}
+
+.farben-bubble.is-wrong {
+  transition: opacity 0.25s;
+  animation: solo-shake 0.25s;
+  opacity: 0.2;
+}
+
+/* ---------------------------------------------------------- Phoni-Rennen */
+
+.rennen {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  border-radius: 24px;
+  border: 2.5px solid var(--ink);
+  overflow: hidden;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.rennen__road {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.rennen__hints {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 16px;
+  font-size: 22px;
+  color: rgba(255, 255, 255, 0.85);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .memo-card__inner,
+  .sortier__item {
+    transition: none;
+  }
+}

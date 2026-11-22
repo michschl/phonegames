@@ -4,20 +4,7 @@ import type {
   PublicKeyCredentialRequestOptionsJSON,
   RegistrationResponseJSON,
 } from '@simplewebauthn/browser';
-import type {
-  ApiErrorBody,
-  AuthOptions,
-  LearnExtractMode,
-  LearnExtractResponse,
-  LearnShareInfo,
-  LearnSharePreview,
-  LearnShareStack,
-  LearnUsage,
-  PasskeyInfo,
-  PublicUser,
-  SyncPayload,
-  SyncResponse,
-} from '../../../shared/types.ts';
+import type { ApiErrorBody, AuthOptions, DocAttempt, LearnExtractMode, LearnExtractResponse, LearnShareInfo, LearnSharePreview, LearnShareStack, LearnUsage, PasskeyInfo, PublicUser, SyncPayload, SyncResponse, TaskDocRequest, TaskDocument, TaskUsage, TopicCardsRequest, TopicDraftResponse } from '../../../shared/types.ts';
 
 export class ApiError extends Error {
   readonly status: number;
@@ -34,6 +21,14 @@ export class OfflineError extends Error {
   constructor() {
     super('Keine Verbindung. Bitte prüfe dein Internet und versuche es nochmals.');
   }
+}
+
+const subscriptionListeners = new Set<() => void>();
+
+/** Called when the server says the subscription has ended (HTTP 402) – see session.ts. */
+export function onSubscriptionRequired(listener: () => void): () => void {
+  subscriptionListeners.add(listener);
+  return () => subscriptionListeners.delete(listener);
 }
 
 async function request<T>(method: string, url: string, body?: unknown): Promise<T> {
@@ -65,6 +60,7 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
 
   if (!response.ok) {
     const err = (data ?? {}) as Partial<ApiErrorBody>;
+    if (response.status === 402) for (const listener of subscriptionListeners) listener();
     throw new ApiError(response.status, err.error ?? 'error', err.message ?? 'Da ist etwas schiefgelaufen.');
   }
   return data as T;
@@ -72,7 +68,7 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
 
 export const api = {
   authOptions: () => request<AuthOptions>('GET', '/api/auth/options'),
-  register: (body: { name: string; email: string; password: string; inviteCode?: string; shareId?: string }) =>
+  register: (body: { name: string; email: string; password: string; inviteCode?: string; shareId?: string; termsVersion?: string }) =>
     request<{ user: PublicUser }>('POST', '/api/auth/register', body),
   login: (body: { email: string; password: string }) => request<{ user: PublicUser }>('POST', '/api/auth/login', body),
   logout: () => request<void>('POST', '/api/auth/logout'),
@@ -83,6 +79,10 @@ export const api = {
   changePassword: (body: { currentPassword: string; newPassword: string }) =>
     request<void>('POST', '/api/account/password', body),
   deleteAccount: (body: { password: string }) => request<void>('DELETE', '/api/account', body),
+  /** Confirms the password (a forgotten code of «Belohnungen»). */
+  checkPassword: (password: string) => request<void>('POST', '/api/account/check-password', { password }),
+  /** Agree to the terms of use and the privacy notice (shared/legal.ts). */
+  acceptTerms: (version: string) => request<{ user: PublicUser }>('POST', '/api/account/terms', { version }),
   exportData: () => request<unknown>('GET', '/api/account/export'),
   sync: (body: SyncPayload) => request<SyncResponse>('POST', '/api/sync', body),
   passkeys: () => request<{ passkeys: PasskeyInfo[]; userHandle: string }>('GET', '/api/passkeys'),
@@ -103,6 +103,29 @@ export const api = {
   deleteShare: (id: string) => request<void>('DELETE', `/api/shares/${encodeURIComponent(id)}`),
   sharePreview: (id: string) => request<LearnSharePreview>('GET', `/api/shares/${encodeURIComponent(id)}`),
   importShare: (id: string) => request<{ stack: LearnShareStack }>('POST', `/api/shares/${encodeURIComponent(id)}/import`, {}),
+  /** «Aufgaben»: learning goals of a topic from photos and/or keywords. Takes a while – the AI reads everything. */
+  topicDraft: (body: { images: string[]; text: string; subject: string; level: string }) =>
+    request<TopicDraftResponse>('POST', '/api/tasks/topic', body),
+  taskUsage: () => request<TaskUsage>('GET', '/api/tasks/usage'),
+  /** The documents of a topic, newest first. */
+  documents: (topicId: string) => request<{ documents: TaskDocument[] }>('GET', `/api/tasks/documents?topicId=${encodeURIComponent(topicId)}`),
+  document: (id: string) => request<{ document: TaskDocument }>('GET', `/api/tasks/documents/${encodeURIComponent(id)}`),
+  /** Starts writing a document – it comes back «pending», the AI writes it in the background. */
+  createDocument: (body: TaskDocRequest) => request<{ document: TaskDocument; usage: TaskUsage }>('POST', '/api/tasks/documents', body),
+  deleteDocument: (id: string) => request<void>('DELETE', `/api/tasks/documents/${encodeURIComponent(id)}`),
+  /** A result: solved in the app, or the points of a sheet solved on paper. */
+  saveAttempt: (docId: string, attempt: DocAttempt) =>
+    request<{ document: TaskDocument }>('POST', `/api/tasks/documents/${encodeURIComponent(docId)}/attempts`, attempt),
+  deleteAttempt: (docId: string, attemptId: string) =>
+    request<{ document: TaskDocument }>('DELETE', `/api/tasks/documents/${encodeURIComponent(docId)}/attempts/${encodeURIComponent(attemptId)}`),
+  /** Lernkarten from the learning goals of a topic – a draft to review. */
+  topicCards: (body: TopicCardsRequest) => request<LearnExtractResponse>('POST', '/api/tasks/cards', body),
+  /** Stripe's payment page for the yearly subscription. */
+  billingCheckout: () => request<{ url: string }>('POST', '/api/billing/checkout', {}),
+  billingConfirm: (sessionId: string) => request<{ user: PublicUser; confirmed: boolean }>('POST', '/api/billing/confirm', { sessionId }),
+  /** Stripe's customer portal: cancel, payment method, receipts. */
+  billingPortal: () => request<{ url: string }>('POST', '/api/billing/portal', {}),
+  billingRefresh: () => request<{ user: PublicUser }>('POST', '/api/billing/refresh', {}),
 };
 
 /** Public address of a shared stack. */
