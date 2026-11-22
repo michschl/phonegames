@@ -14,6 +14,7 @@ export const DEFAULT_REWARDS: Omit<RewardSettings, 'updatedAt'> = {
   perPoint: 1,
   dailyMax: 60,
   pricePerRound: 5,
+  arena: true,
 };
 
 const sum = (values: Record<string, number>) => Object.values(values).reduce((a, b) => a + b, 0);
@@ -101,6 +102,7 @@ export function cleanRewards(raw: RewardSettings): RewardSettings {
     perPoint: within(raw.perPoint, 10, DEFAULT_REWARDS.perPoint),
     dailyMax: within(raw.dailyMax, 1000, DEFAULT_REWARDS.dailyMax),
     pricePerRound: within(raw.pricePerRound, 100, DEFAULT_REWARDS.pricePerRound),
+    arena: (raw as { arena?: unknown }).arena !== false,
     updatedAt: time(raw.updatedAt),
   };
 }

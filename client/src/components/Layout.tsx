@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { NavLink, useLocation, useNavigate } from 'react-router';
 import { Icon, type IconName } from './Icon.tsx';
 import { haptic } from '../lib/device.ts';
+import { useData } from '../store/data.ts';
 import { useDueTotal } from '../store/learners.ts';
 import { useSettings } from '../store/settings.ts';
 import { dismissToast, useUi } from '../store/ui.ts';
@@ -65,9 +66,19 @@ export function TabBar() {
   const due = useDueTotal();
   const active = Math.max(
     0,
-    TABS.findIndex((tab) => (tab.to === '/' ? pathname === '/' || pathname.startsWith('/allein') : pathname.startsWith(tab.to))),
+    TABS.findIndex((tab) =>
+      tab.to === '/' ? pathname === '/' || pathname.startsWith('/allein') || pathname.startsWith('/arena') : pathname.startsWith(tab.to),
+    ),
   );
-  const target = (to: string) => (to === '/lernen' && learnArea === 'aufgaben' ? '/lernen/aufgaben' : to === '/' && playArea === 'allein' ? '/allein' : to);
+  const arenaShown = useData((s) => s.rewards?.arena !== false);
+  const target = (to: string) =>
+    to === '/lernen' && learnArea === 'aufgaben'
+      ? '/lernen/aufgaben'
+      : to === '/' && playArea === 'allein'
+        ? '/allein'
+        : to === '/' && playArea === 'arena' && arenaShown
+          ? '/arena'
+          : to;
   return (
     <nav
       className="tabbar"

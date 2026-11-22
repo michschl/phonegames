@@ -197,6 +197,7 @@ export const syncSchema = z.object({
       perPoint: z.number(),
       dailyMax: z.number(),
       pricePerRound: z.number(),
+      arena: z.boolean().default(true),
       updatedAt: timestamp,
     })
     .nullable()

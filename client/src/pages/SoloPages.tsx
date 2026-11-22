@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router';
 import { balance } from '../../../shared/coins.ts';
 import { Mascot } from '../components/Brand.tsx';
 import { CoinPill } from '../components/Coins.tsx';
+import { FamilyRanking } from '../components/FamilyRanking.tsx';
 import { Fold } from '../components/Fold.tsx';
 import { Icon } from '../components/Icon.tsx';
 import { BottomBar, Page, Section } from '../components/Layout.tsx';
@@ -24,10 +25,13 @@ import { useGameSettings, useSettings } from '../store/settings.ts';
 
 export const SOLO = '/allein';
 
-/** «Zusammen | Allein» at the top of the «Spiele» tab; the tab opens the area used last. */
-export function PlayAreaSwitch({ area }: { area: 'zusammen' | 'allein' }) {
+const AREA_PATH = { zusammen: '/', allein: '/allein', arena: '/arena' } as const;
+
+/** «Zusammen | Allein | Arena» at the top of the «Spiele» tab; the tab opens the area used last. Parents can hide the Arena. */
+export function PlayAreaSwitch({ area }: { area: 'zusammen' | 'allein' | 'arena' }) {
   const navigate = useNavigate();
   const setPlayArea = useSettings((s) => s.setPlayArea);
+  const arena = useRewards().arena;
   // Only a change is stored – writing the same value would rewrite all settings on every visit.
   useEffect(() => {
     if (useSettings.getState().playArea !== area) setPlayArea(area);
@@ -40,10 +44,11 @@ export function PlayAreaSwitch({ area }: { area: 'zusammen' | 'allein' }) {
         options={[
           { value: 'zusammen', label: 'Zusammen' },
           { value: 'allein', label: 'Allein' },
+          ...(arena ? [{ value: 'arena' as const, label: 'Arena' }] : []),
         ]}
         onChange={(next) => {
           haptic(6);
-          navigate(next === 'allein' ? SOLO : '/', { viewTransition: true });
+          navigate(AREA_PATH[next], { viewTransition: true });
         }}
       />
     </div>
@@ -51,7 +56,7 @@ export function PlayAreaSwitch({ area }: { area: 'zusammen' | 'allein' }) {
 }
 
 /** Who plays: the names of «Wer lernt?» (or the account), remembered per device. */
-function usePlayer(): [string, (name: string) => void, { id: string; name: string; color: string }[]] {
+export function usePlayer(): [string, (name: string) => void, { id: string; name: string; color: string }[]] {
   const learners = useLearners();
   const self = useAuth((s) => s.user?.name ?? '');
   const [chosen, setChosen] = useGameSettings<{ player: string }>('allein', { player: '' });
@@ -59,7 +64,7 @@ function usePlayer(): [string, (name: string) => void, { id: string; name: strin
   return [known?.name ?? learners[0]?.name ?? self, (player) => setChosen({ player }), learners];
 }
 
-function PlayerChips({ value, onChange, players, coins }: { value: string; onChange: (name: string) => void; players: { id: string; name: string; color: string }[]; coins: boolean }) {
+export function PlayerChips({ value, onChange, players, coins }: { value: string; onChange: (name: string) => void; players: { id: string; name: string; color: string }[]; coins: boolean }) {
   return (
     <div className="solver-picker" role="radiogroup" aria-label="Wer spielt?">
       {players.map((player) => (
@@ -190,6 +195,12 @@ export function SoloGamePage() {
     [game, level, player, recordBest],
   );
   const quit = useCallback(() => setPhase('start'), []);
+  // Keep the sound awake while playing (the music of Beat-Bahn, the effects of the others).
+  useEffect(() => {
+    if (phase !== 'play') return;
+    sound.hold();
+    return () => sound.release();
+  }, [phase]);
 
   if (!game) return <Navigate to={SOLO} replace />;
 
@@ -228,6 +239,9 @@ export function SoloGamePage() {
           {result.record ? <p className="solo-result__record">🏆 Neuer Rekord für {player}!</p> : best ? <p className="solo-result__best">Rekord: {best} Punkte</p> : null}
           <p className="solo-result__summary">{result.summary}</p>
         </div>
+        <Section title={`Familie · ${LEVEL_LABEL[level]}`}>
+          <FamilyRanking scoreKey={`${game.id}:${level}`} current={player} />
+        </Section>
         <BottomBar>
           <div className="solve-nav">
             <Link to={SOLO} className="btn btn--secondary" viewTransition>
@@ -300,6 +314,10 @@ export function SoloGamePage() {
           </div>
         </Section>
       )}
+
+      <Section title="Familie">
+        <FamilyRanking scoreKey={`${game.id}:${level}`} current={player} />
+      </Section>
 
       <Section title="So geht’s">
         <Fold title="Regeln" icon="sparkles">

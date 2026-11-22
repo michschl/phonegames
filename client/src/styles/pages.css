@@ -3730,3 +3730,260 @@
   inset: 0;
   background: var(--bg);
 }
+
+/* ======================================================= Familien-Rangliste */
+
+.ranking {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ranking__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px 6px 8px;
+  border-radius: var(--radius);
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  font-weight: 700;
+}
+
+.ranking__row.is-me {
+  background: var(--yellow-soft);
+}
+
+.ranking__place {
+  width: 2em;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.ranking__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ranking__score {
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.ranking__score small {
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.ranking__empty {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+/* ======================================================= Arena (3D, ab 13) */
+
+.arena-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.arena-tile {
+  position: relative;
+  display: grid;
+  align-content: end;
+  gap: 3px;
+  min-height: 190px;
+  padding: 14px;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  border: var(--border);
+  background: radial-gradient(120% 90% at 85% 0%, var(--c1) 0%, transparent 60%), linear-gradient(160deg, #1b1530 30%, #2c2350);
+  box-shadow: var(--shadow-lg);
+  color: #fff;
+  text-decoration: none;
+  animation: tile-in 0.55s var(--ease-spring) both;
+  transition: transform 0.15s ease;
+}
+
+.arena-tile:active {
+  transform: translateY(3px) scale(0.98);
+}
+
+.arena-tile__glow {
+  position: absolute;
+  inset: auto -30% -40% auto;
+  width: 120%;
+  height: 70%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--c2) 55%, transparent), transparent);
+  filter: blur(6px);
+  pointer-events: none;
+}
+
+.arena-tile__emoji {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  font-size: 44px;
+  filter: drop-shadow(0 0 14px var(--c1));
+}
+
+.arena-tile__name {
+  position: relative;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.1;
+  text-shadow: 0 0 18px var(--c1);
+}
+
+.arena-tile__tag {
+  position: relative;
+  font-size: 13.5px;
+  font-weight: 700;
+  opacity: 0.9;
+}
+
+.arena-tile__skills {
+  position: relative;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--c2);
+}
+
+.arena-tile__best {
+  position: absolute;
+  top: 12px;
+  right: 10px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+  font-size: 12.5px;
+  font-weight: 900;
+}
+
+.arena-hero {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 18px 16px;
+  border-radius: var(--radius-lg);
+  border: var(--border);
+  background: radial-gradient(120% 90% at 80% 0%, var(--c1), transparent 65%), linear-gradient(160deg, #1b1530, #2c2350);
+  box-shadow: var(--shadow);
+  color: #fff;
+  text-align: center;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.arena-hero p {
+  margin: 0;
+}
+
+.arena-hero__emoji {
+  font-size: 60px;
+  filter: drop-shadow(0 0 18px var(--c1));
+  animation: solo-bounce 2.4s ease-in-out infinite;
+}
+
+.skin-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.skin {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 10px 4px 8px;
+  border-radius: var(--radius);
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow-sm);
+  color: var(--ink);
+}
+
+.skin.is-active {
+  background: var(--yellow);
+}
+
+.skin.is-locked {
+  border-style: dashed;
+  box-shadow: none;
+}
+
+.skin__swatch {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 2.5px solid var(--ink);
+  box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.18), inset 4px 6px 0 rgba(255, 255, 255, 0.35);
+}
+
+.skin__name {
+  font-size: 12.5px;
+  font-weight: 800;
+  text-align: center;
+  line-height: 1.15;
+}
+
+.skin__price {
+  font-size: 11.5px;
+  font-weight: 900;
+}
+
+.level-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.level-cell {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 900;
+  font-size: 15px;
+}
+
+.level-cell.is-done {
+  background: var(--lime-soft);
+}
+
+.level-cell.is-active {
+  background: var(--yellow);
+  transform: scale(1.06);
+}
+
+.level-cell:disabled {
+  opacity: 0.45;
+  border-style: dashed;
+}
+
+.level-cell small {
+  position: absolute;
+  top: 1px;
+  right: 4px;
+  font-size: 10px;
+  color: #c77c00;
+}
+
+.arena-loading {
+  position: fixed;
+  inset: 0;
+  background: #120e22;
+}

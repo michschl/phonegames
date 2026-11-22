@@ -47,6 +47,7 @@ const rewards = (patch: Partial<RewardSettings> = {}): RewardSettings => ({
   perPoint: 1,
   dailyMax: 60,
   pricePerRound: 5,
+  arena: true,
   updatedAt: T,
   ...patch,
 });
@@ -98,7 +99,9 @@ describe('coins of «Belohnungen»', () => {
     expect(res.rewards).toMatchObject({ enabled: true, pricePerRound: 3 });
     // Values out of range are cut.
     const later = await sync({ rewards: rewards({ perCard: 500, pricePerRound: -4, updatedAt: T + 20 }) });
-    expect(later.rewards).toMatchObject({ perCard: 10, pricePerRound: 0 });
+    expect(later.rewards).toMatchObject({ perCard: 10, pricePerRound: 0, arena: true });
+    // Parents hide the «Arena».
+    expect((await sync({ rewards: rewards({ arena: false, updatedAt: T + 30 }) })).rewards).toMatchObject({ arena: false });
     // Older apps send neither.
     const old = await sync({});
     expect(old.wallets).toHaveLength(1);

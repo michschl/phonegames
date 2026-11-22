@@ -1,0 +1,244 @@
+/* «Arena» – the 3D games. */
+
+.arena-shell .gs__body {
+  gap: 8px;
+}
+
+.arena-hud {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.arena-hud strong {
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.arena-hud em {
+  font-style: normal;
+  color: #ff4f6d;
+  font-weight: 900;
+}
+
+.arena-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 22px;
+  border: 2.5px solid var(--ink);
+  background: #120e22;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.arena-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.arena-hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 12px;
+  margin: 0;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 800;
+  font-size: 14px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  animation: arena-fade 4s ease-out 2.5s forwards;
+}
+
+@keyframes arena-fade {
+  to {
+    opacity: 0;
+  }
+}
+
+.arena-flash {
+  position: absolute;
+  top: 22%;
+  left: 50%;
+  margin: 0;
+  transform: translateX(-50%);
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 2px 0 var(--ink), 0 0 18px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  animation: arena-pop 0.9s ease-out forwards;
+}
+
+.arena-flash.is-bad {
+  color: #ff6b84;
+}
+
+.arena-flash.is-good {
+  color: #b6ff7a;
+}
+
+@keyframes arena-pop {
+  0% {
+    transform: translate(-50%, 10px) scale(0.6);
+    opacity: 0;
+  }
+  20% {
+    transform: translate(-50%, 0) scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -30px) scale(1);
+    opacity: 0;
+  }
+}
+
+.arena-finish {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  background: rgba(18, 14, 34, 0.35);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 800;
+  text-shadow: 0 3px 0 var(--ink);
+  animation: arena-zoom 0.4s var(--ease-spring);
+}
+
+@keyframes arena-zoom {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+}
+
+/* Beat-Bahn: four lanes to tap over the lower part of the track. */
+.beat-lanes {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 42%;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.beat-lane {
+  border: none;
+  background: linear-gradient(0deg, color-mix(in srgb, var(--lane) 22%, transparent), transparent);
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.beat-lane:active {
+  background: linear-gradient(0deg, color-mix(in srgb, var(--lane) 55%, transparent), transparent);
+}
+
+.beat-call {
+  top: 30%;
+}
+
+.arena-flash.is-ok {
+  color: #ffe27a;
+}
+
+.beat-mult {
+  color: #ffd23f !important;
+}
+
+/* Raumdenker */
+.raum-ask {
+  margin: 0;
+  text-align: center;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.raum-stage {
+  flex: 1 1 0;
+  min-height: 180px;
+  background: #e9f7ef;
+}
+
+.raum-hint {
+  color: #1d1b26;
+  text-shadow: none;
+  opacity: 0.6;
+}
+
+.raum-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.raum-options.is-spiegel {
+  grid-template-columns: 1fr 1fr;
+}
+
+.raum-option {
+  display: grid;
+  place-items: center;
+  min-height: 64px;
+  padding: 8px;
+  border-radius: 16px;
+  border: 2.5px solid var(--ink);
+  background: var(--paper);
+  box-shadow: 0 3px 0 var(--ink);
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.raum-option.is-number {
+  font-family: var(--font-display);
+  font-size: 30px;
+}
+
+.raum-option.is-text {
+  font-size: 16px;
+}
+
+.raum-option.is-right {
+  background: var(--lime);
+}
+
+.raum-option.is-wrong {
+  background: #ffc2cc;
+}
+
+.raum-option:disabled {
+  opacity: 1;
+}
+
+.raum-view {
+  width: 100%;
+  max-width: 76px;
+  aspect-ratio: 1;
+}
+
+.raum-view rect {
+  fill: #eef0f6;
+}
+
+.raum-view rect.is-on {
+  fill: var(--ink);
+}
+
+.arena-hint.is-dark {
+  color: rgba(29, 27, 38, 0.75);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+}
