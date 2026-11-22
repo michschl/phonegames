@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { expectAccessible, register } from './helpers.ts';
 
-test('Arena: 3D-Spiele ab 13, Familien-Rangliste, Kugelbahn-Level und Ausblenden durch Eltern', async ({ page }) => {
+test('Arena: 3D-Spiele ab 13, Familien-Rangliste, Kugelbahn- und Orbit-Level und Ausblenden durch Eltern', async ({ page }) => {
   // Several 3D games one after the other – software rendering in the test browser takes its time.
   test.setTimeout(180_000);
   await register(page, 'Lea');
@@ -9,7 +9,7 @@ test('Arena: 3D-Spiele ab 13, Familien-Rangliste, Kugelbahn-Level und Ausblenden
   await expect(areas.getByRole('radio')).toHaveText(['Zusammen', 'Allein', 'Arena']);
   await areas.getByRole('radio', { name: 'Arena' }).click();
   await expect(page).toHaveURL('/arena');
-  await expect(page.locator('.arena-tile')).toHaveCount(6);
+  await expect(page.locator('.arena-tile')).toHaveCount(7);
   await expectAccessible(page);
 
   // Another person of the family already has a record in the Raumdenker.
@@ -46,6 +46,19 @@ test('Arena: 3D-Spiele ab 13, Familien-Rangliste, Kugelbahn-Level und Ausblenden
   await page.locator('.arena-tile', { hasText: 'Kugelbahn' }).click();
   await expect(page.getByRole('radio', { name: 'Level 1, geschafft' })).toBeVisible();
   await expect(page.getByRole('radio', { name: 'Level 2', exact: true })).toBeEnabled();
+
+  // Orbit: pull back and let go – level 1 flies straight into the ring, then level 2 is open.
+  await page.goto('/arena/orbit');
+  await page.getByRole('button', { name: /Level 1 spielen/ }).click();
+  await expect(page.locator('.arena-canvas')).toBeVisible();
+  const stage = (await page.locator('.arena-stage').boundingBox())!;
+  const [cx, cy] = [stage.x + stage.width / 2, stage.y + stage.height / 2];
+  await page.mouse.move(cx, cy);
+  await page.mouse.down();
+  await page.mouse.move(cx, cy + 120, { steps: 5 });
+  await page.mouse.up();
+  await expect(page.getByText('Angekommen!')).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByRole('button', { name: 'Level 2' })).toBeVisible({ timeout: 6000 });
 
   // Pistenjagd and Beat-Bahn start and can be left.
   for (const name of ['Pistenjagd', 'Beat-Bahn', 'Drohnen-Parcours', 'Golfinsel']) {

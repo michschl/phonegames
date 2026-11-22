@@ -57,6 +57,7 @@ export const ARENA_GAMES: ArenaGame[] = [
       { id: 'galaxie', name: 'Galaxie', color: '#5b2bd6', accent: '#ff7ad9', price: 100 },
     ],
     unit: 'Level',
+    levels: 30,
     Play: lazy(() => import('./kugel/KugelGame.tsx')),
   },
   {
@@ -170,17 +171,41 @@ export const ARENA_GAMES: ArenaGame[] = [
     options: { label: 'Platz', values: ['Sonneninsel', 'Vulkaninsel'] },
     Play: lazy(() => import('./golf/GolfGame.tsx')),
   },
+  {
+    id: 'orbit',
+    name: 'Orbit',
+    tagline: 'Mit Schwung um die Planeten',
+    description: 'Schick die Sonde auf die Reise: Die Planeten ziehen sie mit ihrer Schwerkraft in weite Bögen. Triff den grünen Ring – ohne Absturz und ohne dich im All zu verlieren. 20 Level.',
+    emoji: '🪐',
+    colors: ['#8b5cf6', '#ff7ad9'],
+    skills: ['Physik-Gespür', 'Knobeln'],
+    rules: [
+      'Irgendwo tippen, zurückziehen und loslassen – Richtung und Kraft wie bei einer Steinschleuder.',
+      'Die Punkte zeigen nur den Anfang der Bahn; den Rest musst du abschätzen.',
+      'Planeten ziehen an, Asteroiden stehen im Weg. Wer abstürzt oder davonfliegt, versucht es nochmals.',
+      'Weniger Versuche geben mehr Punkte. Jedes Level schaltet das nächste frei.',
+    ],
+    duration: 'je Level 1 Min.',
+    tilt: false,
+    skinLabel: 'Sonde',
+    skins: [
+      { id: 'weiss', name: 'Explorer', color: '#e6e6ee', accent: '#2ec5ff', price: 0 },
+      { id: 'rot', name: 'Mars', color: '#ff4f6d', accent: '#ffd23f', price: 25 },
+      { id: 'gruen', name: 'Alien', color: '#9be15d', accent: '#ff7ad9', price: 50 },
+      { id: 'gold', name: 'Gold', color: '#ffc107', accent: '#ffffff', price: 100 },
+    ],
+    unit: 'Level',
+    levels: 20,
+    Play: lazy(() => import('./orbit/OrbitGame.tsx')),
+  },
 ];
 
 export function getArenaGame(id: string | undefined): ArenaGame | undefined {
   return ARENA_GAMES.find((game) => game.id === id);
 }
 
-/** Levels of the Kugelbahn. */
-export const KUGEL_LEVELS = 30;
-
-/** Leaderboard key of a game and choice. Kugelbahn: the highest level finished. */
+/** Leaderboard key of a game and choice. Games with levels: the highest level finished. */
 export function arenaKey(game: ArenaGame, option: number): string {
-  if (game.id === 'kugel') return 'kugel:level';
+  if (game.levels) return `${game.id}:level`;
   return game.options ? `${game.id}:${option}` : game.id;
 }

@@ -1,7 +1,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { Link, Navigate, useParams } from 'react-router';
 import { balance } from '../../../shared/coins.ts';
-import { arenaKey, ARENA_GAMES, getArenaGame, KUGEL_LEVELS } from '../arena/registry.ts';
+import { arenaKey, ARENA_GAMES, getArenaGame } from '../arena/registry.ts';
 import type { ArenaGame, ArenaResult } from '../arena/types.ts';
 import { hasWebGL } from '../arena/support.ts';
 import { tiltAvailable } from '../arena/input.ts';
@@ -45,7 +45,7 @@ function ArenaTile({ game, index, best }: { game: ArenaGame; index: number; best
       {best !== undefined && best > 0 && (
         <span className="arena-tile__best">
           🏆 {best.toLocaleString('de-CH')}
-          {game.id === 'kugel' ? ` / ${KUGEL_LEVELS}` : ''}
+          {game.levels ? ` / ${game.levels}` : ''}
         </span>
       )}
     </Link>
@@ -92,10 +92,10 @@ export function ArenaHubPage() {
 }
 
 /** Kugelbahn: the levels – the next after the highest finished one is open. */
-function LevelPicker({ value, onChange, reached, times }: { value: number; onChange: (level: number) => void; reached: number; times: Record<string, number> }) {
+function LevelPicker({ value, onChange, reached, times, count, prefix }: { value: number; onChange: (level: number) => void; reached: number; times: Record<string, number>; count: number; prefix: string }) {
   return (
     <div className="level-grid" role="radiogroup" aria-label="Level">
-      {Array.from({ length: KUGEL_LEVELS }, (_, i) => {
+      {Array.from({ length: count }, (_, i) => {
         const open = i <= reached;
         const done = i < reached;
         return (
@@ -113,7 +113,7 @@ function LevelPicker({ value, onChange, reached, times }: { value: number; onCha
             }}
           >
             {open ? i + 1 : '🔒'}
-            {done && times[`kugel:L${i + 1}`] ? <small>★</small> : null}
+            {done && times[`${prefix}:L${i + 1}`] ? <small>★</small> : null}
           </button>
         );
       })}
@@ -145,13 +145,14 @@ export function ArenaGamePage() {
   const [buy, setBuy] = useState<string | null>(null);
   const webgl = useMemo(() => hasWebGL(), []);
 
-  const reached = Math.min(KUGEL_LEVELS - 1, wallet.best['kugel:level'] ?? 0);
+  const levelCount = game?.levels ?? 0;
+  const reached = Math.min(Math.max(0, levelCount - 1), wallet.best[`${id}:level`] ?? 0);
   const owned = (skinId: string) => {
     const skin = game?.skins.find((s) => s.id === skinId);
     return !!skin && (!rewards.enabled || skin.price === 0 || wallet.unlocks.includes(`${id}:${skinId}`));
   };
   const skin = game ? (owned(choice.skin) ? game.skins.find((s) => s.id === choice.skin)! : game.skins[0]!) : null;
-  const option = game?.id === 'kugel' ? Math.min(choice.option, reached) : Math.min(choice.option, (game?.options?.values.length ?? 1) - 1);
+  const option = levelCount ? Math.min(choice.option, reached) : Math.min(choice.option, (game?.options?.values.length ?? 1) - 1);
   const price = rewards.enabled ? rewards.pricePerRound : 0;
   const coins = balance(wallet);
   const canPay = coins >= price;
@@ -216,7 +217,7 @@ export function ArenaGamePage() {
   if (phase === 'result' && result) {
     const ranking = familyRanking(Object.values(wallets ?? {}), result.key);
     const mine = placeOf(ranking, player);
-    const nextLevel = game.id === 'kugel' && (result.records?.['kugel:level'] ?? 0) > option && option + 1 < KUGEL_LEVELS;
+    const nextLevel = !!game.levels && (result.records?.[`${game.id}:level`] ?? 0) > option && option + 1 < game.levels;
     return (
       <Page title={game.name} back={ARENA} className="solo-result-page arena-page">
         <div className="solo-result">
@@ -237,8 +238,8 @@ export function ArenaGamePage() {
             </p>
           )}
         </div>
-        <Section title={game.id === 'kugel' ? 'Familie · Level geschafft' : `Familie${game.options ? ` · ${game.options.values[option]}` : ''}`}>
-          <FamilyRanking scoreKey={game.id === 'kugel' ? 'kugel:level' : result.key} current={player} unit={game.unit} />
+        <Section title={game.levels ? 'Familie · Level geschafft' : `Familie${game.options ? ` · ${game.options.values[option]}` : ''}`}>
+          <FamilyRanking scoreKey={game.levels ? `${game.id}:level` : result.key} current={player} unit={game.unit} />
         </Section>
         <BottomBar>
           <div className="solve-nav">
@@ -282,9 +283,16 @@ export function ArenaGamePage() {
         </Section>
       )}
 
-      {game.id === 'kugel' && (
+      {!!game.levels && (
         <Section title="Level">
-          <LevelPicker value={option} onChange={(level) => setChoice({ ...choice, option: level })} reached={reached} times={wallet.best} />
+          <LevelPicker
+            value={option}
+            onChange={(level) => setChoice({ ...choice, option: level })}
+            reached={reached}
+            times={wallet.best}
+            count={game.levels}
+            prefix={game.id}
+          />
         </Section>
       )}
       {game.options && (
@@ -372,7 +380,7 @@ export function ArenaGamePage() {
           </p>
         )}
         <Button size="lg" block icon="play" disabled={!canPay || !webgl} onClick={() => void start()}>
-          {game.id === 'kugel' ? `Level ${option + 1} spielen` : 'Spielen'}
+          {game.levels ? `Level ${option + 1} spielen` : 'Spielen'}
           {price > 0 ? ` · ${price} 🪙` : ''}
         </Button>
       </BottomBar>
