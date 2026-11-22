@@ -378,3 +378,12 @@
   gap: 6px;
   margin-left: auto;
 }
+
+.arena-finish {
+  padding: 0 14px;
+  text-align: center;
+}
+
+.kette-stage .arena-finish {
+  font-size: min(40px, 7.2vw);
+}

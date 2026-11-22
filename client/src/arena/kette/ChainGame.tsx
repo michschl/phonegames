@@ -22,7 +22,8 @@ import {
   type Placement,
   type World,
 } from '../chain.ts';
-import { glowTexture, skyTexture, useArenaScene } from '../engine.ts';
+import { useArenaScene } from '../engine.ts';
+import { Confetti, environmentFrom, glow, hdr, Particles, Shake, Sky, Trail, type SkyLook } from '../fx.ts';
 import { ARENA_GAMES } from '../registry.ts';
 import type { ArenaPlayProps } from '../types.ts';
 import '../arena.css';
@@ -211,13 +212,17 @@ export default function ChainGame({ skin: skinId, option, onFinish, onQuit }: Ar
   useArenaScene(canvasRef, (renderer) => {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     const scene = new THREE.Scene();
-    scene.background = skyTexture('#2a1d5c', '#7a5cd6');
     const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 200);
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x6a5a9a, 1.3));
-    const sun = new THREE.DirectionalLight(0xfff4e0, 2.2);
+    // A room at dusk around the box: its light also shows as reflections on balls and blocks.
+    const room: SkyLook = { top: '#1a1240', horizon: '#8a4fd0', bottom: '#2a1648', sun: { dir: [-0.4, 0.75, 0.55], color: '#ffe9c4', size: 0.02, glow: 1.4 } };
+    scene.add(new Sky(room));
+    environmentFrom(renderer, scene, room, 0.85);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x6a5a9a, 0.55));
+    const sun = new THREE.DirectionalLight(0xfff0d8, 2.6);
     sun.position.set(-5, 9, 12);
     sun.castShadow = true;
-    sun.shadow.mapSize.set(1024, 1024);
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.radius = 4;
     Object.assign(sun.shadow.camera, { left: -8, right: 8, top: 9, bottom: -9, near: 1, far: 40 });
     sun.shadow.bias = -0.0005;
     sun.shadow.normalBias = 0.03;
@@ -226,6 +231,16 @@ export default function ChainGame({ skin: skinId, option, onFinish, onQuit }: Ar
     const X = (x: number) => x - cols / 2;
     const Y = (y: number) => y - rows / 2;
 
+    // Soft lights far behind the box.
+    const bokeh: THREE.Sprite[] = [];
+    for (let i = 0; i < 16; i++) {
+      const light = glow(['#ff7ad9', '#ffd23f', '#2ec5ff', '#a46bff'][i % 4]!, 2.5 + Math.random() * 4, 0.35);
+      light.position.set((Math.random() - 0.5) * 34, (Math.random() - 0.5) * 34, -14 - Math.random() * 10);
+      light.userData.phase = Math.random() * 6;
+      scene.add(light);
+      bokeh.push(light);
+    }
+
     // The box: back wall with a grid, frame around it.
     const gridTex = gridTexture();
     gridTex.repeat.set(cols, rows);
@@ -233,7 +248,20 @@ export default function ChainGame({ skin: skinId, option, onFinish, onQuit }: Ar
     back.position.z = -0.5;
     back.receiveShadow = true;
     scene.add(back);
-    const frameMat = new THREE.MeshStandardMaterial({ color: '#4a3a8c', roughness: 0.6 });
+    // The lamp lights the middle of the wall best.
+    const shade = document.createElement('canvas');
+    shade.width = 128;
+    shade.height = 128;
+    const shadeCtx = shade.getContext('2d')!;
+    const falloff = shadeCtx.createRadialGradient(54, 44, 20, 64, 64, 96);
+    falloff.addColorStop(0, 'rgba(40,20,90,0)');
+    falloff.addColorStop(1, 'rgba(40,20,90,0.42)');
+    shadeCtx.fillStyle = falloff;
+    shadeCtx.fillRect(0, 0, 128, 128);
+    const dim = new THREE.Mesh(new THREE.PlaneGeometry(cols, rows), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(shade), transparent: true, depthWrite: false }));
+    dim.position.z = -0.49;
+    scene.add(dim);
+    const frameMat = new THREE.MeshPhysicalMaterial({ color: '#4a3a8c', roughness: 0.35, clearcoat: 0.8, clearcoatRoughness: 0.2 });
     for (const [w, h, x, y] of [
       [0.35, rows + 0.7, -cols / 2 - 0.175, 0],
       [0.35, rows + 0.7, cols / 2 + 0.175, 0],
@@ -250,7 +278,7 @@ export default function ChainGame({ skin: skinId, option, onFinish, onQuit }: Ar
     // Blocks (one instanced mesh), goals and buttons never change.
     const blockCells: [number, number][] = [];
     level.map.forEach((line, row) => [...line].forEach((ch, col) => ch === '#' && blockCells.push([col, row])));
-    const blocks = new THREE.InstancedMesh(new RoundedBoxGeometry(1, 1, 1, 2, 0.1), new THREE.MeshStandardMaterial({ roughness: 0.7 }), blockCells.length);
+    const blocks = new THREE.InstancedMesh(new RoundedBoxGeometry(1, 1, 1, 3, 0.12), new THREE.MeshPhysicalMaterial({ roughness: 0.3, clearcoat: 0.9, clearcoatRoughness: 0.15 }), blockCells.length);
     const m = new THREE.Matrix4();
     const blockColors = ['#3fc1a5', '#35ad94', '#48cfb1'];
     blockCells.forEach(([col, row], i) => {
@@ -270,23 +298,21 @@ export default function ChainGame({ skin: skinId, option, onFinish, onQuit }: Ar
         const x = X(col + 0.5);
         const y = Y(cellY(rows, row));
         if (ch === 'G') {
-          const ring = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.07, 12, 40), new THREE.MeshStandardMaterial({ color: '#9be15d', emissive: '#5cd12b', emissiveIntensity: 0.9 }));
+          const ring = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.07, 12, 40), new THREE.MeshBasicMaterial({ color: hdr('#8dff5a', 2.2) }));
           ring.position.set(x, y + 0.5, 0);
-          ring.castShadow = true;
-          const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture('#b6ff7a'), transparent: true, opacity: 0.6, depthWrite: false }));
-          glow.position.set(x, y + 0.5, -0.2);
-          glow.scale.set(1.6, 1.6, 1);
+          const halo = glow('#8dff5a', 2.2, 0.8);
+          halo.position.set(x, y + 0.5, -0.2);
           const flag = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.32, 3).rotateZ(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#ff4f6d' }));
           flag.position.set(x + 0.18, y + 1.02, 0);
           const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.5), new THREE.MeshStandardMaterial({ color: '#ffffff' }));
           pole.position.set(x, y + 0.98, 0);
-          scene.add(ring, glow, flag, pole);
+          scene.add(ring, halo, flag, pole);
           goalRings.push(ring);
-          goalGlows.push(glow);
+          goalGlows.push(halo);
         } else if (ch === 'b') {
           const base = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.44, 0.08, 24), new THREE.MeshStandardMaterial({ color: '#6b6280' }));
           base.position.set(x, y + 0.04, 0);
-          const top = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.14, 24), new THREE.MeshStandardMaterial({ color: '#ff4f6d', emissive: '#ff4f6d', emissiveIntensity: 0.3 }));
+          const top = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.14, 24), new THREE.MeshStandardMaterial({ color: '#ff4f6d', emissive: '#ff2f55', emissiveIntensity: 1.6 }));
           top.position.set(x, y + 0.13, 0);
           top.castShadow = true;
           scene.add(base, top);
@@ -297,20 +323,20 @@ export default function ChainGame({ skin: skinId, option, onFinish, onQuit }: Ar
 
     // Shared looks of the moving parts.
     const mats = {
-      ramp: new THREE.MeshStandardMaterial({ color: '#ff8a3d', roughness: 0.5 }),
+      ramp: new THREE.MeshPhysicalMaterial({ color: '#ff8a3d', roughness: 0.35, clearcoat: 0.7, clearcoatRoughness: 0.2 }),
       rampFixed: new THREE.MeshStandardMaterial({ color: '#b86a3a', roughness: 0.7 }),
       plank: new THREE.MeshStandardMaterial({ color: '#d9a066', roughness: 0.8 }),
       plankFixed: new THREE.MeshStandardMaterial({ color: '#9c7048', roughness: 0.8 }),
-      spring: new THREE.MeshStandardMaterial({ color: '#c9d1e0', metalness: 0.7, roughness: 0.3 }),
+      spring: new THREE.MeshStandardMaterial({ color: '#e3e8f2', metalness: 1, roughness: 0.18 }),
       springTop: new THREE.MeshStandardMaterial({ color: '#ff4f6d', roughness: 0.4 }),
       springTopFixed: new THREE.MeshStandardMaterial({ color: '#a63a50', roughness: 0.6 }),
-      domino: new THREE.MeshStandardMaterial({ color: '#fbfaff', roughness: 0.35 }),
+      domino: new THREE.MeshPhysicalMaterial({ color: '#fbfaff', roughness: 0.2, clearcoat: 1, clearcoatRoughness: 0.1 }),
       dominoFixed: new THREE.MeshStandardMaterial({ color: '#c9c3dc', roughness: 0.5 }),
       dot: new THREE.MeshStandardMaterial({ color: '#2b2440' }),
-      ball: new THREE.MeshStandardMaterial({ color: skin.color, metalness: 0.35, roughness: 0.25 }),
-      ball2: new THREE.MeshStandardMaterial({ color: '#3a86ff', metalness: 0.35, roughness: 0.25 }),
+      ball: new THREE.MeshStandardMaterial({ color: skin.color, metalness: 0.85, roughness: 0.14 }),
+      ball2: new THREE.MeshStandardMaterial({ color: '#3a86ff', metalness: 0.85, roughness: 0.14 }),
       gate: new THREE.MeshStandardMaterial({ map: stripeTexture(), roughness: 0.6 }),
-      star: new THREE.MeshStandardMaterial({ color: '#ffd23f', emissive: '#ffb300', emissiveIntensity: 0.6, metalness: 0.3, roughness: 0.3 }),
+      star: new THREE.MeshStandardMaterial({ color: '#ffd23f', emissive: '#ffa200', emissiveIntensity: 1.7, metalness: 0.6, roughness: 0.25 }),
       ghost: new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.45, depthWrite: false }),
     };
     const geos = {
@@ -320,7 +346,7 @@ export default function ChainGame({ skin: skinId, option, onFinish, onQuit }: Ar
       springTop: new RoundedBoxGeometry(0.62, 0.08, 0.6, 2, 0.03),
       domino: new RoundedBoxGeometry(0.18, DOMINO_H, 0.6, 2, 0.04),
       dot: new THREE.SphereGeometry(0.035, 8, 6),
-      ball: new THREE.SphereGeometry(BALL_R, 32, 20),
+      ball: new THREE.SphereGeometry(BALL_R, 40, 28),
       gate: new RoundedBoxGeometry(1, 1, 0.9, 2, 0.06),
       star: new THREE.ExtrudeGeometry(starShape(), { depth: 0.1, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03, bevelSegments: 2 }).center(),
     };
@@ -362,9 +388,19 @@ export default function ChainGame({ skin: skinId, option, onFinish, onQuit }: Ar
       return ghost ? g : shadowed(g);
     };
 
+    // Sparks that glow, puffs that show on the bright wall, paper snippets and a jolt for the big moments.
+    const sparks = new Particles(360);
+    const puffs = new Particles(220, { additive: false, sharp: 1 });
+    const confetti = new Confetti();
+    const shake = new Shake();
+    scene.add(sparks, puffs, confetti);
+    const view = { x: 0, y: 0, clock: 0 };
+
     let built = -1;
     let dynamic = new THREE.Group();
     scene.add(dynamic);
+    let trails: Trail[] = [];
+    let starGlows: THREE.Sprite[] = [];
     let ballMeshes: THREE.Mesh[] = [];
     let dominoMeshes: THREE.Group[] = [];
     let starMeshes: THREE.Mesh[] = [];
@@ -418,12 +454,24 @@ export default function ChainGame({ skin: skinId, option, onFinish, onQuit }: Ar
         dynamic.add(ball);
         return ball;
       });
+      trails = world.balls.map((b) => {
+        const trail = new Trail(26, BALL_R * 1.7, b.main ? skin.color : '#3a86ff', { additive: false, opacity: 0.5 });
+        dynamic.add(trail);
+        return trail;
+      });
       starMeshes = world.stars.map((s) => {
         const star = new THREE.Mesh(geos.star, mats.star);
         star.position.set(X(s.x), Y(s.y), 0);
         star.visible = !s.taken;
         dynamic.add(shadowed(star));
         return star;
+      });
+      starGlows = world.stars.map((s) => {
+        const halo = glow('#ffc93c', 1.5, 0.75);
+        halo.position.set(X(s.x), Y(s.y), -0.25);
+        halo.visible = !s.taken;
+        dynamic.add(halo);
+        return halo;
       });
       gateMeshes = [];
       level.map.forEach((line, row) =>
@@ -448,8 +496,9 @@ export default function ChainGame({ skin: skinId, option, onFinish, onQuit }: Ar
       const needH = rows + 1.4;
       const needW = cols + 1.4;
       const dist = Math.max(needH / 2 / Math.tan(fov / 2), needW / 2 / (Math.tan(fov / 2) * camera.aspect));
-      camera.position.set(0, 0, dist + 0.6);
-      camera.lookAt(0, 0, 0);
+      // While the ball runs, the camera leans after it a little – that shows the depth of the box.
+      camera.position.set(view.x, view.y, dist + 0.6);
+      camera.lookAt(view.x * 0.25, view.y * 0.25, 0);
       camera.updateMatrixWorld();
       // Lay the button grid exactly over the board.
       const grid = gridRef.current;
@@ -468,9 +517,19 @@ export default function ChainGame({ skin: skinId, option, onFinish, onQuit }: Ar
     };
 
     const update = (dt: number) => {
-      fit();
+      view.clock += dt;
       if (built !== sim.current.version) rebuild();
       const world = sim.current.world;
+      const lead = world.balls.find((b) => b.main && !b.out) ?? world.balls[0];
+      const running = world.status === 'run' && !!lead;
+      const follow = Math.min(1, dt * 2.5);
+      view.x += ((running ? (lead!.x - cols / 2) * 0.22 : 0) - view.x) * follow;
+      view.y += ((running ? (lead!.y - rows / 2) * 0.12 : 0) - view.y) * follow;
+      if (Math.abs(view.x) < 0.002 && !running) view.x = 0;
+      if (Math.abs(view.y) < 0.002 && !running) view.y = 0;
+      fit();
+      shake.apply(camera, dt, 0.35);
+      for (const light of bokeh) light.material.opacity = 0.6 + 0.4 * Math.sin(view.clock * 0.7 + (light.userData.phase as number));
       if (world.status === 'run') {
         acc += dt;
         let steps = 0;
@@ -484,23 +543,51 @@ export default function ChainGame({ skin: skinId, option, onFinish, onQuit }: Ar
             if (performance.now() - lastBump > 90) {
               sound.click(0.6 + e.strength);
               lastBump = performance.now();
+              puffs.burst({ x: X(e.x), y: Y(e.y), z: 0.3 }, 3 + Math.round(e.strength * 8), ['#ffffff', '#cdbff5'], { speed: [0.4, 1.6 + e.strength * 2], life: [0.25, 0.55], size: [0.08, 0.18], gravity: 3, alpha: 0.8 });
+              if (e.strength > 0.45) shake.kick(e.strength * 0.35);
             }
           } else if (e.type === 'spring') {
             squash.set(`${e.col},${e.row}`, 1);
+            const at = { x: X(e.col + 0.5), y: Y(cellY(rows, e.row)) + 0.25, z: 0.3 };
+            sparks.burst(at, 16, ['#ff4f6d', '#ffd23f', '#ffffff'], { speed: [1, 4], up: 2.5, life: [0.3, 0.6], size: [0.1, 0.22], gravity: 6, intensity: 2.2 });
+            puffs.burst(at, 8, ['#ff8fa3', '#ffffff'], { speed: [0.5, 2], up: 1.5, life: [0.3, 0.6], size: [0.1, 0.2], gravity: 5 });
             sound.pop();
             haptic(10);
-          } else if (e.type === 'domino') sound.tap();
-          else if (e.type === 'star') {
+          } else if (e.type === 'domino') {
+            puffs.burst({ x: X(e.x), y: Y(e.y), z: 0.3 }, 4, ['#ffffff', '#cdbff5'], { speed: [0.3, 1.2], life: [0.2, 0.45], size: [0.07, 0.14], gravity: 2, alpha: 0.8 });
+            sound.tap();
+          } else if (e.type === 'star') {
+            const star = world.stars[e.index]!;
+            const at = { x: X(star.x), y: Y(star.y), z: 0.3 };
+            sparks.burst(at, 34, ['#ffd23f', '#fff3b0', '#ffffff'], { speed: [1, 5], life: [0.4, 0.9], size: [0.1, 0.28], drag: 2, intensity: 3 });
+            puffs.burst(at, 14, ['#ffc93c', '#ff9f1c'], { speed: [1, 3.5], life: [0.4, 0.8], size: [0.1, 0.2], gravity: 4 });
             sound.coin();
             haptic(12);
           } else if (e.type === 'button') {
+            const at = { x: X(e.col + 0.5), y: Y(cellY(rows, e.row)) + 0.2, z: 0.3 };
+            sparks.burst(at, 30, ['#ff4f6d', '#ffffff'], { speed: [1, 5], up: 2, life: [0.3, 0.8], size: [0.1, 0.24], gravity: 5, intensity: 2.6 });
+            for (const gate of gateMeshes) puffs.burst({ x: gate.position.x, y: gate.position.y, z: 0.4 }, 22, ['#ffd23f', '#2b2440'], { speed: [0.6, 3], life: [0.4, 0.9], size: [0.12, 0.26], gravity: 6 });
+            shake.kick(0.35);
             sound.ding();
             haptic([10, 30, 10]);
-          } else if (e.type === 'goal') sound.sparkle();
+          } else if (e.type === 'goal') {
+            const goal = world.goals[e.index]!;
+            sparks.burst({ x: X(goal.col + 0.5), y: Y(cellY(rows, goal.row)) + 0.5, z: 0.3 }, 60, ['#8dff5a', '#ffffff', '#ffd23f'], { speed: [1, 6], life: [0.5, 1.2], size: [0.1, 0.3], drag: 1.8, intensity: 3 });
+            sound.sparkle();
+          }
         }
         world.events.length = 0;
-        if (world.status !== 'run') ended.current(world);
+        if (world.status !== 'run') {
+          if (world.status === 'goal') {
+            confetti.burst(camera, scene);
+            shake.kick(0.3);
+          }
+          ended.current(world);
+        }
       }
+      sparks.update(dt);
+      puffs.update(dt);
+      confetti.update(dt);
       // Moving parts follow the world.
       world.balls.forEach((b, i) => {
         const mesh = ballMeshes[i];
@@ -508,6 +595,9 @@ export default function ChainGame({ skin: skinId, option, onFinish, onQuit }: Ar
         mesh.position.set(X(b.x), Y(b.y), 0);
         mesh.rotation.z = b.spin;
         mesh.visible = !b.out;
+        const trail = trails[i]!;
+        if (world.status === 'edit' || b.held || b.out) trail.reset();
+        else trail.follow(X(b.x), Y(b.y), -0.2, dt, camera);
       });
       world.dominoes.forEach((d, i) => {
         const pivot = dominoMeshes[i];
@@ -520,7 +610,11 @@ export default function ChainGame({ skin: skinId, option, onFinish, onQuit }: Ar
       world.stars.forEach((s, i) => {
         const star = starMeshes[i];
         if (!star) return;
-        star.rotation.y = Math.sin(performance.now() / 500 + i) * 0.7;
+        star.rotation.y = Math.sin(view.clock * 2 + i) * 0.7;
+        star.position.y = Y(s.y) + Math.sin(view.clock * 2.4 + i * 2) * 0.05;
+        const halo = starGlows[i]!;
+        halo.visible = !s.taken;
+        halo.scale.setScalar(1.4 + Math.sin(view.clock * 3 + i) * 0.2);
         if (s.taken && star.visible) {
           star.scale.multiplyScalar(1 + dt * 6);
           if (star.scale.x > 1.8) star.visible = false;
@@ -533,7 +627,9 @@ export default function ChainGame({ skin: skinId, option, onFinish, onQuit }: Ar
       if (world.pressed && gateDrop < 1) {
         gateDrop = Math.min(1, gateDrop + dt * 4);
         gateMeshes.forEach((g) => {
-          g.scale.y = 1 - gateDrop;
+          // (Never flat: a height of nothing has no direction for the light.)
+          g.scale.y = Math.max(0.02, 1 - gateDrop);
+          g.visible = gateDrop < 1;
           g.position.y = g.userData.y0 ?? (g.userData.y0 = g.position.y);
           g.position.y = (g.userData.y0 as number) - gateDrop * 0.5;
         });
@@ -554,12 +650,13 @@ export default function ChainGame({ skin: skinId, option, onFinish, onQuit }: Ar
       world.goals.forEach((g, i) => {
         const ring = goalRings[i];
         if (!ring) return;
-        ring.rotation.y = g.done ? ring.rotation.y + dt * 8 : Math.sin(performance.now() / 700) * 0.5;
-        const glow = goalGlows[i]!;
-        glow.material.opacity = g.done ? 1 : 0.45 + Math.sin(performance.now() / 300) * 0.15;
+        ring.rotation.y = g.done ? ring.rotation.y + dt * 8 : Math.sin(view.clock * 1.4) * 0.5;
+        const halo = goalGlows[i]!;
+        halo.material.opacity = g.done ? 1 : 0.6 + Math.sin(view.clock * 3.3) * 0.25;
       });
+      for (const button of buttons) (button.material as THREE.MeshStandardMaterial).emissiveIntensity = world.pressed ? 0.2 : 1.3 + Math.sin(view.clock * 5) * 0.6;
     };
-    return { scene, camera, update };
+    return { scene, camera, update, fx: { bloom: { strength: 0.6, radius: 0.6, threshold: 1 }, vignette: 0.42 } };
   });
 
   // The scene reads the placed parts for the hints without rebuilding itself.

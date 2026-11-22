@@ -78,11 +78,11 @@ export interface Seg {
 }
 
 export type ChainEvent =
-  | { type: 'bump'; strength: number }
+  | { type: 'bump'; strength: number; x: number; y: number }
   | { type: 'spring'; col: number; row: number }
-  | { type: 'domino' }
+  | { type: 'domino'; x: number; y: number }
   | { type: 'star'; index: number }
-  | { type: 'button' }
+  | { type: 'button'; col: number; row: number }
   | { type: 'goal'; index: number };
 
 export interface World {
@@ -244,8 +244,9 @@ function contact(b: Ball, qx: number, qy: number, reach: number, e: number, sx =
   return { nx, ny, impact: Math.max(0, -vn) };
 }
 
-function bump(w: World, impact: number) {
-  if (impact > 2.5) w.events.push({ type: 'bump', strength: Math.min(1, impact / 12) });
+/** A knock that can be heard and seen, at the point of contact. */
+function bump(w: World, impact: number, x: number, y: number) {
+  if (impact > 2.5) w.events.push({ type: 'bump', strength: Math.min(1, impact / 12), x, y });
 }
 
 function stepBall(w: World, b: Ball, dt: number) {
@@ -265,7 +266,7 @@ function stepBall(w: World, b: Ball, dt: number) {
       const qy = Math.max(cy, Math.min(cy + 1, b.y));
       const hit = contact(b, qx, qy, BALL_R, 0.3);
       if (hit) {
-        bump(w, hit.impact);
+        bump(w, hit.impact, qx, qy);
         if (hit.ny > 0.5) grounded = true;
       }
     }
@@ -287,7 +288,7 @@ function stepBall(w: World, b: Ball, dt: number) {
       w.lastSpring = key;
       w.events.push({ type: 'spring', col: s.col, row: s.row });
     } else {
-      bump(w, hit.impact);
+      bump(w, hit.impact, qx, qy);
       if (hit.ny > 0.5) grounded = true;
     }
   }
@@ -313,7 +314,7 @@ function stepBall(w: World, b: Ball, dt: number) {
       d.dir = b.x < d.x ? 1 : -1;
       d.state = 'fall';
       d.w = Math.min(5, 1 + hit.impact * 0.35);
-      w.events.push({ type: 'domino' });
+      w.events.push({ type: 'domino', x: qx, y: qy });
     }
   }
   // The board is a box: walls left and right.
@@ -342,7 +343,7 @@ function stepDomino(w: World, d: Domino, dt: number) {
         o.dir = d.dir;
         o.state = 'fall';
         o.w = Math.max(1.5, d.w * 0.8);
-        w.events.push({ type: 'domino' });
+        w.events.push({ type: 'domino', x: tx, y: ty });
       }
       d.state = 'rest';
       return;
@@ -351,7 +352,7 @@ function stepDomino(w: World, d: Domino, dt: number) {
   if (solidAt(w, tx, ty) || d.a >= Math.PI / 2) {
     if (d.a >= Math.PI / 2) d.a = Math.PI / 2;
     d.state = 'rest';
-    w.events.push({ type: 'bump', strength: 0.4 });
+    w.events.push({ type: 'bump', strength: 0.4, x: tx, y: ty });
   }
   pressButtons(w, tx, ty);
 }
@@ -362,7 +363,7 @@ function pressButtons(w: World, x: number, y: number) {
     const by = cellY(w.rows, btn.row);
     if (x > btn.col && x < btn.col + 1 && y >= by - 0.05 && y < by + 0.5) {
       w.pressed = true;
-      w.events.push({ type: 'button' });
+      w.events.push({ type: 'button', col: btn.col, row: btn.row });
       for (let i = 0; i < w.solid.length; i++) if (w.solid[i] === 2) w.solid[i] = 0;
       return;
     }
@@ -393,7 +394,7 @@ function collideBalls(w: World) {
         a.vy -= j2 * ny;
         b.vx += j2 * nx;
         b.vy += j2 * ny;
-        bump(w, -vn);
+        bump(w, -vn, (a.x + b.x) / 2, (a.y + b.y) / 2);
       }
     }
   }

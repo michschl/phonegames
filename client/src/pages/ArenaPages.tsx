@@ -3,7 +3,7 @@ import { Link, Navigate, useParams } from 'react-router';
 import { balance } from '../../../shared/coins.ts';
 import { arenaKey, ARENA_GAMES, getArenaGame } from '../arena/registry.ts';
 import type { ArenaGame, ArenaResult } from '../arena/types.ts';
-import { hasWebGL } from '../arena/support.ts';
+import { ARENA_SETTINGS, hasWebGL, type ArenaGraphics } from '../arena/support.ts';
 import { tiltAvailable } from '../arena/input.ts';
 import { Mascot } from '../components/Brand.tsx';
 import { FamilyRanking } from '../components/FamilyRanking.tsx';
@@ -57,6 +57,7 @@ export function ArenaHubPage() {
   const rewards = useRewards();
   const [player, setPlayer, players] = usePlayer();
   const wallet = useWallet(player);
+  const [look, setLook] = useGameSettings<{ grafik: ArenaGraphics }>(ARENA_SETTINGS, { grafik: 'auto' });
   if (!rewards.arena) return <Navigate to="/allein" replace />;
   return (
     <Page title="Arena" subtitle="3D-Spiele ab 13 – mit Familien-Rangliste.">
@@ -85,6 +86,25 @@ export function ArenaHubPage() {
             <ArenaTile key={game.id} game={game} index={i} best={wallet.best[arenaKey(game, 0)]} />
           ))}
         </div>
+      </Section>
+      <Section title="Grafik">
+        <Segmented
+          label="Grafik"
+          value={look.grafik}
+          options={[
+            { value: 'auto', label: 'Automatisch' },
+            { value: 'schoen', label: 'Schön' },
+            { value: 'schnell', label: 'Schnell' },
+          ]}
+          onChange={(grafik) => setLook({ grafik })}
+        />
+        <p className="settings-panel__hint arena-mode-hint">
+          {look.grafik === 'auto'
+            ? 'Leuchten, Spiegelungen und Partikel – läuft es nicht flüssig, schaltet das Spiel sie von selbst ab.'
+            : look.grafik === 'schoen'
+              ? 'Immer mit allen Effekten, auch wenn es einmal ruckelt.'
+              : 'Ohne Leuchteffekte: schont den Akku und läuft auch auf älteren Handys flüssig.'}
+        </p>
       </Section>
       {!hasWebGL() && <p className="notice notice--warn">Dieses Gerät kann leider keine 3D-Grafik anzeigen.</p>}
     </Page>
