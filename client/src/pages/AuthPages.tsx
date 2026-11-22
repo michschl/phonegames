@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate, useSearchParams } from 'react-router';
 import { Mascot, type Mood } from '../components/Brand.tsx';
 import { TrustNote } from '../components/TrustNote.tsx';
 import { LegalLinks, LegalSheet, type LegalDoc } from '../legal/LegalPages.tsx';
+import { legalReady } from '../legal/operator.ts';
 import { TERMS_VERSION } from '../../../shared/legal.ts';
 import { Button, TextField } from '../components/ui.tsx';
 import { GAMES } from '../games/registry.ts';
@@ -225,6 +226,8 @@ export function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [termsChecked, setTermsChecked] = useState(false);
+  // No consent to the terms while the operator details are still placeholders (legal/operator.ts).
+  const consentNeeded = legalReady();
   const [error, setError] = useState<string | null>(null);
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -242,7 +245,7 @@ export function RegisterPage() {
       email: emailProblem(email),
       password:
         password.length < LIMITS.passwordMin ? `Dein Passwort braucht mindestens ${LIMITS.passwordMin} Zeichen.` : undefined,
-      terms: termsChecked ? undefined : TERMS_MISSING,
+      terms: termsChecked || !consentNeeded ? undefined : TERMS_MISSING,
     };
     setFieldErrors(problems);
     if (Object.values(problems).some(Boolean)) {
@@ -253,7 +256,7 @@ export function RegisterPage() {
     setLoading(true);
     try {
       const user = await register({
-        termsVersion: TERMS_VERSION,
+        ...(consentNeeded ? { termsVersion: TERMS_VERSION } : {}),
         name: name.trim(),
         email: email.trim(),
         password,
@@ -366,14 +369,16 @@ export function RegisterPage() {
           hint={`Mindestens ${LIMITS.passwordMin} Zeichen`}
           required
         />
-        <TermsConsent
-          checked={termsChecked}
-          onChange={(checked) => {
-            setTermsChecked(checked);
-            clearFieldError('terms');
-          }}
-          error={fieldErrors.terms}
-        />
+        {consentNeeded && (
+          <TermsConsent
+            checked={termsChecked}
+            onChange={(checked) => {
+              setTermsChecked(checked);
+              clearFieldError('terms');
+            }}
+            error={fieldErrors.terms}
+          />
+        )}
         {error && <p className="notice notice--error">{error}</p>}
         <Button type="submit" size="lg" block loading={loading}>
           {billing && !inviteCode.trim() ? 'Weiter zum Abo' : 'Los geht’s'}

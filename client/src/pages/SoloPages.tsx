@@ -28,7 +28,10 @@ export const SOLO = '/allein';
 export function PlayAreaSwitch({ area }: { area: 'zusammen' | 'allein' }) {
   const navigate = useNavigate();
   const setPlayArea = useSettings((s) => s.setPlayArea);
-  useEffect(() => setPlayArea(area), [area, setPlayArea]);
+  // Only a change is stored – writing the same value would rewrite all settings on every visit.
+  useEffect(() => {
+    if (useSettings.getState().playArea !== area) setPlayArea(area);
+  }, [area, setPlayArea]);
   return (
     <div className="learn-area play-area">
       <Segmented

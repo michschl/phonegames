@@ -2,6 +2,7 @@ import type { PublicUser } from '../../../shared/types.ts';
 import { api, ApiError, onSubscriptionRequired } from './api.ts';
 import { handleSessionExpired, syncNow } from './sync.ts';
 import { useAuth } from '../store/auth.ts';
+import { legalReady } from '../legal/operator.ts';
 import { useData } from '../store/data.ts';
 import { clearDocuments } from '../store/documents.ts';
 import { useLearnDraft } from '../store/learnDraft.ts';
@@ -69,8 +70,8 @@ function keepUser(user: PublicUser): void {
 }
 
 /** Has the person agreed to the current terms? Accounts stored by older versions: yes until the server says. */
-export function needsTerms(user: PublicUser | null): boolean {
-  return !!user && user.termsAccepted === false;
+export function needsTerms(user: PublicUser | null, ready = legalReady()): boolean {
+  return ready && !!user && user.termsAccepted === false;
 }
 
 /** May the person use the app? Accounts stored by older versions know nothing of the subscription. */

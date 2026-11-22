@@ -45,7 +45,9 @@ export const TASKS = '/lernen/aufgaben';
 export function LearnAreaSwitch({ area }: { area: 'karten' | 'aufgaben' }) {
   const navigate = useNavigate();
   const setLearnArea = useSettings((s) => s.setLearnArea);
-  useEffect(() => setLearnArea(area), [area, setLearnArea]);
+  useEffect(() => {
+    if (useSettings.getState().learnArea !== area) setLearnArea(area);
+  }, [area, setLearnArea]);
   return (
     <div className="learn-area">
       <Segmented

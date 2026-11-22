@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { expectAccessible, register } from './helpers.ts';
+import { acceptTerms, expectAccessible, register } from './helpers.ts';
 
 /** Fills the registration form without an invitation code – the account needs the subscription. */
 async function registerPaid(page: Page, name: string): Promise<string> {
@@ -9,7 +9,7 @@ async function registerPaid(page: Page, name: string): Promise<string> {
   await page.getByLabel('Dein Name').fill(name);
   await page.getByLabel('E-Mail').fill(email);
   await page.getByLabel('Passwort', { exact: true }).fill('passwort123');
-  await page.getByRole('checkbox', { name: /Ich akzeptiere die Nutzungsbedingungen/ }).check();
+  await acceptTerms(page);
   await page.getByRole('button', { name: 'Weiter zum Abo' }).click();
   await expect(page).toHaveURL('/abo');
   return email;

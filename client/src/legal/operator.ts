@@ -20,3 +20,12 @@ export const OPERATOR = {
 export function isPlaceholder(value: string): boolean {
   return value.startsWith('[') && value.endsWith(']');
 }
+
+/**
+ * Are the details of the operator filled in? Until they are, nobody is asked to agree to the terms –
+ * neither when registering nor afterwards (a consent to placeholder texts would mean little). As soon as
+ * they are filled in, new accounts tick the box and existing ones agree once (see needsTerms).
+ */
+export function legalReady(): boolean {
+  return ![OPERATOR.name, OPERATOR.street, OPERATOR.city, OPERATOR.email].some(isPlaceholder);
+}

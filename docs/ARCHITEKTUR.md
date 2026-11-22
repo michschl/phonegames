@@ -136,8 +136,10 @@ Registrierung, Abo, Konto und geteilten Stapeln. Die Betreiberangaben stehen an 
 `client/src/legal/operator.ts`. Bei der Registrierung stimmt man per Checkbox zu; der Server speichert Version
 (`TERMS_VERSION` in `shared/legal.ts`) und Zeitpunkt. Konten ohne Zustimmung zur aktuellen Version – ältere Konten
 oder nach einer Änderung der Texte – sehen vor allem anderen die Seite «Kurz zustimmen» (`/bedingungen`). Wer die
-Texte ändert, setzt `TERMS_VERSION` und `TERMS_DATE` auf das neue Datum. Mit einem Infomaniak-VPS liegen
-die Daten in der Schweiz.
+Texte ändert, setzt `TERMS_VERSION` und `TERMS_DATE` auf das neue Datum. Solange in `operator.ts` noch Platzhalter
+(`[…]`) stehen, ist die Zustimmung ausgeschaltet (`legalReady()`): keine Checkbox bei der Registrierung, keine Seite
+«Kurz zustimmen»; die Platzhalter sind auf den Seiten markiert. Mit den echten Angaben wird sie ohne weitere Änderung
+aktiv. Mit einem Infomaniak-VPS liegen die Daten in der Schweiz.
 
 ## Datenmodell (SQLite)
 
