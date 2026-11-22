@@ -242,3 +242,35 @@
   color: rgba(29, 27, 38, 0.75);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
 }
+
+/* Thumb sticks (Drohnen-Parcours) */
+.arena-stick {
+  --dx: 0px;
+  --dy: 0px;
+  position: absolute;
+  display: none;
+  width: 120px;
+  height: 120px;
+  margin: -60px 0 0 -60px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.12);
+  pointer-events: none;
+}
+
+.arena-stick::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 48px;
+  height: 48px;
+  margin: -24px 0 0 -24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.75);
+  transform: translate(var(--dx), var(--dy));
+}
+
+.arena-mode-hint {
+  margin: 8px 2px 0;
+}

@@ -133,10 +133,11 @@ export function ArenaGamePage() {
   const unlock = useData((s) => s.unlock);
   const recordBest = useData((s) => s.recordBest);
   const id = game?.id ?? 'none';
-  const [choice, setChoice] = useGameSettings<{ skin: string; option: number; tilt: boolean }>(`arena-${id}-${player.toLowerCase()}`, {
+  const [choice, setChoice] = useGameSettings<{ skin: string; option: number; tilt: boolean; mode: number }>(`arena-${id}-${player.toLowerCase()}`, {
     skin: '',
     option: 0,
     tilt: false,
+    mode: 0,
   });
   const [phase, setPhase] = useState<'start' | 'play' | 'result'>('start');
   const [round, setRound] = useState(0);
@@ -198,7 +199,16 @@ export function ArenaGamePage() {
     const Play = game.Play;
     return (
       <Suspense fallback={<div className="arena-loading" aria-busy="true" />}>
-        <Play key={round} player={player} skin={skin.id} option={option} tilt={choice.tilt && game.tilt} onFinish={finish} onQuit={quit} />
+        <Play
+          key={round}
+          player={player}
+          skin={skin.id}
+          option={option}
+          tilt={choice.tilt && game.tilt}
+          mode={Math.min(choice.mode, (game.modes?.values.length ?? 1) - 1)}
+          onFinish={finish}
+          onQuit={quit}
+        />
       </Suspense>
     );
   }
@@ -285,6 +295,18 @@ export function ArenaGamePage() {
             options={game.options.values.map((label, i) => ({ value: String(i), label }))}
             onChange={(value) => setChoice({ ...choice, option: Number(value) })}
           />
+        </Section>
+      )}
+
+      {game.modes && (
+        <Section title={game.modes.label}>
+          <Segmented
+            label={game.modes.label}
+            value={String(Math.min(choice.mode, game.modes.values.length - 1))}
+            options={game.modes.values.map((label, i) => ({ value: String(i), label }))}
+            onChange={(value) => setChoice({ ...choice, mode: Number(value) })}
+          />
+          {game.modes.hints?.[choice.mode] && <p className="settings-panel__hint arena-mode-hint">{game.modes.hints[choice.mode]}</p>}
         </Section>
       )}
 
