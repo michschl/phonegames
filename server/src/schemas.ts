@@ -182,6 +182,7 @@ export const syncSchema = z.object({
         history: z.array(z.object({ id: z.string().max(64), at: z.number(), amount: z.number(), reason: z.string().max(200) })).max(LIMITS.walletHistory * 2),
         unlocks: z.array(z.string().max(40)).max(LIMITS.walletUnlocks * 2),
         best: z.record(z.string().max(40), z.number()),
+        tally: z.record(z.string().max(40), z.record(z.string().max(64), z.number())).optional(),
         updatedAt: timestamp,
         deleted: z.boolean(),
       }),

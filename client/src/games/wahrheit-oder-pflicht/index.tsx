@@ -16,6 +16,7 @@ export const wahrheitOderPflicht: GameDefinition<PackSettings> = {
   age: 'ab 8 J.',
   tags: ['Gespräch', 'Party', 'Mutprobe'],
   status: 'available',
+  scored: 'points',
   rules: [
     'Das Roulette wählt eine Person aus.',
     'Sie entscheidet: Wahrheit (ehrlich antworten) oder Pflicht (Aufgabe erledigen) – oder lässt den Zufall entscheiden.',

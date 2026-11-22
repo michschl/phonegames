@@ -10,6 +10,7 @@ import { formatValue } from '../schaetzmeister/logic.ts';
 import { FACT_SETS } from './facts.ts';
 import { duelKey, pickDuel, type Duel, type MehrSettings } from './logic.ts';
 import './mehr-oder-weniger.css';
+import { useReportScores } from '../shared/results.ts';
 
 /** Short suspense between locking in an answer and uncovering the numbers. */
 const REVEAL_MS = 900;
@@ -35,6 +36,7 @@ export default function MehrOderWenigerGame({ players, settings, onExit }: GameP
   const totalTurns = settings.rounds * players.length;
   const player = players[turn % players.length]!;
   const ranking = <ScoreList entries={playerScores(players, scores)} />;
+  useReportScores(scores);
   const correct = revealed && choice === duel.winner;
 
   useEffect(() => () => window.clearTimeout(revealTimer.current), []);

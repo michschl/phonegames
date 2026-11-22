@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type { GameProps } from '../types.ts';
 import { Avatar, Button } from '../../components/ui.tsx';
 import { sound } from '../../lib/audio.ts';
@@ -13,6 +13,9 @@ import { PlayerPicker } from '../shared/players.tsx';
 import { TimerRing, useCountdown } from '../shared/Timer.tsx';
 import { assignRoles, resolveNight, ROLES, winner, type DorfSettings, type Role } from './logic.ts';
 import './dorf.css';
+import { nextGame, useReportScores } from '../shared/results.ts';
+
+const NO_POINTS: Record<string, number> = {};
 
 type Phase = 'roles' | 'dusk' | 'night' | 'day' | 'vote' | 'end';
 type NightUi = { kind: 'narrate' } | { kind: 'pick'; role: 'beschuetzer' | 'werwolf' | 'seherin' } | { kind: 'seen'; target: string };
@@ -84,6 +87,9 @@ export default function DorfGame({ players, settings, onExit }: GameProps<DorfSe
   const cancelled = useRef(false);
   const stopAmbience = useRef<(() => void) | null>(null);
   rolesRef.current = roles;
+  // Who won: everybody on the side that won (the village or the werewolves).
+  const dorfWinners = useMemo(() => (result ? players.filter((p) => ROLES[roles[p.id]!].team === result).map((p) => p.id) : null), [result, roles, players]);
+  useReportScores(NO_POINTS, dorfWinners);
   aliveRef.current = alive;
 
   const timer = useCountdown(settings.discussionMinutes * 60, { beepFrom: 10 });
@@ -295,6 +301,7 @@ export default function DorfGame({ players, settings, onExit }: GameProps<DorfSe
   };
 
   const newGame = () => {
+    nextGame();
     const next = assignRoles(players, settings);
     setRoles(next);
     rolesRef.current = next;

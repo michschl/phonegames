@@ -42,6 +42,7 @@ export const summRaten: GameDefinition<SummRatenSettings> = {
   age: 'ab 8 J.',
   tags: ['Teams', 'Musik', 'Laut'],
   status: 'available',
+  scored: 'points',
   rules: [
     'Zwei Teams spielen abwechselnd. Eine Person summt, ihr Team rät den Titel.',
     'Kein Text, kein Pfeifen von Liedtext – nur summen oder «dadada».',

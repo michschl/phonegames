@@ -11,6 +11,7 @@ import { PassTurns } from '../shared/PassTurns.tsx';
 import { playerScores, ScoreList } from '../shared/players.tsx';
 import { CATEGORY_OPTIONS, formatValue, scoreGuesses, type SchaetzSettings } from './logic.ts';
 import { QUESTIONS, type EstimateQuestion } from './questions.ts';
+import { useReportScores } from '../shared/results.ts';
 
 type Phase = 'question' | 'guess' | 'reveal' | 'end';
 
@@ -35,6 +36,7 @@ export default function SchaetzmeisterGame({ players, settings, onExit }: GamePr
   const payoffTimer = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(payoffTimer.current), []);
   const ranking = <ScoreList entries={playerScores(players, scores)} />;
+  useReportScores(scores);
 
   const results = useMemo(() => scoreGuesses(question.answer, guesses), [question, guesses]);
   const category = CATEGORY_OPTIONS.find((c) => c.id === question.category);

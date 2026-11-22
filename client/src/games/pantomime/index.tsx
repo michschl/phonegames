@@ -36,6 +36,7 @@ export const pantomime: GameDefinition<PantomimeSettings> = {
   age: 'ab 6 J.',
   tags: ['Teams', 'Bewegung', 'Raten'],
   status: 'available',
+  scored: 'points',
   rules: [
     'Die App teilt euch in zwei Teams ein.',
     'Abwechselnd stellt eine Person ihres Teams Begriffe dar – ohne Worte und ohne Geräusche.',

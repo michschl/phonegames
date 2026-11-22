@@ -11,6 +11,7 @@ import { PlayerPicker, playerScores, ScoreList } from '../shared/players.tsx';
 import { TimerRing, useCountdown, useHeartbeat, useSuspense } from '../shared/Timer.tsx';
 import { LOCATIONS } from './locations.ts';
 import { scoreRound, setupRound, type SpionOutcome, type SpionRound, type SpionSettings } from './logic.ts';
+import { useReportScores } from '../shared/results.ts';
 
 type Phase = 'reveal' | 'play' | 'vote' | 'guess' | 'result';
 
@@ -49,6 +50,7 @@ export default function SpionGame({ players, settings, onExit }: GameProps<Spion
   const nameOf = (id: string | null) => players.find((p) => p.id === id)?.name ?? '';
   const spies = players.filter((p) => round.spyIds.includes(p.id));
   const ranking = <ScoreList entries={playerScores(players, scores)} />;
+  useReportScores(scores);
 
   const finish = (result: SpionOutcome) => {
     timer.pause();

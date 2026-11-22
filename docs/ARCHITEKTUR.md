@@ -418,3 +418,10 @@ schlecht in Karten fassen lässt.
   (`CoinWallet.best`), die Rangliste zeigt für einen Schlüssel (z. B. `memo:2`, `piste:1`, `kugel:level`) alle
   Personen des Kontos, Gleichstände teilen den Platz. Sie steht auf Start- und Ergebnisseite aller Einzelspiele
   («Allein» pro Altersstufe, «Arena» pro Piste bzw. Stil; Kugelbahn: Level geschafft).
+- **Gemeinschaftsspiele** mit Wertung (`scored` in der Spieldefinition) melden ihre Punkte pro Person mit
+  `useReportScores` (`games/shared/results.ts`); in Teamspielen bekommt die Person die Punkte, die ihr Team holte,
+  während sie erklärte oder darstellte, den Sieg das ganze Siegerteam; «Nachts im Dorf» zählt nur Siege. Beim
+  Verlassen des Spiels (oder «Neues Spiel») kommen Punkte, Sieg und Partie in die Brieftasche jeder Person
+  (`CoinWallet.tally`, wie die Münzen pro Gerät gezählt, `recordGame`). Der Startbildschirm zeigt die Rangliste:
+  Punkte, Siege und Partien aller Personen des Kontos (`familyTotals`). Bombe, «Wer würde eher …?», «Ich hab noch
+  nie …» und die Werkzeuge zählen nicht – dort gibt es keine Leistung zu werten.

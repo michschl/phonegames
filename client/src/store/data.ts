@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { mergeRecords, pruneTombstones } from '../../../shared/sync.ts';
-import { balance, bookCoins, DEFAULT_REWARDS, earnedSince, emptyWallet, mergeWallet } from '../../../shared/coins.ts';
+import { addTally, balance, bookCoins, DEFAULT_REWARDS, earnedSince, emptyWallet, mergeWallet } from '../../../shared/coins.ts';
 import {
   LIMITS,
   type CoinWallet,
@@ -111,6 +111,8 @@ interface DataState {
   /** Keeps a score when it is a new record; true when it is. */
   recordBest(learner: string, key: string, score: number): boolean;
   saveRewards(patch: Partial<Omit<RewardSettings, 'updatedAt'>>): void;
+  /** A game played together has ended: points, a win and a game more for everybody who took part. */
+  recordGame(gameId: string, results: { name: string; points: number; won: boolean }[]): void;
   applyRemote(payload: SyncPayload, sentRevision: number): void;
   resetFor(ownerId: string | null): void;
 }
@@ -456,6 +458,21 @@ export const useData = create<DataState>()(
         const next = { ...wallet, best: { ...wallet.best, [key]: rounded }, updatedAt: stamp() };
         set((s) => ({ wallets: { ...s.wallets, [id]: next }, revision: s.revision + 1 }));
         return true;
+      },
+
+      recordGame(gameId, results) {
+        const now = stamp();
+        set((s) => {
+          const wallets = { ...s.wallets };
+          for (const { name, points, won } of results) {
+            const learner = name.trim();
+            if (!learner) continue;
+            const id = learnerId(learner);
+            const wallet = wallets[id] ?? emptyWallet(id, learner, now);
+            wallets[id] = addTally(wallet, deviceId(), { [`${gameId}:punkte`]: points, [`${gameId}:siege`]: won ? 1 : 0, [`${gameId}:spiele`]: 1 }, now);
+          }
+          return { wallets, revision: s.revision + 1 };
+        });
       },
 
       saveRewards(patch) {

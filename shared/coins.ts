@@ -41,11 +41,23 @@ function latestHistory(events: CoinEvent[]): CoinEvent[] {
   return [...byId.values()].sort((x, y) => x.at - y.at || x.id.localeCompare(y.id)).slice(-LIMITS.walletHistory);
 }
 
+function mergeTally(a: CoinWallet['tally'], b: CoinWallet['tally']): Record<string, Record<string, number>> {
+  const result: Record<string, Record<string, number>> = { ...(a ?? {}) };
+  for (const [key, counts] of Object.entries(b ?? {})) result[key] = maxPerKey(result[key] ?? {}, counts);
+  return result;
+}
+
+/** A total of the games played together (all devices). */
+export function tallyOf(wallet: Pick<CoinWallet, 'tally'> | undefined, key: string): number {
+  return sum(wallet?.tally?.[key] ?? {});
+}
+
 /** Both states of a wallet together: no coin, purchase or record gets lost. */
 export function mergeWallet(a: CoinWallet | undefined, b: CoinWallet): CoinWallet {
   if (!a) return b;
   const newer = b.updatedAt >= a.updatedAt ? b : a;
   return {
+    tally: mergeTally(a.tally, b.tally),
     id: a.id,
     learner: newer.learner,
     earned: maxPerKey(a.earned, b.earned),
@@ -85,6 +97,12 @@ export function cleanWallet(raw: CoinWallet): CoinWallet {
     ),
     unlocks: Array.isArray(raw.unlocks) ? [...new Set(raw.unlocks.filter((u) => typeof u === 'string').map((u) => u.slice(0, 40)))].slice(0, LIMITS.walletUnlocks) : [],
     best: counts(raw.best, LIMITS.walletBest),
+    tally: Object.fromEntries(
+      Object.entries(raw.tally && typeof raw.tally === 'object' ? raw.tally : {})
+        .filter(([key]) => typeof key === 'string' && key.length <= 40)
+        .slice(0, LIMITS.walletTally)
+        .map(([key, value]) => [key, counts(value, LIMITS.walletDevices)]),
+    ),
     updatedAt: time(raw.updatedAt),
     deleted: raw.deleted === true,
   };
@@ -109,7 +127,7 @@ export function cleanRewards(raw: RewardSettings): RewardSettings {
 
 /** A new, empty wallet. */
 export function emptyWallet(id: string, learner: string, now: number): CoinWallet {
-  return { id, learner, earned: {}, spent: {}, history: [], unlocks: [], best: {}, updatedAt: now, deleted: false };
+  return { id, learner, earned: {}, spent: {}, history: [], unlocks: [], best: {}, tally: {}, updatedAt: now, deleted: false };
 }
 
 /** Adds coins (positive) or takes them (negative) on this device, with an entry in the history. */
@@ -117,4 +135,15 @@ export function bookCoins(wallet: CoinWallet, device: string, event: CoinEvent):
   const earned = event.amount > 0 ? { ...wallet.earned, [device]: (wallet.earned[device] ?? 0) + event.amount } : wallet.earned;
   const spent = event.amount < 0 ? { ...wallet.spent, [device]: (wallet.spent[device] ?? 0) - event.amount } : wallet.spent;
   return { ...wallet, earned, spent, history: latestHistory([...wallet.history, event]), updatedAt: Math.max(wallet.updatedAt + 1, event.at), deleted: false };
+}
+
+/** Adds to totals of the games played together, counted on this device. */
+export function addTally(wallet: CoinWallet, device: string, add: Record<string, number>, now: number): CoinWallet {
+  const tally = { ...(wallet.tally ?? {}) };
+  for (const [key, value] of Object.entries(add)) {
+    if (value <= 0) continue;
+    if (!tally[key] && Object.keys(tally).length >= LIMITS.walletTally) continue;
+    tally[key] = { ...(tally[key] ?? {}), [device]: (tally[key]?.[device] ?? 0) + Math.round(value) };
+  }
+  return { ...wallet, tally, updatedAt: Math.max(wallet.updatedAt + 1, now), deleted: false };
 }

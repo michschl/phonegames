@@ -25,6 +25,7 @@ export const verboteneWoerter: GameDefinition<TurnSettings> = {
   age: 'ab 10 J.',
   tags: ['Teams', 'Wörter', 'Raten'],
   status: 'available',
+  scored: 'points',
   rules: [
     'Zwei Teams spielen abwechselnd. Eine Person erklärt, ihr Team rät.',
     'Der Begriff und die fünf roten Wörter sind verboten – auch Teile davon und Übersetzungen.',

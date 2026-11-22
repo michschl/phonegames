@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import { buildApp } from '../src/app.ts';
 import { openDatabase } from '../src/db.ts';
-import { balance, cleanWallet, earnedSince, mergeWallet } from '../../shared/coins.ts';
+import { addTally, balance, cleanWallet, earnedSince, mergeWallet, tallyOf } from '../../shared/coins.ts';
 import type { CoinWallet, RewardSettings, SyncResponse } from '../../shared/types.ts';
 
 const HEADERS = { 'x-requested-with': 'phonegames' };
@@ -74,6 +74,16 @@ describe('coins of «Belohnungen»', () => {
     expect(merged.history.map((e) => e.id)).toEqual(['a', 'b']);
     // Merging again changes nothing.
     expect(mergeWallet(merged, phone)).toEqual(merged);
+  });
+
+  it('adds the games played together per device, so two phones never lose a game', () => {
+    const phone = addTally(wallet(), 'phone', { 'spion:punkte': 4, 'spion:spiele': 1 }, T);
+    const tablet = addTally(addTally(wallet(), 'tablet', { 'spion:punkte': 2, 'spion:spiele': 1, 'spion:siege': 1 }, T), 'tablet', { 'spion:spiele': 1 }, T + 1);
+    const merged = mergeWallet(phone, tablet);
+    expect([tallyOf(merged, 'spion:punkte'), tallyOf(merged, 'spion:spiele'), tallyOf(merged, 'spion:siege')]).toEqual([6, 3, 1]);
+    // Old wallets without totals still merge.
+    expect(tallyOf(mergeWallet(wallet(), phone), 'spion:punkte')).toBe(4);
+    expect(cleanWallet({ ...phone, tally: { 'x:punkte': { a: -2 } } }).tally).toEqual({ 'x:punkte': { a: 0 } });
   });
 
   it('cleans what a device sends and counts only coins from learning towards the daily limit', () => {

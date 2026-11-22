@@ -37,6 +37,7 @@ export const hutspiel: GameDefinition<HutSettings> = {
   age: 'ab 10 J.',
   tags: ['Teams', 'Raten', 'Party'],
   status: 'available',
+  scored: 'points',
   rules: [
     'Alle tippen geheim ein paar Begriffe ein – Personen, Dinge, Orte, Insider.',
     'Runde 1: frei erklären. Runde 2: nur ein Wort. Runde 3: Pantomime. Immer mit denselben Begriffen.',

@@ -12,6 +12,7 @@ import { fillPerson, playerScores, ScoreList } from '../shared/players.tsx';
 import { pickStarter } from '../bombe/logic.ts';
 import { CARDS, type DareCard } from './cards.ts';
 import './wahrheit-oder-pflicht.css';
+import { useReportScores } from '../shared/results.ts';
 
 type Phase = 'pick' | 'choose' | 'card';
 type Kind = DareCard['type'];
@@ -27,6 +28,7 @@ export default function WahrheitOderPflichtGame({ players, settings, onExit }: G
   const [chickens, setChickens] = useState<Record<string, number>>({});
   const player = players[starter]!;
   const ranking = <ScoreList entries={playerScores(players, scores)} />;
+  useReportScores(scores);
 
   const take = (kind: Kind) => {
     sound.flip();

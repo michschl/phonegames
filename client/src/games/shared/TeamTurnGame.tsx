@@ -8,6 +8,7 @@ import { Actions, GameShell, Headline, Stage } from './GameShell.tsx';
 import { PassPrompt } from './PassTurns.tsx';
 import { makeTeams, ScoreList, TeamCards, teamScores, type Team } from './players.tsx';
 import { CountdownOverlay, TimerRing, useCountdown, useStartCountdown, useSuspense, useTurnTally } from './Timer.tsx';
+import { nextGame, useReportScores } from './results.ts';
 
 export interface TurnCard {
   id: string;
@@ -67,6 +68,8 @@ export function TeamTurnGame<C extends TurnCard>({
   const [teamIndex, setTeamIndex] = useState(0);
   const [performerByTeam, setPerformerByTeam] = useState<Record<string, number>>({});
   const [scores, setScores] = useState<Record<string, number>>({});
+  // Points per person: what the team got while this person explained or acted.
+  const [personal, setPersonal] = useState<Record<string, number>>({});
   const [round, setRound] = useState(1);
   const [card, setCard] = useState<C | null>(null);
   const [log, setLog] = useState<LogEntry<C>[]>([]);
@@ -125,6 +128,7 @@ export function TeamTurnGame<C extends TurnCard>({
 
     const apply = () => {
       setScores(newScores);
+      setPersonal((p) => ({ ...p, [performer.id]: (p[performer.id] ?? 0) + turnPoints(log) }));
       setPerformerByTeam((p) => ({ ...p, [team.id]: (p[team.id] ?? 0) + 1 }));
       setLog([]);
       setCard(null);
@@ -163,8 +167,10 @@ export function TeamTurnGame<C extends TurnCard>({
 
   const restart = () => {
     sound.swirl();
+    nextGame();
     setTeams(makeTeams(players));
     setScores({});
+    setPersonal({});
     setPerformerByTeam({});
     setTeamIndex(0);
     setRound(1);
@@ -173,6 +179,9 @@ export function TeamTurnGame<C extends TurnCard>({
 
   const ranking = useMemo(() => <ScoreList entries={teamScores(teams, scores)} />, [teams, scores]);
   const winner = teams.reduce((a, b) => ((scores[a.id] ?? 0) >= (scores[b.id] ?? 0) ? a : b));
+  // A win counts once the game is decided – the whole winning team gets it.
+  const winners = useMemo(() => (phase === 'winner' ? winner.players.map((p) => p.id) : []), [phase, winner]);
+  useReportScores(personal, winners);
 
   return (
     <GameShell

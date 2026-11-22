@@ -254,6 +254,11 @@ export interface CoinWallet {
   unlocks: string[];
   /** Best score per game and age level, e.g. «memo:2» → 840. */
   best: Record<string, number>;
+  /**
+   * Totals of the games played together, e.g. «spion:punkte», «spion:siege», «spion:spiele» – counted per
+   * device (key → device → count) like the coins. Older wallets have none.
+   */
+  tally?: Record<string, Record<string, number>>;
   updatedAt: number;
   deleted: boolean;
 }
@@ -475,10 +480,11 @@ export const LIMITS = {
   topicNotes: 2000,
   tasksPerDocument: 40,
   attemptsPerDocument: 20,
-  wallets: 50,
+  wallets: 100,
   walletHistory: 40,
   walletDevices: 30,
   walletUnlocks: 40,
   walletBest: 60,
+  walletTally: 80,
   coinReason: 80,
 } as const;
