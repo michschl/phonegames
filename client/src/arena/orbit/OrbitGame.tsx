@@ -4,7 +4,7 @@ import { sound } from '../../lib/audio.ts';
 import { haptic } from '../../lib/device.ts';
 import { GameShell } from '../../games/shared/GameShell.tsx';
 import { useArenaScene } from '../engine.ts';
-import { Confetti, glow, GLSL_NOISE, hdr, Nebula, Particles, Shake, Trail } from '../fx.ts';
+import { Confetti, glow, GLSL_NOISE, hdr, Nebula, Particles, Shake, softDot, Trail } from '../fx.ts';
 import { FLIGHT_SECONDS, H, MAX_SPEED, orbitLevel, orbitScore, orbitStars, simulate, step, STEP_SECONDS, W, type Probe } from '../orbit.ts';
 import { ARENA_GAMES } from '../registry.ts';
 import type { ArenaPlayProps } from '../types.ts';
@@ -310,7 +310,7 @@ export default function OrbitGame({ skin: skinId, option, onFinish, onQuit }: Ar
     const previewGeo = new THREE.BufferGeometry();
     previewGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(400 * 3), 3));
     previewGeo.setDrawRange(0, 0);
-    scene.add(new THREE.Points(previewGeo, new THREE.PointsMaterial({ color: hdr('#ffffff', 1.8), size: 0.22, transparent: true, opacity: 0.95 })));
+    scene.add(new THREE.Points(previewGeo, new THREE.PointsMaterial({ map: softDot(), color: hdr('#ffffff', 2.2), size: 0.42, transparent: true, opacity: 0.95, depthWrite: false })));
     const lastGeo = new THREE.BufferGeometry();
     lastGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(trailMax * 3), 3));
     lastGeo.setDrawRange(0, 0);
@@ -339,7 +339,7 @@ export default function OrbitGame({ skin: skinId, option, onFinish, onQuit }: Ar
     for (let i = 0; i < 70; i++) motes.set([(Math.random() - 0.5) * W * 3.4, 3 + Math.random() * 14, (Math.random() - 0.5) * H * 2.8], i * 3);
     const dustGeo = new THREE.BufferGeometry();
     dustGeo.setAttribute('position', new THREE.BufferAttribute(motes, 3));
-    const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({ color: '#cfd8ff', size: 0.09, transparent: true, opacity: 0.55, depthWrite: false }));
+    const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({ map: softDot(), color: '#cfd8ff', size: 0.18, transparent: true, opacity: 0.55, depthWrite: false }));
     scene.add(dust);
 
     const p: Probe = { x: level.start[0], z: level.start[1], vx: 0, vz: 0 };

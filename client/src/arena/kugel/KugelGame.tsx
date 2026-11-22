@@ -6,7 +6,7 @@ import { haptic } from '../../lib/device.ts';
 import { GameShell } from '../../games/shared/GameShell.tsx';
 import { CountdownOverlay, useStartCountdown } from '../../games/shared/Timer.tsx';
 import { useArenaScene } from '../engine.ts';
-import { Confetti, glow as glowSprite, hdr, Nebula, Particles, Shake, Trail } from '../fx.ts';
+import { Confetti, glow as glowSprite, hdr, Nebula, Particles, Shake, softDot, Trail } from '../fx.ts';
 import { useSteer } from '../input.ts';
 import { kugelLevel, kugelScore, kugelStars } from '../logic.ts';
 import { ARENA_GAMES } from '../registry.ts';
@@ -256,7 +256,7 @@ export default function KugelGame({ skin: skinId, option, tilt, onFinish, onQuit
       starPos[i * 3 + 2] = (Math.random() - 0.5) * 120;
     }
     starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-    scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: hdr('#ffffff', 1.6), size: 0.22, transparent: true, opacity: 0.9 })));
+    scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ map: softDot(), color: hdr('#ffffff', 1.8), size: 0.4, transparent: true, opacity: 0.9, depthWrite: false })));
 
     const marbleMat =
       skin.id === 'galaxie'

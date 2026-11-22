@@ -132,7 +132,7 @@ export class Sky extends THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial> 
             float a = atan(d.x, -d.z);
             float wave = fbm(vec2(a * 1.6 + uTime * 0.04, uTime * 0.03));
             float curtain = smoothstep(0.38, 0.72, fbm(vec2(a * 2.6 - uTime * 0.05, wave * 2.4)));
-            float band = smoothstep(0.04, 0.2, h) * smoothstep(0.78, 0.25, h + wave * 0.25);
+            float band = smoothstep(0.015, 0.09, h) * smoothstep(0.7, 0.16, h + wave * 0.25);
             float rays = 0.55 + 0.45 * sin(a * 46.0 + fbm(vec2(a * 9.0, uTime * 0.25)) * 7.0);
             vec3 hue = mix(vec3(0.1, 1.0, 0.5), vec3(0.6, 0.25, 1.0), smoothstep(0.18, 0.6, h));
             col += hue * curtain * band * rays * uAurora * 1.8;
