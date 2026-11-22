@@ -30,6 +30,7 @@ export const mehrOderWeniger: GameDefinition<MehrSettings> = {
   age: 'ab 8 J.',
   tags: ['Wissen', 'Schnell', 'Familie'],
   status: 'available',
+  scored: 'points',
   rules: [
     'Reihum bekommt jede Person zwei Dinge und eine Frage, z. B. «Welcher Berg ist höher?».',
     'Tippe auf deine Antwort – danach werden die Zahlen aufgedeckt.',

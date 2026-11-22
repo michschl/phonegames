@@ -10,7 +10,7 @@ export const ARENA_GAMES: ArenaGame[] = [
     id: 'piste',
     name: 'Pistenjagd',
     tagline: 'Slalom, Sprünge, Tiefschnee',
-    description: 'Abfahrt durch eine immer neue Berglandschaft: Fahr durch die Tore, spring über die Schanzen und weiche Tannen und Felsen aus. Ein Geist zeigt deine Bestfahrt.',
+    description: 'Abfahrt durch die Berge: Fahr durch die Tore, spring über die Schanzen und weiche Tannen und Felsen aus. Jede Piste hat ihre feste Strecke, ein Geist zeigt deine Bestfahrt.',
     emoji: '🎿',
     colors: ['#3a86ff', '#9fe3ff'],
     skills: ['Reaktion', 'Linienwahl'],
@@ -57,6 +57,7 @@ export const ARENA_GAMES: ArenaGame[] = [
       { id: 'galaxie', name: 'Galaxie', color: '#5b2bd6', accent: '#ff7ad9', price: 100 },
     ],
     unit: 'Level',
+    levels: 30,
     Play: lazy(() => import('./kugel/KugelGame.tsx')),
   },
   {
@@ -111,17 +112,127 @@ export const ARENA_GAMES: ArenaGame[] = [
     unit: 'Punkte',
     Play: lazy(() => import('./raum/RaumGame.tsx')),
   },
+  {
+    id: 'drohne',
+    name: 'Drohnen-Parcours',
+    tagline: 'Durch die Tore – auf Zeit',
+    description: 'Flieg deine Drohne durch die leuchtenden Tore – in der Stadt zwischen den Häusern, im Wald zwischen den Tannen oder in der Halle um die Säulen. Ein Pfeil zeigt zum nächsten Tor, ein Geist fliegt deine Bestzeit.',
+    emoji: '🛸',
+    colors: ['#2ec5ff', '#8b5cf6'],
+    skills: ['Feinmotorik', 'Orientierung'],
+    rules: [
+      'Flieg die Tore der Reihe nach durch – das nächste leuchtet, der Pfeil zeigt hin.',
+      '«Einfach»: Die Drohne fliegt von selbst, du lenkst mit einem Daumen.',
+      '«Profi»: zwei Daumen – links drehen und Höhe, rechts vor, zurück und seitwärts.',
+      'Anstossen bremst dich kurz aus. Die Zeit zählt.',
+    ],
+    duration: '1 Min.',
+    tilt: true,
+    skinLabel: 'Drohne',
+    skins: [
+      { id: 'blau', name: 'Sky', color: '#2ec5ff', accent: '#ffffff', price: 0 },
+      { id: 'racer', name: 'Racer', color: '#ff4f6d', accent: '#ffd23f', price: 25 },
+      { id: 'stealth', name: 'Stealth', color: '#2a2540', accent: '#9be15d', price: 50 },
+      { id: 'gold', name: 'Gold', color: '#ffc107', accent: '#ff4fa3', price: 100 },
+    ],
+    unit: 'Punkte',
+    options: { label: 'Strecke', values: ['Stadt', 'Wald', 'Halle'] },
+    modes: {
+      label: 'Modus',
+      values: ['Einfach', 'Profi'],
+      hints: ['Ein Daumen, die Drohne fliegt von selbst vorwärts.', 'Zwei Daumen wie bei einer echten Drohne.'],
+    },
+    Play: lazy(() => import('./drone/DroneGame.tsx')),
+  },
+  {
+    id: 'golf',
+    name: 'Golfinsel',
+    tagline: 'Minigolf über dem Meer',
+    description: 'Minigolf auf schwebenden Inseln: Banden, Sand, Förderbänder, Windmühlen und Sprungschanzen über die Lücken. Wer über den Rand rollt, landet im Meer.',
+    emoji: '⛳',
+    colors: ['#4cc25a', '#4fb2ff'],
+    skills: ['Kraft dosieren', 'Winkel'],
+    rules: [
+      'Irgendwo auf den Platz tippen, zurückziehen wie eine Steinschleuder und loslassen – je weiter, desto fester.',
+      'Banden prallen ab, Sand bremst, Förderbänder schieben, Windmühlen-Flügel versperren den Weg.',
+      'Über den Rand ins Meer: ein Schlag mehr, zurück an den letzten Ort.',
+      'Neun Löcher – so wenige Schläge wie möglich. Nach acht Schlägen geht es weiter.',
+    ],
+    duration: '3–5 Min.',
+    tilt: false,
+    skinLabel: 'Ball',
+    skins: [
+      { id: 'weiss', name: 'Classic', color: '#f7f7f2', accent: '#ff4f6d', price: 0 },
+      { id: 'neon', name: 'Neon', color: '#b6ff3a', accent: '#2ec5ff', price: 25 },
+      { id: 'pink', name: 'Bubblegum', color: '#ff7ad9', accent: '#ffd23f', price: 50 },
+      { id: 'gold', name: 'Gold', color: '#ffc107', accent: '#8b5cf6', price: 100 },
+    ],
+    unit: 'Punkte',
+    options: { label: 'Platz', values: ['Sonneninsel', 'Vulkaninsel'] },
+    Play: lazy(() => import('./golf/GolfGame.tsx')),
+  },
+  {
+    id: 'orbit',
+    name: 'Orbit',
+    tagline: 'Mit Schwung um die Planeten',
+    description: 'Schick die Sonde auf die Reise: Die Planeten ziehen sie mit ihrer Schwerkraft in weite Bögen. Triff den grünen Ring – ohne Absturz und ohne dich im All zu verlieren. 20 Level.',
+    emoji: '🪐',
+    colors: ['#8b5cf6', '#ff7ad9'],
+    skills: ['Physik-Gespür', 'Knobeln'],
+    rules: [
+      'Irgendwo tippen, zurückziehen und loslassen – Richtung und Kraft wie bei einer Steinschleuder.',
+      'Die Punkte zeigen nur den Anfang der Bahn; den Rest musst du abschätzen.',
+      'Planeten ziehen an, Asteroiden stehen im Weg. Wer abstürzt oder davonfliegt, versucht es nochmals.',
+      'Weniger Versuche geben mehr Punkte. Jedes Level schaltet das nächste frei.',
+    ],
+    duration: 'je Level 1 Min.',
+    tilt: false,
+    skinLabel: 'Sonde',
+    skins: [
+      { id: 'weiss', name: 'Explorer', color: '#e6e6ee', accent: '#2ec5ff', price: 0 },
+      { id: 'rot', name: 'Mars', color: '#ff4f6d', accent: '#ffd23f', price: 25 },
+      { id: 'gruen', name: 'Alien', color: '#9be15d', accent: '#ff7ad9', price: 50 },
+      { id: 'gold', name: 'Gold', color: '#ffc107', accent: '#ffffff', price: 100 },
+    ],
+    unit: 'Level',
+    levels: 20,
+    Play: lazy(() => import('./orbit/OrbitGame.tsx')),
+  },
+  {
+    id: 'kette',
+    name: 'Kettenreaktion',
+    tagline: 'Bauen, loslassen, staunen',
+    description: 'Ein Physik-Rätsel im Guckkasten: Setz Rampen, Federn, Bretter und Dominosteine so, dass die Kugel ins Ziel kommt – manchmal über Schalter, Tore und eine zweite Kugel. 10 Level.',
+    emoji: '🧩',
+    colors: ['#ff8a3d', '#3fc1a5'],
+    skills: ['Ursache und Wirkung', 'Kreativität'],
+    rules: [
+      'Unten ein Teil wählen und auf ein freies Feld tippen. Nochmals tippen dreht die Rampe oder nimmt das Teil weg.',
+      'Federn und Dominosteine brauchen einen Block darunter. Ein Schalter öffnet alle gestreiften Tore.',
+      '«Los» lässt die Kugel fallen. Klappt es nicht, baust du weiter – die Teile bleiben liegen.',
+      'Sterne und übrig gebliebene Teile geben Extrapunkte. Nach zwei Versuchen gibt es Tipps.',
+    ],
+    duration: 'je Level 2 Min.',
+    tilt: false,
+    skinLabel: 'Kugel',
+    skins: [
+      { id: 'rot', name: 'Kirsche', color: '#ff4f6d', accent: '#ffd23f', price: 0 },
+      { id: 'gruen', name: 'Limette', color: '#7ed957', accent: '#ffffff', price: 25 },
+      { id: 'lila', name: 'Murmel', color: '#a46bff', accent: '#ffd23f', price: 50 },
+      { id: 'gold', name: 'Gold', color: '#ffc107', accent: '#ffffff', price: 100 },
+    ],
+    unit: 'Level',
+    levels: 10,
+    Play: lazy(() => import('./kette/ChainGame.tsx')),
+  },
 ];
 
 export function getArenaGame(id: string | undefined): ArenaGame | undefined {
   return ARENA_GAMES.find((game) => game.id === id);
 }
 
-/** Levels of the Kugelbahn. */
-export const KUGEL_LEVELS = 30;
-
-/** Leaderboard key of a game and choice. Kugelbahn: the highest level finished. */
+/** Leaderboard key of a game and choice. Games with levels: the highest level finished. */
 export function arenaKey(game: ArenaGame, option: number): string {
-  if (game.id === 'kugel') return 'kugel:level';
+  if (game.levels) return `${game.id}:level`;
   return game.options ? `${game.id}:${option}` : game.id;
 }

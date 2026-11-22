@@ -41,6 +41,7 @@ export const doppelgaenger: GameDefinition<DoppelSettings> = {
   age: 'ab 8 J.',
   tags: ['Bluff', 'Wörter', 'Party'],
   status: 'available',
+  scored: 'points',
   rules: [
     'Das Handy geht reihum: Alle sehen geheim ihr Wort. Der Doppelgänger hat ein ähnliches Wort – und weiss nicht, dass er der Doppelgänger ist.',
     'Reihum sagt jede Person ein einziges Wort, das zu ihrem Begriff passt.',

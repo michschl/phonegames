@@ -12,6 +12,7 @@ import { TimerRing, useCountdown } from '../shared/Timer.tsx';
 import { DrawingCanvas, type DrawingCanvasHandle } from './DrawingCanvas.tsx';
 import { DRAWING_TERMS, type Term } from './terms.ts';
 import './zeichnen.css';
+import { useReportScores } from '../shared/results.ts';
 
 export interface ZeichnenSettings {
   seconds: number;
@@ -43,6 +44,7 @@ export default function ZeichnenGame({ players, settings, onExit }: GameProps<Ze
 
   const drawer = players[turn % players.length]!;
   const ranking = <ScoreList entries={playerScores(players, scores)} />;
+  useReportScores(scores);
   const nameOf = (id: string | null) => players.find((p) => p.id === id)?.name ?? '';
 
   const finish = (winner: string | null) => {

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useMemo, useState, type FormEvent } from 'react';
 import type { GameProps } from '../types.ts';
 import { Button } from '../../components/ui.tsx';
 import { sound } from '../../lib/audio.ts';
@@ -11,6 +11,7 @@ import { makeTeams, ScoreList, TeamCards, teamScores, type Team } from '../share
 import { CountdownOverlay, TimerRing, useCountdown, useStartCountdown, useSuspense, useTurnTally } from '../shared/Timer.tsx';
 import { DRAWING_TERMS } from '../zeichnen/terms.ts';
 import { collectTerms, HUT_ROUNDS, newPool, skipCard, type HutSettings, type HutTerm } from './logic.ts';
+import { useReportScores } from '../shared/results.ts';
 
 type Phase = 'teams' | 'collect' | 'roundIntro' | 'pass' | 'ready' | 'turn' | 'summary' | 'end';
 const ACCENT = '#ff7ae0';
@@ -75,6 +76,8 @@ export default function HutspielGame({ players, settings, onExit }: GameProps<Hu
   const [teamIndex, setTeamIndex] = useState(0);
   const [performerByTeam, setPerformerByTeam] = useState<Record<string, number>>({});
   const [scores, setScores] = useState<Record<string, number>>({});
+  // Points per person: what the team got while this person explained.
+  const [personal, setPersonal] = useState<Record<string, number>>({});
   const [log, setLog] = useState<{ text: string; correct: boolean }[]>([]);
   const [roundOver, setRoundOver] = useState(false);
   const [flash, setFlash] = useState<{ kind: 'correct' | 'wrong'; key: number } | null>(null);
@@ -83,6 +86,12 @@ export default function HutspielGame({ players, settings, onExit }: GameProps<Hu
   const performer = team.players[(performerByTeam[team.id] ?? 0) % team.players.length]!;
   const current = terms.find((t) => t.id === pool[0]);
   const ranking = <ScoreList entries={teamScores(teams, scores)} />;
+  const winners = useMemo(() => {
+    if (phase !== 'end') return [];
+    const best = Math.max(...teams.map((t) => scores[t.id] ?? 0));
+    return teams.filter((t) => (scores[t.id] ?? 0) === best && best > 0).flatMap((t) => t.players.map((p) => p.id));
+  }, [phase, teams, scores]);
+  useReportScores(personal, winners);
 
   // Soft ticks in the last 10 seconds, beeps in the last 5, buzzer at the end.
   const timer = useCountdown(settings.seconds, { onEnd: () => setPhase('summary'), ticking: 10 });
@@ -127,6 +136,7 @@ export default function HutspielGame({ players, settings, onExit }: GameProps<Hu
 
     const apply = () => {
       setScores(newScores);
+      setPersonal((p) => ({ ...p, [performer.id]: (p[performer.id] ?? 0) + points }));
       setPerformerByTeam((p) => ({ ...p, [team.id]: (p[team.id] ?? 0) + 1 }));
       setTeamIndex((i) => (i + 1) % teams.length);
       timer.reset();

@@ -111,7 +111,8 @@ export default function PisteGame({ player, skin: skinId, option, tilt, onFinish
   const [flash, setFlash] = useState<{ text: string; tone: 'good' | 'bad'; id: number } | null>(null);
   const [finished, setFinished] = useState<string | null>(null);
   const live = useRef({ running: false, done: false });
-  const [seed] = useState(() => Math.floor(Math.random() * 1e9));
+  // The same course for each piste every time – the ghost and the family leaderboard compare like with like.
+  const seed = 2026 + option * 101;
   const countdown = useStartCountdown(() => {
     live.current.running = true;
   });

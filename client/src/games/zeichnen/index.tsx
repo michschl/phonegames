@@ -40,6 +40,7 @@ export const zeichnen: GameDefinition<ZeichnenSettings> = {
   age: 'ab 6 J.',
   tags: ['Kreativ', 'Raten', 'Familie'],
   status: 'available',
+  scored: 'points',
   rules: [
     'Wer zeichnet, sieht geheim einen Begriff und zeichnet ihn auf dem Handy – ohne Buchstaben und Zahlen.',
     'Alle anderen schauen zu und rufen ihre Tipps.',

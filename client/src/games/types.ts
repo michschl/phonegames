@@ -61,6 +61,11 @@ export interface GameDefinition<S extends object = any> {
   /** The game needs no player group (e.g. tools like «Zufallsfinger»). */
   noGroup?: boolean;
   /**
+   * Points per person count for the family leaderboard: `points` (points and wins) or `wins` (only who
+   * won, e.g. «Nachts im Dorf»). The game reports them with useReportScores (shared/results.ts).
+   */
+  scored?: 'points' | 'wins';
+  /**
    * The game has its own pages instead of the setup screen: where it lives with these settings
    * (Lernen: the stack, or «Wer spielt mit?» of a mode). Used after a game, for «Weiterspielen»
    * and when the setup screen is opened anyway.

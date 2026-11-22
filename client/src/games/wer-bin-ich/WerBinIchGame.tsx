@@ -11,6 +11,7 @@ import { playerScores, ScoreList } from '../shared/players.tsx';
 import { CountdownOverlay, useCountdown, useStartCountdown, useTurnTally } from '../shared/Timer.tsx';
 import { DECKS } from './decks.ts';
 import './wer-bin-ich.css';
+import { useReportScores } from '../shared/results.ts';
 
 export interface WerBinIchSettings {
   decks: string[];
@@ -51,6 +52,7 @@ export default function WerBinIchGame({ players, settings, onExit }: GameProps<W
 
   const player = players[turn % players.length]!;
   const ranking = <ScoreList entries={playerScores(players, scores)} />;
+  useReportScores(scores);
 
   const draw = () => {
     const next = drawFresh('wer-bin-ich', pool.length ? pool : [{ id: 'x', word: '?', deck: '' }], (c) => c.id, {

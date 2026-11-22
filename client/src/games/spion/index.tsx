@@ -40,6 +40,7 @@ export const spion: GameDefinition<SpionSettings> = {
   age: 'ab 10 J.',
   tags: ['Bluff', 'Raten', 'Party'],
   status: 'available',
+  scored: 'points',
   rules: [
     'Das Handy geht reihum: Alle sehen geheim denselben Ort und eine Rolle – der Spion sieht nur «Du bist der Spion».',
     'Reihum stellt ihr einander Fragen zum Ort. Antwortet so, dass die anderen merken, dass ihr Bescheid wisst – aber der Spion nichts lernt.',

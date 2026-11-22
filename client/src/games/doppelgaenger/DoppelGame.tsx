@@ -11,6 +11,7 @@ import { PlayerPicker, playerScores, ScoreList } from '../shared/players.tsx';
 import { useHeartbeat, useSuspense } from '../shared/Timer.tsx';
 import { PAIRS } from './pairs.ts';
 import { setupRound, wordFor, type DoppelRound, type DoppelSettings } from './logic.ts';
+import { useReportScores } from '../shared/results.ts';
 
 type Phase = 'reveal' | 'describe' | 'vote' | 'result';
 const ACCENT = '#2de2e6';
@@ -31,6 +32,7 @@ export default function DoppelGame({ players, settings, onExit }: GameProps<Dopp
   const imposters = players.filter((p) => round.imposterIds.includes(p.id));
   const imposterNames = imposters.map((p) => p.name).join(' & ');
   const ranking = <ScoreList entries={playerScores(players, scores)} />;
+  useReportScores(scores);
 
   const accuse = () => {
     if (!suspect || suspense.pending) return;

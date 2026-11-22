@@ -36,6 +36,7 @@ export const schaetzmeister: GameDefinition<SchaetzSettings> = {
   age: 'ab 10 J.',
   tags: ['Wissen', 'Ruhig', 'Familie'],
   status: 'available',
+  scored: 'points',
   rules: [
     'Eine Schätzfrage erscheint. Alle tippen nacheinander geheim ihre Zahl ein.',
     'Dann wird die Antwort spannend aufgelöst.',

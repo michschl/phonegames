@@ -242,3 +242,139 @@
   color: rgba(29, 27, 38, 0.75);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
 }
+
+/* Thumb sticks (Drohnen-Parcours) */
+.arena-stick {
+  --dx: 0px;
+  --dy: 0px;
+  position: absolute;
+  display: none;
+  width: 120px;
+  height: 120px;
+  margin: -60px 0 0 -60px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.12);
+  pointer-events: none;
+}
+
+.arena-stick::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 48px;
+  height: 48px;
+  margin: -24px 0 0 -24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.75);
+  transform: translate(var(--dx), var(--dy));
+}
+
+.arena-mode-hint {
+  margin: 8px 2px 0;
+}
+
+/* Kettenreaktion */
+.kette-stage {
+  background: #2a1d5c;
+}
+
+.kette-grid {
+  position: absolute;
+  display: grid;
+}
+
+.kette-grid.is-off {
+  pointer-events: none;
+}
+
+.kette-cell {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.kette-cell.is-ok {
+  box-shadow: inset 0 0 0 1.5px rgba(90, 70, 160, 0.35);
+}
+
+.kette-cell.is-placed {
+  box-shadow: inset 0 0 0 2px rgba(255, 138, 61, 0.55);
+}
+
+.kette-grid.is-off .kette-cell {
+  box-shadow: none;
+}
+
+.kette-cell:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: -3px;
+}
+
+.kette-hint {
+  bottom: auto;
+  top: 10px;
+  padding: 0 12px;
+}
+
+.kette-star-off {
+  opacity: 0.3;
+}
+
+.kette-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.kette-parts {
+  display: flex;
+  gap: 6px;
+}
+
+.kette-part {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  column-gap: 6px;
+  padding: 6px 10px;
+  border-radius: 14px;
+  border: 2.5px solid var(--ink);
+  background: var(--paper);
+  box-shadow: 0 3px 0 var(--ink);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 13px;
+  line-height: 1.1;
+}
+
+.kette-part__glyph {
+  grid-row: span 2;
+  font-size: 20px;
+}
+
+.kette-part strong {
+  font-size: 15px;
+}
+
+.kette-part.is-on {
+  background: var(--lime);
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+
+.kette-part:disabled {
+  opacity: 0.6;
+}
+
+.kette-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}

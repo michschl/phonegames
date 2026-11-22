@@ -53,6 +53,7 @@ export const werBinIch: GameDefinition<WerBinIchSettings> = {
   age: 'ab 8 J.',
   tags: ['Raten', 'Schnell', 'Bewegung'],
   status: 'available',
+  scored: 'points',
   rules: [
     'Wer dran ist, hält das Handy hochkant an die Stirn – das Display zeigt zu den anderen.',
     'Die anderen erklären den Begriff, ohne ihn zu nennen.',

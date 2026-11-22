@@ -23,6 +23,8 @@ export interface ArenaPlayProps {
   option: number;
   /** Steer by tilting the phone (instead of the finger). */
   tilt: boolean;
+  /** The chosen mode (index of ArenaGame.modes), e.g. «Einfach» or «Profi». */
+  mode: number;
   onFinish(result: ArenaResult): void;
   onQuit(): void;
 }
@@ -56,5 +58,9 @@ export interface ArenaGame {
   unit: string;
   /** A choice before the round (runs, styles); the leaderboard is per choice. Kugelbahn has levels instead. */
   options?: { label: string; values: string[] };
+  /** Levels to play one after the other (Kugelbahn, Orbit): the leaderboard counts the levels finished. */
+  levels?: number;
+  /** A way to play that does not change the leaderboard, e.g. the controls («Einfach», «Profi»). */
+  modes?: { label: string; values: string[]; hints?: string[] };
   Play: LazyExoticComponent<ComponentType<ArenaPlayProps>>;
 }

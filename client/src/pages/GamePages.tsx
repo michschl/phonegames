@@ -15,6 +15,8 @@ import { useData, useGroup, useGroups, useLibraryIds } from '../store/data.ts';
 import { useGameSettings, useSettings } from '../store/settings.ts';
 import { toast } from '../store/ui.ts';
 import { GroupPicker } from './GroupsPage.tsx';
+import { FamilyTotals } from '../components/FamilyRanking.tsx';
+import { endSession, startSession } from '../games/shared/results.ts';
 
 /** Pick the group to preselect: one asked for (?gruppe=…), the last used for this game, else the first one. */
 export function useSelectedGroup(gameId: string) {
@@ -164,6 +166,12 @@ function GameSetup({ game }: { game: GameDefinition }) {
 
       {!game.noGroup && <GroupSection selectedId={selectedId} onSelect={select} />}
 
+      {game.scored && (
+        <Fold title="Rangliste der Familie" icon="trophy" meta="alle Partien">
+          <FamilyTotals gameId={game.id} winsOnly={game.scored === 'wins'} />
+        </Fold>
+      )}
+
       {game.Settings && (
         <Fold
           title="Einstellungen"
@@ -221,6 +229,13 @@ export function GamePlayPage() {
   const players = useMemo(() => group?.players ?? [], [group?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   usePlayScreen();
+
+  // Points per person: the game reports them, leaving the game adds them to the family totals.
+  useEffect(() => {
+    if (!game?.scored) return;
+    startSession(game.id, players);
+    return () => endSession();
+  }, [game?.id, game?.scored, players]);
 
   if (!game?.Play || game.status !== 'available') return <Navigate to="/" replace />;
   // After the game: its setup screen, or its own page (Lernen: «Wer spielt mit?» of the stack).

@@ -57,6 +57,7 @@ export const dorf: GameDefinition<DorfSettings> = {
   age: 'ab 10 J.',
   tags: ['Bluff', 'Grosse Gruppe', 'Party'],
   status: 'available',
+  scored: 'wins',
   rules: [
     'Alle sehen geheim ihre Rolle: Werwolf, Seherin, Beschützer oder Dorfbewohner.',
     'Nachts liegt das Handy in der Mitte. Alle schliessen die Augen; die Erzählstimme weckt nacheinander die Rollen, die aufs Handy tippen.',
