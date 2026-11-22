@@ -2,6 +2,8 @@ import { expect, test } from '@playwright/test';
 import { expectAccessible, register } from './helpers.ts';
 
 test('Arena: 3D-Spiele ab 13, Familien-Rangliste, Kugelbahn-Level und Ausblenden durch Eltern', async ({ page }) => {
+  // Several 3D games one after the other – software rendering in the test browser takes its time.
+  test.setTimeout(180_000);
   await register(page, 'Lea');
   const areas = page.getByRole('radiogroup', { name: 'Spielart' });
   await expect(areas.getByRole('radio')).toHaveText(['Zusammen', 'Allein', 'Arena']);
