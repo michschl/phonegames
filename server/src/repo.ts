@@ -4,6 +4,7 @@ import { randomToken, sha256 } from './security.ts';
 import { TOMBSTONE_TTL_MS, shouldReplace } from '../../shared/sync.ts';
 import { TERMS_VERSION } from '../../shared/legal.ts';
 import type {
+  TaskDocument,
   LearnTopic,
   LearnProgress,
   LearnShareInfo,
@@ -551,6 +552,75 @@ export function countShareSignup(db: Database, id: string): void {
   db.prepare('UPDATE learn_shares SET signups = signups + 1 WHERE id = ?').run(id);
 }
 
+/* ------------------------------------------------------- task documents */
+
+interface DocumentRow {
+  id: string;
+  topic_id: string;
+  kind: string;
+  status: string;
+  data: string;
+  created_at: number;
+  updated_at: number;
+}
+
+type DocumentData = Pick<TaskDocument, 'error' | 'title' | 'intro' | 'durationMin' | 'difficulty' | 'goalIds' | 'tasks' | 'attempts'>;
+
+function toDocument(row: DocumentRow): TaskDocument {
+  return {
+    id: row.id,
+    topicId: row.topic_id,
+    kind: row.kind as TaskDocument['kind'],
+    status: row.status as TaskDocument['status'],
+    ...(JSON.parse(row.data) as DocumentData),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function documentData(doc: TaskDocument): string {
+  const { error, title, intro, durationMin, difficulty, goalIds, tasks, attempts } = doc;
+  return JSON.stringify({ error, title, intro, durationMin, difficulty, goalIds, tasks, attempts } satisfies DocumentData);
+}
+
+/** Stores a document – a new one or a newer state of it. */
+export function saveDocument(db: Database, userId: string, doc: TaskDocument): TaskDocument {
+  db.prepare(
+    `INSERT INTO learn_documents (user_id, id, topic_id, kind, status, data, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT (user_id, id) DO UPDATE SET status = excluded.status, data = excluded.data, updated_at = excluded.updated_at`,
+  ).run(userId, doc.id, doc.topicId, doc.kind, doc.status, documentData(doc), doc.createdAt, doc.updatedAt);
+  return doc;
+}
+
+export function getDocument(db: Database, userId: string, id: string): TaskDocument | null {
+  const row = db.prepare('SELECT * FROM learn_documents WHERE user_id = ? AND id = ?').get(userId, id) as DocumentRow | undefined;
+  return row ? toDocument(row) : null;
+}
+
+/** The documents of a topic, newest first. */
+export function listDocuments(db: Database, userId: string, topicId: string): TaskDocument[] {
+  const rows = db
+    .prepare('SELECT * FROM learn_documents WHERE user_id = ? AND topic_id = ? ORDER BY created_at DESC')
+    .all(userId, topicId) as unknown as DocumentRow[];
+  return rows.map(toDocument);
+}
+
+export function deleteDocument(db: Database, userId: string, id: string): boolean {
+  return Number(db.prepare('DELETE FROM learn_documents WHERE user_id = ? AND id = ?').run(userId, id).changes) > 0;
+}
+
+export function getTaskUsage(db: Database, userId: string, month: string): number {
+  const row = db.prepare('SELECT count FROM task_usage WHERE user_id = ? AND month = ?').get(userId, month) as { count: number } | undefined;
+  return row?.count ?? 0;
+}
+
+export function countTaskUsage(db: Database, userId: string, month: string): void {
+  db.prepare(
+    `INSERT INTO task_usage (user_id, month, count) VALUES (?, ?, 1)
+     ON CONFLICT (user_id, month) DO UPDATE SET count = count + 1`,
+  ).run(userId, month);
+}
+
 /* ------------------------------------------------------------ learn usage */
 
 export function getLearnUsage(db: Database, userId: string, month: string): number {
@@ -675,6 +745,12 @@ export function syncUserData(db: Database, userId: string, incoming: SyncPayload
       };
       upsertProgress.run(userId, entry.id, entry.stackId, JSON.stringify(data), entry.updatedAt, entry.deleted ? 1 : 0);
     }
+
+    // The documents of a topic go a day after the topic (a day leaves time for «Rückgängig» on every device).
+    db.prepare(
+      `DELETE FROM learn_documents WHERE user_id = ? AND topic_id IN
+         (SELECT id FROM learn_topics WHERE user_id = ? AND deleted = 1 AND updated_at < ?)`,
+    ).run(userId, userId, now - 24 * 60 * 60 * 1000);
 
     const cutoff = now - TOMBSTONE_TTL_MS;
     for (const table of ['library', 'player_groups', 'learn_stacks', 'learn_progress', 'learn_topics']) {

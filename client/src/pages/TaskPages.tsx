@@ -1,21 +1,25 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router';
-import type { LearnTopic, LearnUsage } from '../../../shared/types.ts';
+import type { LearnTopic, LearnUsage, TaskDocKind, TaskDocRequest, TaskDocument, TaskUsage } from '../../../shared/types.ts';
+import { DocTaskView } from '../components/DocTaskView.tsx';
 import { Mascot } from '../components/Brand.tsx';
 import { Fold } from '../components/Fold.tsx';
 import { Icon } from '../components/Icon.tsx';
 import { BottomBar, Page, Section } from '../components/Layout.tsx';
 import { PhotoGrid, type Photo } from '../components/PhotoGrid.tsx';
 import { LevelField, TopicEditor } from '../components/TopicEditor.tsx';
-import { ActionSheet, Button, ConfirmSheet, EmptyState, IconButton, Segmented, TextField } from '../components/ui.tsx';
+import { ActionSheet, Button, ConfirmSheet, EmptyState, IconButton, Segmented, Sheet, TextField } from '../components/ui.tsx';
 import { api, ApiError, errorMessage } from '../lib/api.ts';
 import { sound } from '../lib/audio.ts';
 import { haptic } from '../lib/device.ts';
 import { subjectEmoji } from '../lib/learn.ts';
+import { documentMeta, KIND_INFO } from '../lib/taskDocs.ts';
+import type { PdfVariant } from '../lib/taskPdf.ts';
 import { daysUntil, examDateLabel, examLabel } from '../lib/topics.ts';
+import { createDocument, deleteDocument, loadDocument, loadDocuments, useDocuments, usePollPending, useTopicDocuments } from '../store/documents.ts';
 import { useAuth } from '../store/auth.ts';
 import { useData, useTopic, useTopics } from '../store/data.ts';
-import { useSettings } from '../store/settings.ts';
+import { useGameSettings, useSettings } from '../store/settings.ts';
 import { emptyGoal, fromTopic, fromTopicDraft, toTopicInput, useTopicDraft, type TopicEditorValue } from '../store/topicDraft.ts';
 import { toast, useUi } from '../store/ui.ts';
 import { deleteTopicWithUndo, withUndo } from '../store/undo.ts';
@@ -420,6 +424,13 @@ export function NewTopicPage() {
 export function TopicPage() {
   const { topicId } = useParams();
   const topic = useTopic(topicId);
+  const online = useUi((s) => s.online);
+  const documents = useTopicDocuments(topicId);
+  usePollPending(documents);
+
+  useEffect(() => {
+    if (topicId && online) void loadDocuments(topicId).catch(() => undefined);
+  }, [topicId, online]);
 
   if (!topic) {
     return (
@@ -466,6 +477,378 @@ export function TopicPage() {
           ))}
         </ol>
       </Section>
+
+      <Section title="Unterlagen">
+        {documents.length === 0 ? (
+          <p className="learn-hub__calm">Noch keine. Erstelle einen Wissenstest, Übungsaufgaben oder eine Probeprüfung – zum Ausdrucken oder Lösen in der App.</p>
+        ) : (
+          <div className="group-list">
+            {documents.map((doc) => (
+              <Link key={doc.id} to={`/aufgaben/${topic.id}/${doc.id}`} className="group-card doc-card" viewTransition>
+                <span className="group-card__emoji" aria-hidden="true">
+                  {KIND_INFO[doc.kind].emoji}
+                </span>
+                <span className="group-card__body">
+                  <span className="group-card__name">{doc.title}</span>
+                  <span className="group-card__count">
+                    {doc.status === 'pending'
+                      ? 'Phoni schreibt …'
+                      : doc.status === 'failed'
+                        ? 'Hat nicht geklappt'
+                        : `${documentMeta(doc)} · ${new Date(doc.createdAt).toLocaleDateString('de-CH')}`}
+                  </span>
+                </span>
+                {doc.status === 'pending' && <span className="spinner" aria-label="wird erstellt" />}
+              </Link>
+            ))}
+          </div>
+        )}
+      </Section>
+
+      <BottomBar>
+        <Link to={`/aufgaben/${topic.id}/unterlage`} className="btn btn--primary btn--lg btn--block" viewTransition>
+          <Icon name="sparkles" size={20} />
+          <span>Unterlage erstellen</span>
+        </Link>
+      </BottomBar>
+    </Page>
+  );
+}
+
+/* ------------------------------------------------------------ documents */
+
+const DIFFICULTIES = [
+  { value: 'easy', label: 'Grundlagen' },
+  { value: 'mixed', label: 'Gemischt' },
+  { value: 'hard', label: 'Knifflig' },
+] as const;
+
+interface DocChoice {
+  kind: TaskDocKind;
+  durationMin: 15 | 30 | 45;
+  difficulty: TaskDocRequest['difficulty'];
+}
+
+/** Asks the server to write a document; shows how many are left this month. */
+async function startDocument(topic: LearnTopic, choice: DocChoice, goalIds: string[]): Promise<TaskDocument> {
+  return createDocument({
+    topicId: topic.id,
+    topic: { title: topic.title, subject: topic.subject, level: topic.level, goals: topic.goals },
+    ...choice,
+    goalIds,
+  });
+}
+
+/** /aufgaben/:topicId/unterlage – what to make: test, tasks or practice exam; time, difficulty, goals. */
+export function NewDocumentPage() {
+  const { topicId } = useParams();
+  const topic = useTopic(topicId);
+  const navigate = useNavigate();
+  const online = useUi((s) => s.online);
+  const [choice, setChoice] = useGameSettings<DocChoice>('aufgaben-unterlage', { kind: 'quiz', durationMin: 15, difficulty: 'mixed' });
+  const [goalIds, setGoalIds] = useState<string[]>(() => topic?.goals.map((g) => g.id) ?? []);
+  const [usage, setUsage] = useState<TaskUsage | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!online) return;
+    api
+      .taskUsage()
+      .then(setUsage)
+      .catch(() => setUsage(null));
+  }, [online]);
+
+  if (!topic) return <Navigate to={TASKS} replace />;
+
+  const create = async () => {
+    setBusy(true);
+    setError(null);
+    sound.unlock();
+    try {
+      const doc = await startDocument(topic, choice, goalIds);
+      sound.sparkle();
+      navigate(`/aufgaben/${topic.id}/${doc.id}`, { replace: true, viewTransition: true });
+    } catch (err) {
+      setError(errorMessage(err));
+      sound.fail();
+      setBusy(false);
+    }
+  };
+
+  const allGoals = goalIds.length === topic.goals.length;
+  const blocked = !online || (usage !== null && (!usage.available || usage.remaining <= 0));
+  return (
+    <Page title="Unterlage erstellen" subtitle={`«${topic.title}»`} back={`/aufgaben/${topic.id}`} className="stack-new">
+      <Section title="Was brauchst du?">
+        <div className="mode-picker doc-kinds" role="radiogroup" aria-label="Art der Unterlage">
+          {(Object.keys(KIND_INFO) as TaskDocKind[]).map((kind) => (
+            <button
+              key={kind}
+              type="button"
+              role="radio"
+              aria-checked={choice.kind === kind}
+              className={`mode-option ${choice.kind === kind ? 'is-active' : ''}`}
+              onClick={() => {
+                haptic(6);
+                setChoice({ ...choice, kind });
+              }}
+            >
+              <span className="mode-option__emoji" aria-hidden="true">
+                {KIND_INFO[kind].emoji}
+              </span>
+              <span className="mode-option__label">{KIND_INFO[kind].label}</span>
+              <span className="mode-option__hint">{KIND_INFO[kind].text}</span>
+            </button>
+          ))}
+        </div>
+      </Section>
+
+      <Section title="Einstellungen">
+        <div className="settings-panel">
+          <div className="settings-panel__group">
+            <span className="settings-panel__label">Dauer</span>
+            <Segmented
+              label="Dauer"
+              value={String(choice.durationMin)}
+              options={[15, 30, 45].map((n) => ({ value: String(n), label: `${n} Min.` }))}
+              onChange={(value) => setChoice({ ...choice, durationMin: Number(value) as DocChoice['durationMin'] })}
+            />
+          </div>
+          <div className="settings-panel__group">
+            <span className="settings-panel__label">Schwierigkeit</span>
+            <Segmented
+              label="Schwierigkeit"
+              value={choice.difficulty}
+              options={DIFFICULTIES.map((d) => ({ ...d }))}
+              onChange={(difficulty) => setChoice({ ...choice, difficulty })}
+            />
+          </div>
+        </div>
+      </Section>
+
+      <Section
+        title="Lernziele"
+        action={
+          <button type="button" className="btn btn--ghost btn--sm" onClick={() => setGoalIds(allGoals ? [] : topic.goals.map((g) => g.id))}>
+            {allGoals ? 'Keine' : 'Alle'}
+          </button>
+        }
+      >
+        <ul className="goal-picks">
+          {topic.goals.map((goal, i) => (
+            <li key={goal.id}>
+              <label className="consent__label">
+                <input
+                  type="checkbox"
+                  className="consent__box"
+                  checked={goalIds.includes(goal.id)}
+                  onChange={(e) => setGoalIds((ids) => (e.target.checked ? [...ids, goal.id] : ids.filter((id) => id !== goal.id)))}
+                />
+                <span>
+                  <strong>{i + 1}.</strong> {goal.text}
+                </span>
+              </label>
+            </li>
+          ))}
+        </ul>
+        {usage?.available && (
+          <p className={`usage-pill ${usage.remaining <= 2 ? 'is-low' : ''}`}>
+            {usage.remaining > 0 ? `Noch ${usage.remaining} von ${usage.limit} Unterlagen diesen Monat` : `Alle ${usage.limit} Unterlagen gebraucht`}
+          </p>
+        )}
+        {!online && <p className="notice notice--warn">Für neue Unterlagen brauchst du Internet.</p>}
+        {usage && !usage.available && <p className="notice notice--warn">Die KI ist noch nicht eingerichtet.</p>}
+        {error && <p className="notice notice--error">{error}</p>}
+      </Section>
+
+      <BottomBar>
+        <Button size="lg" block icon="sparkles" loading={busy} disabled={blocked || goalIds.length === 0} onClick={() => void create()}>
+          {KIND_INFO[choice.kind].label} erstellen
+        </Button>
+      </BottomBar>
+    </Page>
+  );
+}
+
+const PDF_OPTIONS: { variant: PdfVariant; label: string; hint: string }[] = [
+  { variant: 'both', label: 'Aufgaben und Lösungen', hint: 'Die Lösungen beginnen auf einer neuen Seite.' },
+  { variant: 'tasks', label: 'Nur Aufgaben', hint: 'Zum Lösen auf Papier.' },
+  { variant: 'solutions', label: 'Nur Lösungen', hint: 'Zum Korrigieren.' },
+];
+
+/** /aufgaben/:topicId/:docId – a document: preview with or without solutions, PDF, a new version. */
+export function DocumentPage() {
+  const { topicId, docId } = useParams();
+  const topic = useTopic(topicId);
+  const navigate = useNavigate();
+  const online = useUi((s) => s.online);
+  const doc = useDocuments((s) => (docId ? s.docs[docId] : undefined));
+  const [solutions, setSolutions] = useState(false);
+  const [pdfOpen, setPdfOpen] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [missing, setMissing] = useState(false);
+  usePollPending(doc ? [doc] : []);
+
+  useEffect(() => {
+    if (!docId || !online) return;
+    loadDocument(docId).catch((err) => {
+      if (err instanceof ApiError && err.status === 404) setMissing(true);
+    });
+  }, [docId, online]);
+
+  if (!topic || missing) return <Navigate to={topic ? `/aufgaben/${topic.id}` : TASKS} replace />;
+  if (!doc) {
+    return (
+      <Page title="Unterlage" back={`/aufgaben/${topic.id}`}>
+        <p className="reading__text" role="status">
+          {online ? 'Einen Moment …' : 'Diese Unterlage ist auf diesem Gerät noch nicht gespeichert. Öffne sie einmal mit Internet.'}
+        </p>
+      </Page>
+    );
+  }
+
+  const again = async () => {
+    try {
+      const next = await startDocument(
+        topic,
+        { kind: doc.kind, durationMin: doc.durationMin as DocChoice['durationMin'], difficulty: doc.difficulty },
+        doc.goalIds,
+      );
+      navigate(`/aufgaben/${topic.id}/${next.id}`, { replace: true, viewTransition: true });
+    } catch (err) {
+      toast(errorMessage(err), { tone: 'error' });
+    }
+  };
+
+  const remove = async () => {
+    setConfirmDelete(false);
+    try {
+      await deleteDocument(doc.id);
+      toast('Unterlage gelöscht.');
+      navigate(`/aufgaben/${topic.id}`, { replace: true, viewTransition: true });
+    } catch (err) {
+      toast(errorMessage(err), { tone: 'error' });
+    }
+  };
+
+  const pdf = async (variant: PdfVariant) => {
+    setPdfBusy(true);
+    try {
+      const { exportPdf } = await import('../lib/taskPdf.ts');
+      const result = await exportPdf(doc, topic, variant);
+      setPdfOpen(false);
+      if (result === 'downloaded') toast('PDF gespeichert.', { tone: 'success' });
+    } catch {
+      toast('Das PDF konnte nicht erstellt werden.', { tone: 'error' });
+    } finally {
+      setPdfBusy(false);
+    }
+  };
+
+  const header = {
+    title: doc.title,
+    subtitle: doc.status === 'ready' ? documentMeta(doc) : KIND_INFO[doc.kind].label,
+    back: `/aufgaben/${topic.id}`,
+    actions: <IconButton icon="trash" label="Unterlage löschen" onClick={() => setConfirmDelete(true)} />,
+  };
+  const deleteSheet = (
+    <ConfirmSheet
+      open={confirmDelete}
+      onClose={() => setConfirmDelete(false)}
+      title="Unterlage löschen?"
+      message="Sie verschwindet auf allen Geräten."
+      confirmLabel="Löschen"
+      danger
+      onConfirm={() => void remove()}
+    />
+  );
+
+  if (doc.status === 'pending') {
+    return (
+      <Page {...header} className="stack-new">
+        <div className="reading" role="status" aria-live="polite">
+          <Mascot size={150} mood="wow" />
+          <p className="reading__title">Phoni schreibt die Aufgaben …</p>
+          <p className="reading__text">Das dauert etwa eine Minute. Du kannst die Seite verlassen – die Unterlage erscheint beim Thema.</p>
+          <span className="reading__dots" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </span>
+        </div>
+        {deleteSheet}
+      </Page>
+    );
+  }
+
+  if (doc.status === 'failed') {
+    return (
+      <Page {...header}>
+        <EmptyState
+          mascot="oops"
+          emoji="🫣"
+          title="Das hat nicht geklappt"
+          text={doc.error || 'Versuch es nochmals.'}
+          action={
+            <Button icon="refresh" onClick={() => void again()} disabled={!online}>
+              Nochmals versuchen
+            </Button>
+          }
+        />
+        {deleteSheet}
+      </Page>
+    );
+  }
+
+  return (
+    <Page {...header} className="doc-page">
+      <div className="learn-area">
+        <Segmented
+          label="Ansicht"
+          value={solutions ? 'loesungen' : 'aufgaben'}
+          options={[
+            { value: 'aufgaben', label: 'Aufgaben' },
+            { value: 'loesungen', label: 'Mit Lösungen' },
+          ]}
+          onChange={(value) => setSolutions(value === 'loesungen')}
+        />
+      </div>
+      {doc.intro && <p className="doc-intro">{doc.intro}</p>}
+      <ol className="doc-tasks">
+        {doc.tasks.map((task, i) => (
+          <DocTaskView key={task.id} task={task} index={i} solution={solutions} />
+        ))}
+      </ol>
+      <p className="privacy-note">
+        <Icon name="sparkles" size={16} />
+        <span>Aufgaben und Musterlösungen hat Phoni erstellt und einmal kontrolliert. Auch eine KI irrt sich – bitte überfliege sie vor dem Drucken.</span>
+      </p>
+      <div className="doc-actions">
+        <Button variant="secondary" block icon="refresh" onClick={() => void again()} disabled={!online}>
+          Neue Version mit anderen Aufgaben
+        </Button>
+      </div>
+      <BottomBar>
+        <Button size="lg" block icon="download" onClick={() => setPdfOpen(true)}>
+          Als PDF
+        </Button>
+      </BottomBar>
+      <Sheet open={pdfOpen} onClose={() => setPdfOpen(false)} title="Als PDF">
+        <div className="action-list">
+          {PDF_OPTIONS.map((option) => (
+            <button key={option.variant} type="button" className="action-list__item" disabled={pdfBusy} onClick={() => void pdf(option.variant)}>
+              <Icon name="download" />
+              <span className="list__label">
+                {option.label}
+                <small className="list__sub">{option.hint}</small>
+              </span>
+            </button>
+          ))}
+        </div>
+      </Sheet>
+      {deleteSheet}
     </Page>
   );
 }

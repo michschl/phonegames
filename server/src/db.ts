@@ -141,6 +141,29 @@ const MIGRATIONS: string[] = [
     PRIMARY KEY (user_id, id)
   );
   `,
+  `
+  -- «Aufgaben»: tests, task sheets and practice exams the AI wrote for a topic (fetched, not synchronised).
+  CREATE TABLE learn_documents (
+    user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    id         TEXT NOT NULL,
+    topic_id   TEXT NOT NULL,
+    kind       TEXT NOT NULL,
+    status     TEXT NOT NULL,
+    data       TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    PRIMARY KEY (user_id, id)
+  );
+  CREATE INDEX learn_documents_topic ON learn_documents(user_id, topic_id);
+
+  -- Documents written per person and calendar month (Europe/Zurich), for the monthly limit.
+  CREATE TABLE task_usage (
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    month   TEXT NOT NULL,
+    count   INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (user_id, month)
+  );
+  `,
 ];
 
 export function openDatabase(file: string): Database {

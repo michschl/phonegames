@@ -13,7 +13,7 @@ import { GamePlayPage, GameSetupPage } from './pages/GamePages.tsx';
 import { LearnHubPage, LearnPlayPage, StackLearnPage } from './pages/LearnPages.tsx';
 import { GroupEditPage, GroupsPage } from './pages/GroupsPage.tsx';
 import { NewStackPage, StackEditPage } from './pages/StackPages.tsx';
-import { NewTopicPage, TasksHubPage, TopicEditPage, TopicPage } from './pages/TaskPages.tsx';
+import { DocumentPage, NewDocumentPage, NewTopicPage, TasksHubPage, TopicEditPage, TopicPage } from './pages/TaskPages.tsx';
 import { SharePage } from './pages/SharePage.tsx';
 import { LegalPage } from './legal/LegalPages.tsx';
 import { HomePage } from './pages/HomePage.tsx';
@@ -165,6 +165,8 @@ const router = createBrowserRouter([
           { path: '/aufgaben/neu', element: <NewTopicPage /> },
           { path: '/aufgaben/:topicId', element: <TopicPage /> },
           { path: '/aufgaben/:topicId/bearbeiten', element: <TopicEditPage /> },
+          { path: '/aufgaben/:topicId/unterlage', element: <NewDocumentPage /> },
+          { path: '/aufgaben/:topicId/:docId', element: <DocumentPage /> },
           { path: '/lernen/:stackId/:mode', element: <LearnPlayPage /> },
         ],
       },

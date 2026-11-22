@@ -282,6 +282,86 @@ export interface TopicDraftResponse {
   usage: LearnUsage;
 }
 
+/** quiz = Wissenstest, tasks = Übungsaufgaben, exam = Probeprüfung. */
+export type TaskDocKind = 'quiz' | 'tasks' | 'exam';
+export type TaskDifficulty = 'easy' | 'mixed' | 'hard';
+/**
+ * choice = one of several answers, truefalse = «richtig» or «falsch», short = a word, number or short
+ * phrase, open = explain, justify, calculate (written out, checked with the sample solution).
+ */
+export type DocTaskType = 'choice' | 'truefalse' | 'short' | 'open';
+
+/** One task of a printable test, task sheet or practice exam. */
+export interface DocTask {
+  id: string;
+  type: DocTaskType;
+  /** The learning goal it is about (TopicGoal.id), or null. */
+  goalId: string | null;
+  prompt: string;
+  /** Answers to choose from (choice). */
+  options: string[];
+  /** choice: the right option; truefalse: «richtig»/«falsch»; short: the answer; open: the core of the solution. */
+  answer: string;
+  /** Other answers that count (short). */
+  accepted: string[];
+  /** Sample solution: the way to the answer, why it is right, what gives how many points. */
+  solution: string;
+  points: number;
+  /** Lines of space for the answer on paper. */
+  lines: number;
+  /** The check found a doubt that could not be fixed – shown in the preview, or empty. */
+  doubt: string;
+}
+
+/** A person solved a document (in the app or on paper): points per task. */
+export interface DocAttempt {
+  id: string;
+  at: number;
+  mode: 'app' | 'paper';
+  /** Task id → points reached. */
+  scores: Record<string, number>;
+}
+
+/** A test, task sheet or practice exam made by the AI from the learning goals of a topic. */
+export interface TaskDocument {
+  id: string;
+  topicId: string;
+  kind: TaskDocKind;
+  /** pending = the AI is still writing, failed = it did not work (see error). */
+  status: 'pending' | 'ready' | 'failed';
+  error: string;
+  title: string;
+  /** Instructions on top of the sheet. */
+  intro: string;
+  durationMin: number;
+  difficulty: TaskDifficulty;
+  /** The learning goals the tasks are about. */
+  goalIds: string[];
+  tasks: DocTask[];
+  attempts: DocAttempt[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface TaskDocRequest {
+  topicId: string;
+  /** The topic as the app has it – also when it is not synchronised yet. */
+  topic: Pick<LearnTopic, 'title' | 'subject' | 'level' | 'goals'>;
+  kind: TaskDocKind;
+  durationMin: 15 | 30 | 45;
+  difficulty: TaskDifficulty;
+  goalIds: string[];
+}
+
+/** Documents left this month. */
+export interface TaskUsage {
+  available: boolean;
+  used: number;
+  limit: number;
+  remaining: number;
+  resetsOn: string;
+}
+
 export interface SyncResponse extends SyncPayload {
   serverTime: number;
 }
@@ -326,4 +406,6 @@ export const LIMITS = {
   goalText: 300,
   goalContent: 1500,
   topicNotes: 2000,
+  tasksPerDocument: 40,
+  attemptsPerDocument: 20,
 } as const;

@@ -30,6 +30,8 @@ export interface LearnConfig {
   monthlyLimit: number;
   /** Safety net: analyses per calendar month over all accounts. */
   globalMonthlyLimit: number;
+  /** Documents of «Aufgaben» (tests, tasks, practice exams) per person and calendar month. */
+  taskMonthlyLimit?: number;
   timeoutMs?: number;
 }
 

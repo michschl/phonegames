@@ -15,6 +15,9 @@ import type {
   LearnUsage,
   PasskeyInfo,
   TopicDraftResponse,
+  TaskDocRequest,
+  TaskDocument,
+  TaskUsage,
   PublicUser,
   SyncPayload,
   SyncResponse,
@@ -118,6 +121,13 @@ export const api = {
   /** «Aufgaben»: learning goals of a topic from photos and/or keywords. Takes a while – the AI reads everything. */
   topicDraft: (body: { images: string[]; text: string; subject: string; level: string }) =>
     request<TopicDraftResponse>('POST', '/api/tasks/topic', body),
+  taskUsage: () => request<TaskUsage>('GET', '/api/tasks/usage'),
+  /** The documents of a topic, newest first. */
+  documents: (topicId: string) => request<{ documents: TaskDocument[] }>('GET', `/api/tasks/documents?topicId=${encodeURIComponent(topicId)}`),
+  document: (id: string) => request<{ document: TaskDocument }>('GET', `/api/tasks/documents/${encodeURIComponent(id)}`),
+  /** Starts writing a document – it comes back «pending», the AI writes it in the background. */
+  createDocument: (body: TaskDocRequest) => request<{ document: TaskDocument; usage: TaskUsage }>('POST', '/api/tasks/documents', body),
+  deleteDocument: (id: string) => request<void>('DELETE', `/api/tasks/documents/${encodeURIComponent(id)}`),
   /** Stripe's payment page for the yearly subscription. */
   billingCheckout: () => request<{ url: string }>('POST', '/api/billing/checkout', {}),
   billingConfirm: (sessionId: string) => request<{ user: PublicUser; confirmed: boolean }>('POST', '/api/billing/confirm', { sessionId }),

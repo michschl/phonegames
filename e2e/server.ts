@@ -63,6 +63,21 @@ const TOPIC = {
   removed_personal_data: false,
 };
 
+/** A document of «Aufgaben»: a short test on the Romans. */
+const DOC = {
+  title: 'Wissenstest: Die Römer',
+  intro: 'Du hast 15 Minuten Zeit. Keine Hilfsmittel.',
+  tasks: [
+    { type: 'choice', goal: 1, prompt: 'Wer gründete der Sage nach Rom?', options: ['Romulus', 'Caesar', 'Nero', 'Augustus'], answer: 'Romulus', accepted: [], solution: 'Romulus, nach der Sage 753 v. Chr.', points: 1, lines: 0 },
+    { type: 'truefalse', goal: 2, prompt: 'Die Republik wurde von zwei Konsuln geführt.', options: [], answer: 'richtig', accepted: [], solution: 'Zwei Konsuln, jedes Jahr neu gewählt.', points: 1, lines: 0 },
+    { type: 'short', goal: 3, prompt: 'Wie hiess die römische Stadt bei Augst?', options: [], answer: 'Augusta Raurica', accepted: ['Augusta Rauracorum'], solution: 'Augusta Raurica.', points: 1, lines: 1 },
+    { type: 'open', goal: 2, prompt: 'Erkläre, wer in der Republik die Gesetze beschloss.', options: [], answer: 'Die Volksversammlung', accepted: [], solution: 'Die Volksversammlung beschliesst, der Senat berät.', points: 2, lines: 4 },
+  ],
+};
+
+/** The check of a document doubts one task. */
+const DOC_CHECK = { checks: [{ index: 2, correct: false, reason: 'Schreibweise prüfen.', answer: '', solution: '' }] };
+
 /** The second look at invented cards finds the wrong one. */
 const CHECK = { checks: [{ index: 1, correct: false, reason: '«le jardin» heisst «der Garten».' }] };
 
@@ -71,13 +86,18 @@ const ai = http.createServer((req, res) => {
   req.on('data', (chunk) => (body += chunk));
   req.on('end', () => {
     const system = String(JSON.parse(body || '{}')?.messages?.[0]?.content ?? '');
-    const answer = system.includes('Lernziele der Prüfung')
-      ? TOPIC
-      : system.includes('kritische Lehrperson')
-        ? CHECK
-        : system.includes('NEUE AUFGABEN')
-          ? CREATIVE
-          : EXACT;
+    // The check of a document is also written by a «kritische Lehrperson» – so it comes first.
+    const answer = system.includes('prüfst Prüfungsaufgaben')
+      ? DOC_CHECK
+      : system.includes('Unterlagen zur Prüfungsvorbereitung')
+        ? DOC
+        : system.includes('Lernziele der Prüfung')
+          ? TOPIC
+          : system.includes('kritische Lehrperson')
+            ? CHECK
+            : system.includes('NEUE AUFGABEN')
+              ? CREATIVE
+              : EXACT;
     res.writeHead(200, { 'Content-Type': 'application/json' }).end(
       JSON.stringify({
         choices: [{ index: 0, finish_reason: 'stop', message: { role: 'assistant', content: JSON.stringify(answer) } }],

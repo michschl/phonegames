@@ -2528,3 +2528,150 @@
   color: var(--muted);
   font-style: italic;
 }
+
+/* ======================================================= Unterlagen (Aufgaben) */
+
+.doc-kinds {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 9.5em), 1fr));
+}
+
+/* Which learning goals a document covers. */
+.goal-picks {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.goal-picks .consent__label {
+  padding: 12px;
+  border-radius: var(--radius);
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow-sm);
+  color: var(--ink);
+}
+
+.doc-page .learn-area {
+  margin-bottom: 14px;
+}
+
+.doc-intro {
+  margin: 0 0 14px;
+  font-style: italic;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+/* A document as on paper. */
+.doc-tasks {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 18px;
+  padding: 0;
+  list-style: none;
+}
+
+.doc-task {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border-radius: var(--radius);
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow-sm);
+}
+
+.doc-task__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.doc-task__num {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--yellow-soft);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.doc-task__points {
+  margin-left: auto;
+}
+
+.doc-task__prompt {
+  margin: 0;
+  font-weight: 700;
+  line-height: 1.45;
+  white-space: pre-line;
+}
+
+.doc-task__options {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 1.6em;
+  list-style: upper-alpha;
+  line-height: 1.4;
+}
+
+.doc-task__options li {
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.doc-task__options li.is-right {
+  background: var(--lime-soft);
+  font-weight: 800;
+}
+
+.doc-task__tf {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.doc-task__lines {
+  height: calc(var(--lines) * 26px);
+  background: repeating-linear-gradient(to bottom, transparent 0 25px, var(--line) 25px 26px);
+}
+
+.doc-task__solution {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--lime-soft);
+  line-height: 1.45;
+}
+
+.doc-task__solution p {
+  margin: 0;
+}
+
+.doc-task__accepted,
+.doc-task__explain {
+  color: var(--ink-2);
+}
+
+.doc-task__explain {
+  white-space: pre-line;
+}
+
+.doc-actions {
+  margin: 16px 0 8px;
+}
+
+.doc-card .spinner {
+  flex: none;
+}

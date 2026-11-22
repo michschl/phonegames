@@ -52,6 +52,7 @@ export const config = {
     model: env.LEARN_AI_MODEL || 'Qwen/Qwen3.8-27B-FP8',
     monthlyLimit: int(env.LEARN_MONTHLY_LIMIT, 5),
     globalMonthlyLimit: int(env.LEARN_GLOBAL_MONTHLY_LIMIT, 2000),
+    taskMonthlyLimit: int(env.TASK_MONTHLY_LIMIT, 20),
   },
   /** Yearly subscription through Stripe (CHF 5, 7 days trial). Switched off without a secret key. */
   billing: {

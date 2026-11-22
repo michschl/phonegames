@@ -70,3 +70,59 @@ test('Aufgaben: Lernziele selbst schreiben, ohne KI', async ({ page }) => {
   await page.getByRole('button', { name: 'Thema speichern' }).click();
   await expect(page.locator('h1')).toHaveText('Bruchrechnen');
 });
+
+test('Aufgaben: Wissenstest erstellen, mit Lösungen ansehen, als PDF speichern', async ({ page }) => {
+  await register(page, 'Lea');
+  await page.goto('/aufgaben/neu');
+  await page.getByRole('button', { name: 'Lernziele selbst schreiben' }).click();
+  await page.getByLabel('Titel').fill('Die Römer');
+  await page.getByLabel('Lernziel 1', { exact: true }).fill('Du kannst die Gründungssage Roms erzählen.');
+  await page.getByRole('button', { name: 'Lernziel hinzufügen' }).click();
+  await page.getByLabel('Lernziel 2', { exact: true }).fill('Du kannst erklären, wie die Republik regiert wurde.');
+  await page.getByRole('button', { name: 'Thema speichern' }).click();
+  await expect(page.getByText('Noch keine. Erstelle einen Wissenstest')).toBeVisible();
+
+  // What to make: kind, time, difficulty, which goals.
+  await page.getByRole('link', { name: 'Unterlage erstellen' }).click();
+  await expect(page).toHaveURL(/\/unterlage$/);
+  await expect(page.getByRole('radio', { name: /Wissenstest/ })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByText('Noch 20 von 20 Unterlagen diesen Monat')).toBeVisible();
+  await page.getByRole('radiogroup', { name: 'Schwierigkeit' }).getByRole('radio', { name: 'Grundlagen' }).click();
+  await expect(page.getByRole('checkbox')).toHaveCount(2);
+  await expectAccessible(page);
+  await page.getByRole('button', { name: 'Wissenstest erstellen' }).click();
+
+  // Phoni writes in the background; the page shows the document once it is ready.
+  await expect(page.locator('h1')).toHaveText('Wissenstest: Die Römer', { timeout: 15_000 });
+  await expect(page.locator('.doc-task')).toHaveCount(4);
+  await expect(page.getByText('Du hast 15 Minuten Zeit.')).toBeVisible();
+  await expect(page.getByText('Lösung:')).toHaveCount(0);
+  await expectAccessible(page);
+
+  await page.getByRole('radiogroup', { name: 'Ansicht' }).getByRole('radio', { name: 'Mit Lösungen' }).click();
+  await expect(page.getByText('Lösung:')).toHaveCount(4);
+  await expect(page.locator('.doc-task__options .is-right')).toHaveText('Romulus');
+  await expect(page.getByText('(auch: Augusta Rauracorum)')).toBeVisible();
+  await expect(page.getByText('Bitte prüfen: Schreibweise prüfen.')).toBeVisible();
+  await expectAccessible(page);
+
+  // The PDF is made in the browser – under the app's content security policy.
+  await page.getByRole('button', { name: 'Als PDF' }).click();
+  const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: /Aufgaben und Lösungen/ }).click()]);
+  expect(download.suggestedFilename()).toMatch(/^Wissenstest.*\.pdf$/);
+  const file = await download.path();
+  const { readFile } = await import('node:fs/promises');
+  const bytes = await readFile(file);
+  expect(bytes.subarray(0, 5).toString()).toBe('%PDF-');
+  expect(bytes.length).toBeGreaterThan(5_000);
+
+  // Listed with the topic; deleting asks first.
+  await page.getByRole('button', { name: 'Zurück' }).first().click();
+  const row = page.locator('.doc-card', { hasText: 'Wissenstest: Die Römer' });
+  await expect(row).toContainText('Wissenstest · 15 Min. · 5 Punkte');
+  await row.click();
+  await page.getByRole('button', { name: 'Unterlage löschen' }).click();
+  await page.locator('.sheet').getByRole('button', { name: 'Löschen' }).click();
+  await expect(page.getByText('Unterlage gelöscht.')).toBeVisible();
+  await expect(page.locator('.doc-card')).toHaveCount(0);
+});

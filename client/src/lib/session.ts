@@ -3,6 +3,7 @@ import { api, ApiError, onSubscriptionRequired } from './api.ts';
 import { handleSessionExpired, syncNow } from './sync.ts';
 import { useAuth } from '../store/auth.ts';
 import { useData } from '../store/data.ts';
+import { clearDocuments } from '../store/documents.ts';
 import { useLearnDraft } from '../store/learnDraft.ts';
 
 /** Store the signed-in user and start syncing their data. */
@@ -43,6 +44,7 @@ export async function logout(): Promise<void> {
   }
   useAuth.setState({ user: null });
   useData.getState().resetFor(null);
+  clearDocuments();
   useLearnDraft.getState().setDraft(null);
 }
 
@@ -96,5 +98,6 @@ export async function deleteAccount(password: string): Promise<void> {
   await api.deleteAccount({ password });
   useAuth.setState({ user: null });
   useData.getState().resetFor(null);
+  clearDocuments();
   useLearnDraft.getState().setDraft(null);
 }
