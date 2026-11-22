@@ -29,6 +29,8 @@ interface SettingsState {
   learnCheck: Record<string, 'self' | 'choice' | 'type'>;
   /** Lernen: the area shown last – «Karten» or «Aufgaben» (the tab opens it again). */
   learnArea: 'karten' | 'aufgaben';
+  /** The «Spiele» tab opens the area used last: playing together or alone. */
+  playArea: 'zusammen' | 'allein';
   /** Aufgaben: the school level chosen last for a new topic. */
   topicLevel: string | null;
   /** Lernen: which way the vocabulary of a stack is asked (stack id → direction), «forward» if missing. */
@@ -45,6 +47,7 @@ interface SettingsState {
   setLearnDirection(stackId: string, direction: LearnDirection): void;
   clearLearnerNames(): void;
   setLearnArea(area: 'karten' | 'aufgaben'): void;
+  setPlayArea(area: 'zusammen' | 'allein'): void;
   setTopicLevel(level: string): void;
 }
 
@@ -64,8 +67,10 @@ export const useSettings = create<SettingsState>()(
       learnCheck: {},
       learnDirection: {},
       learnArea: 'karten',
+      playArea: 'zusammen',
       topicLevel: null,
       setLearnArea: (learnArea) => set({ learnArea }),
+      setPlayArea: (playArea) => set({ playArea }),
       setTopicLevel: (topicLevel) => set({ topicLevel }),
       setSound: (sound) => set({ sound }),
       setHaptics: (haptics) => set({ haptics }),

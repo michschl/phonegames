@@ -48,7 +48,8 @@ Im Tab **📝 Lernen** wird Schulstoff zum Spiel: Wörtliblatt fotografieren, ei
 | **Konto** | Registrieren mit Name, E-Mail und Passwort – **Jahresabo** über Stripe (7 Tage gratis, danach CHF 5 pro Jahr; TWINT, Apple Pay, Google Pay, Karte; verwalten und kündigen im Stripe-Kundenportal) oder kostenlos mit Einladungscode (auch als Link `/registrieren?code=…`) · Zustimmung zu Nutzungsbedingungen und Datenschutzerklärung (auch für bestehende Konten, erneut bei Änderungen) · öffentliche Seiten Impressum, AGB, Datenschutz · Anmelden/Abmelden · **Passkeys** (Face ID, Fingerabdruck, Geräte-PIN) einrichten, verwalten und damit anmelden – Hinweis auf dem Startbildschirm, der sich dauerhaft wegklicken lässt · Name, E-Mail, Avatar (Emoji + Farbe) und Passwort ändern · Datenexport (JSON) · Konto löschen |
 | **Entdecken** | «Spiel des Tages» · Filter «Wie viele seid ihr?» · Volltextsuche (umlaut-tolerant) und Kategorien · Spiele mit einem Tipp hinzufügen/entfernen |
 | **Spielgruppen** | Gruppen mit Namen, Symbol und Mitspielenden anlegen · beim Spielstart wird die Gruppe angezeigt und kann direkt angepasst werden (Personen hinzufügen/entfernen) |
-| **Spiele** | 17 Partyspiele mit über 2’500 Begriffen, Fragen und Karten – siehe Tabelle unten |
+| **Spiele** | Oben «Zusammen \| Allein» (der Tab öffnet den zuletzt benutzten Bereich) · 17 Partyspiele mit über 2’500 Begriffen, Fragen und Karten · **Allein spielen:** 5 Spiele für eine Person von 6 bis 12 Jahren mit zwei Altersstufen, Rekorden pro Person und – im Phoni-Rennen – Autos zum Kaufen – siehe Tabellen unten |
+| **Belohnungen** | Münzen fürs Lernen, ein- und ausschaltbar (Konto → Belohnungen): pro gewusste Karte im Kartenkasten und Lückentext und pro Punkt in Aufgaben, mit Tageslimit · eine Runde «Allein spielen» kostet Münzen · Kontostand pro Person mit Verlauf, Münzen schenken oder abziehen · Einstellungen mit Code schützen (Code vergessen → Passwort des Kontos) · passt für Eltern jüngerer Kinder; Jugendliche mit eigenem Konto lassen es aus oder nutzen es als eigenen Ansporn · Münzen gehen beim Synchronisieren nie verloren (Zähler pro Gerät) |
 | **Lernen** | Eigener Bereich (Tab, mit rotem Badge für alle fälligen Karten), kein Spiel im Katalog · Spielformen: **Kartenkasten** (Lernkartei mit 5 Fächern, Lernstand und Lernserie pro Person, allein ohne Spielgruppe; aufdecken, Auswahl aus vier oder eintippen; Wörtli wie erfasst, umgekehrt oder gemischt abfragen), **Lückentext** (Wortbank oder eintippen), **Duell** (zu zweit, geteilter Bildschirm), **Blitzrunde** (Teams, eine Person fragt ab), **Schätzrunde** (Zahlen und Jahreszahlen, alle schätzen geheim) · «Heute dran» (wer welche Karten wiederholen soll, ein Tipp startet die erste Karte) und alle Stapel · Stapelseite mit «Wer lernt?» (ohne Spielgruppe, Personen hinzufügen und entfernen), Kartenkasten mit Fächern und Antwortart pro Person, Lückentext und den Spielformen zum Zusammenspielen · Lernstoff per Foto erfassen (bis 6 Seiten; Auswertung mit einem Qwen-Modell bei Infomaniak in der Schweiz, Fotos werden nicht gespeichert) oder abtippen · erkannte Karten prüfen und korrigieren · Monatslimit pro Person · Stapel und Lernstand werden synchronisiert · **per Link teilen** (der Link gilt als Einladung, Empfänger übernehmen eine eigene Kopie) |
 | **Aufgaben** | Zweiter Bereich im Tab «Lernen» («Karten \| Aufgaben») für die Prüfungsvorbereitung · Thema mit Lernzielen und Kernstoff aus Fotos (Lernziel-Blatt, Buchseiten) oder Stichworten, passend zur Stufe (Lehrplan 21), oder selbst geschrieben · Prüfungsdatum (steht in den letzten 7 Tagen in «Heute dran») · **Unterlagen** von der KI: Wissenstest, Übungsaufgaben oder Probeprüfung (15/30/45 Minuten, drei Schwierigkeiten, ausgewählte Lernziele), mit Musterlösungen und zweiter Kontrolle · Vorschau mit/ohne Lösungen, **PDF** zum Ausdrucken (Häuschen in Mathe, Lösungen auf eigener Seite, Notenskala) · **in der App lösen** mit Notizblatt für Finger und Stift (iPad), Auswertung und Selbstbewertung · Ergebnisse vom Papier eintragen · Stand pro Lernziel («sitzt», «fast», «üben») und «Gezielt üben» · Lernkarten aus einem Thema · 20 Unterlagen pro Monat |
 | **Sound & Stimme** | Eigenes Sounddesign pro Spiel (Trommelwirbel, Herzschlag, Fanfaren …, alles synthetisiert) · natürliche Erzählstimmen «Thorsten» und «Kerstin» vom eigenen Server (Piper) – auf jedem Gerät gleich, auch auf dem iPhone, Ansagen offline verfügbar; sonst die beste Stimme des Geräts · Stimmenauswahl mit Hörprobe unter Konto → Erzählstimme |
@@ -75,6 +76,16 @@ Im Tab **📝 Lernen** wird Schulstoff zum Spiel: Wörtliblatt fotografieren, ei
 | 🙋 **Ich hab noch nie …** | 3–30 | Wer schon hat, steht auf – mit Strichliste. 168 Aussagen |
 | ☝️ **Zufallsfinger** | 2–10 | Alle Finger aufs Display: eine Person, zwei Teams oder eine Reihenfolge auslosen |
 | 🍾 **Flaschendrehen** | beliebig | Wischen und drehen lassen – auf Wunsch mit Wahrheit-oder-Pflicht-Karte |
+
+### Allein spielen
+
+| Spiel | Übt | Worum es geht |
+| --- | --- | --- |
+| 🏎️ **Phoni-Rennen** | Reaktion, Steuern | Strasse von oben: Spur wechseln per Tipp, Pylonen, Öl und Gegenverkehr ausweichen, Sterne sammeln – immer schneller. 3 bzw. 4 Spuren, vier Autos (Blitz, Monstertruck, Rakete gegen Münzen) |
+| 🧠 **Memo-Blitz** | Merken, Konzentration | Alle Karten kurz offen, dann Paare finden – 12 bzw. 20 Karten, Punkte für wenige Züge und Tempo |
+| 🫧 **Farben-Fänger** | Aufmerksamkeit, Reaktion | Nur Blasen der gesuchten Farbe antippen, die Farbe wechselt; für 8–12 mit Farbwörtern als Ablenkung |
+| 🧩 **Muster-Meister** | Logik | Was kommt an die Stelle von ❓? Farben, Formen, Drehpfeile und Zahlenreihen, 10 Reihen pro Runde |
+| 🛝 **Sortier-Rutsche** | Einordnen, Tempo | Links oder rechts sortieren, bevor es unten ist: Obst/Gemüse, Land/Wasser … bzw. gerade/ungerade, Nomen/Verb, Säugetier, Kanton |
 
 Alle Inhalte sind in Schweizer Hochdeutsch geschrieben (ohne «ß») und funktionieren offline.
 
@@ -144,6 +155,7 @@ npm run preview
 │       │   ├── shared/     Spielrahmen, Timer, Weitergeben & Aufdecken, Teams, Team-Engine …
 │       │   ├── bombe/      Fragen, Logik, Timer, Sounds, Explosion, Grafik
 │       │   └── …           16 weitere Spiele mit Logik und Inhalten
+│       ├── solo/           «Allein spielen» – registry.ts, logic.ts (Regeln, getestet), je Spiel ein Ordner
 │       ├── lib/            API-Client, Sync, Audio, Konfetti, PWA, Geräte-APIs
 │       ├── pages/          Seiten (Willkommen, Spiele, Lernen, Entdecken, Gruppen, Konto, Spiel)
 │       ├── store/          Zustand-Stores (Auth, Daten, Einstellungen, UI)

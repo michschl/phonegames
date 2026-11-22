@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { Icon } from '../components/Icon.tsx';
 import { Page, Section } from '../components/Layout.tsx';
 import { Avatar, Button, ConfirmSheet, Sheet, TextField, Toggle } from '../components/ui.tsx';
@@ -16,7 +16,7 @@ import { deleteAccount, logout, updateProfile } from '../lib/session.ts';
 import { syncNow } from '../lib/sync.ts';
 import { AVATAR_EMOJIS, formatRelative, PLAYER_COLORS } from '../lib/util.ts';
 import { useAuth } from '../store/auth.ts';
-import { useData, useHasPendingChanges } from '../store/data.ts';
+import { useData, useHasPendingChanges, useRewards } from '../store/data.ts';
 import { useSettings } from '../store/settings.ts';
 import { toast, useUi } from '../store/ui.ts';
 import { LIMITS } from '../../../shared/types.ts';
@@ -41,6 +41,7 @@ async function lookForUpdate() {
 
 export function AccountPage() {
   const user = useAuth((s) => s.user)!;
+  const rewards = useRewards();
   const navigate = useNavigate();
   const [sheet, setSheet] = useState<null | 'avatar' | 'profile' | 'password' | 'delete' | 'logout' | 'ios' | 'voice'>(null);
   const close = () => setSheet(null);
@@ -107,6 +108,23 @@ export function AccountPage() {
       {user.plan === 'paid' && user.subscription && <SubscriptionSection />}
 
       <PasskeySettings />
+
+      <Section title="Familie">
+        <div className="list">
+          <Link to="/belohnungen" className="list__item" viewTransition>
+            <span className="list__coin" aria-hidden="true">
+              🪙
+            </span>
+            <span className="list__label">
+              Belohnungen
+              <small className="list__sub">
+                {rewards.enabled ? `Münzen fürs Lernen: an · ${rewards.pricePerRound} pro Runde` : 'Münzen fürs Lernen: aus'}
+              </small>
+            </span>
+            <Icon name="next" size={18} />
+          </Link>
+        </div>
+      </Section>
 
       <Section title="App">
         <div className="list">

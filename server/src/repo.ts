@@ -3,7 +3,11 @@ import { transaction } from './db.ts';
 import { randomToken, sha256 } from './security.ts';
 import { TOMBSTONE_TTL_MS, shouldReplace } from '../../shared/sync.ts';
 import { TERMS_VERSION } from '../../shared/legal.ts';
+import { cleanRewards, cleanWallet, mergeWallet } from '../../shared/coins.ts';
+import { LIMITS } from '../../shared/types.ts';
 import type {
+  CoinWallet,
+  RewardSettings,
   TaskDocument,
   LearnTopic,
   LearnProgress,
@@ -752,8 +756,33 @@ export function syncUserData(db: Database, userId: string, incoming: SyncPayload
          (SELECT id FROM learn_topics WHERE user_id = ? AND deleted = 1 AND updated_at < ?)`,
     ).run(userId, userId, now - 24 * 60 * 60 * 1000);
 
+    // Coins: merged per device – never «last write wins», so no coin gets lost (shared/coins.ts).
+    const wallets = new Map(getWallets(db, userId).map((wallet) => [wallet.id, wallet]));
+    const upsertWallet = db.prepare(
+      `INSERT INTO coin_wallets (user_id, id, data, updated_at, deleted) VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT (user_id, id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at, deleted = excluded.deleted`,
+    );
+    for (const raw of incoming.wallets ?? []) {
+      const wallet = cleanWallet({ ...raw, updatedAt: clamp(raw.updatedAt) });
+      const known = wallets.get(wallet.id);
+      if (!known && wallets.size >= LIMITS.wallets) continue;
+      const merged = mergeWallet(known, wallet);
+      wallets.set(merged.id, merged);
+      upsertWallet.run(userId, merged.id, JSON.stringify(merged), merged.updatedAt, merged.deleted ? 1 : 0);
+    }
+    if (incoming.rewards) {
+      const rewards = cleanRewards({ ...incoming.rewards, updatedAt: clamp(incoming.rewards.updatedAt) });
+      const known = getRewards(db, userId);
+      if (!known || rewards.updatedAt > known.updatedAt) {
+        db.prepare(
+          `INSERT INTO reward_settings (user_id, data, updated_at) VALUES (?, ?, ?)
+           ON CONFLICT (user_id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at`,
+        ).run(userId, JSON.stringify(rewards), rewards.updatedAt);
+      }
+    }
+
     const cutoff = now - TOMBSTONE_TTL_MS;
-    for (const table of ['library', 'player_groups', 'learn_stacks', 'learn_progress', 'learn_topics']) {
+    for (const table of ['library', 'player_groups', 'learn_stacks', 'learn_progress', 'learn_topics', 'coin_wallets']) {
       db.prepare(`DELETE FROM ${table} WHERE user_id = ? AND deleted = 1 AND updated_at < ?`).run(userId, cutoff);
     }
   });
@@ -764,5 +793,23 @@ export function syncUserData(db: Database, userId: string, incoming: SyncPayload
     stacks: getStacks(db, userId),
     progress: getProgress(db, userId),
     topics: getTopics(db, userId),
+    wallets: getWallets(db, userId),
+    rewards: getRewards(db, userId),
   };
+}
+
+export function getWallets(db: Database, userId: string): CoinWallet[] {
+  const rows = db.prepare('SELECT data FROM coin_wallets WHERE user_id = ? ORDER BY id').all(userId) as { data: string }[];
+  return rows.map((row) => JSON.parse(row.data) as CoinWallet);
+}
+
+export function getRewards(db: Database, userId: string): RewardSettings | null {
+  const row = db.prepare('SELECT data FROM reward_settings WHERE user_id = ?').get(userId) as { data: string } | undefined;
+  return row ? (JSON.parse(row.data) as RewardSettings) : null;
+}
+
+/** All documents of «Aufgaben» – for the data export. */
+export function listAllDocuments(db: Database, userId: string): TaskDocument[] {
+  const rows = db.prepare('SELECT * FROM learn_documents WHERE user_id = ? ORDER BY created_at').all(userId) as unknown as DocumentRow[];
+  return rows.map(toDocument);
 }

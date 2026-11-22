@@ -8,7 +8,10 @@ import {
   getGroups,
   getProgress,
   getStacks,
+  getRewards,
   getTopics,
+  getWallets,
+  listAllDocuments,
   listShares,
   toShareInfo,
   getLibrary,
@@ -65,6 +68,15 @@ export const accountRoutes: FastifyPluginAsync<{ rateLimit: boolean; billing: Bi
     return reply.status(204).send();
   });
 
+  /** Confirms the password – e.g. to reset a forgotten code of «Belohnungen». */
+  app.post('/check-password', { config: limit(10) }, async (request, reply) => {
+    const body = deleteAccountSchema.parse(request.body);
+    if (!(await verifyPassword(body.password, request.user!.passwordHash))) {
+      throw new HttpError(403, 'invalid_password', 'Das Passwort ist falsch.');
+    }
+    return reply.status(204).send();
+  });
+
   app.delete('/', { config: limit(10) }, async (request, reply) => {
     const user = request.user!;
     const body = deleteAccountSchema.parse(request.body);
@@ -101,6 +113,9 @@ export const accountRoutes: FastifyPluginAsync<{ rateLimit: boolean; billing: Bi
       learnStacks: getStacks(app.db, user.id).filter((stack) => !stack.deleted),
       learnProgress: getProgress(app.db, user.id).filter((entry) => !entry.deleted),
       topics: getTopics(app.db, user.id).filter((topic) => !topic.deleted),
+      documents: listAllDocuments(app.db, user.id),
+      coins: getWallets(app.db, user.id).filter((wallet) => !wallet.deleted),
+      rewards: (({ codeHash: _hash, codeSalt: _salt, ...rest }) => rest)(getRewards(app.db, user.id) ?? { codeHash: '', codeSalt: '' }),
       learnShares: listShares(app.db, user.id).map((share) => ({ ...toShareInfo(share), cards: share.stack.cards.length })),
       passkeys: listPasskeys(app.db, user.id).map(toPasskeyInfo),
     };

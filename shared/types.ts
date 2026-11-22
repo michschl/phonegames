@@ -219,6 +219,61 @@ export interface SyncPayload {
   progress: LearnProgress[];
   /** Topics of «Aufgaben» – older app versions send none. */
   topics?: LearnTopic[];
+  /** Coins and records of «Allein spielen», one per person – merged without losing a coin (see shared/coins.ts). */
+  wallets?: CoinWallet[];
+  /** «Belohnungen»: coins on or off, how many and what things cost. Null = never set. */
+  rewards?: RewardSettings | null;
+}
+
+/* ------------------------------------------------------ coins («Belohnungen») */
+
+export interface CoinEvent {
+  id: string;
+  at: number;
+  /** Positive = earned or given, negative = spent or taken. */
+  amount: number;
+  /** «Kartenkasten «Unité 5»», «Phoni-Rennen», «Geschenk» … */
+  reason: string;
+}
+
+/**
+ * Coins of one person (a name of «Wer lernt?»). Every device counts what it adds and spends in its own
+ * entry, so two devices changing the balance at the same time never lose a coin when merged.
+ */
+export interface CoinWallet {
+  /** learnerId(name). */
+  id: string;
+  learner: string;
+  /** Device id → coins earned (or given) on that device. */
+  earned: Record<string, number>;
+  /** Device id → coins spent (or taken) on that device. */
+  spent: Record<string, number>;
+  /** The latest events, oldest first. */
+  history: CoinEvent[];
+  /** Bought things, e.g. «auto:blitz». */
+  unlocks: string[];
+  /** Best score per game and age level, e.g. «memo:2» → 840. */
+  best: Record<string, number>;
+  updatedAt: number;
+  deleted: boolean;
+}
+
+/** «Belohnungen» – set by parents (optionally behind a code), the same on every device. */
+export interface RewardSettings {
+  /** Coins on: learning earns coins, a round of «Allein spielen» costs coins. */
+  enabled: boolean;
+  /** Hash of the code that protects these settings, or empty. Not a password – a lock for children. */
+  codeHash: string;
+  codeSalt: string;
+  /** Coins per card known in the Kartenkasten or gap filled in the Lückentext. */
+  perCard: number;
+  /** Coins per point in a test, task sheet or practice exam of «Aufgaben». */
+  perPoint: number;
+  /** At most this many coins per person and day from learning (0 = no limit). */
+  dailyMax: number;
+  /** Coins for a round of a game of «Allein spielen». */
+  pricePerRound: number;
+  updatedAt: number;
 }
 
 /* ------------------------------------------------- Aufgaben (larger topics) */
@@ -418,4 +473,10 @@ export const LIMITS = {
   topicNotes: 2000,
   tasksPerDocument: 40,
   attemptsPerDocument: 20,
+  wallets: 50,
+  walletHistory: 40,
+  walletDevices: 30,
+  walletUnlocks: 40,
+  walletBest: 60,
+  coinReason: 80,
 } as const;

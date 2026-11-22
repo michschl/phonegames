@@ -2,8 +2,11 @@ import { useMemo } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { mergeRecords, pruneTombstones } from '../../../shared/sync.ts';
+import { balance, bookCoins, DEFAULT_REWARDS, earnedSince, emptyWallet, mergeWallet } from '../../../shared/coins.ts';
 import {
   LIMITS,
+  type CoinWallet,
+  type RewardSettings,
   type LearnCard,
   type LearnProgress,
   type LearnStack,
@@ -15,6 +18,8 @@ import {
 } from '../../../shared/types.ts';
 import { addLearningDay, kastenStatus, localDay, nextProgress, progressId } from '../lib/learn.ts';
 import { createId, nextColor, pickRandom, GROUP_EMOJIS } from '../lib/util.ts';
+import { deviceId } from '../lib/device.ts';
+import { learnerId } from '../lib/learners.ts';
 
 /** A stack as edited by the user – ids are added when saving. */
 export interface StackInput {
@@ -51,6 +56,10 @@ interface DataState {
   progress: Record<string, LearnProgress>;
   /** Topics of «Aufgaben». */
   topics: Record<string, LearnTopic>;
+  /** Coins and records per person («Belohnungen», «Allein spielen»). */
+  wallets: Record<string, CoinWallet>;
+  /** Settings of «Belohnungen» – null until someone changes them. */
+  rewards: RewardSettings | null;
   /** Incremented on every local change. */
   revision: number;
   /** Revision that was last confirmed by the server. */
@@ -88,6 +97,20 @@ interface DataState {
   unhideLearner(stackId: string, player: string): void;
   /** Brings back a Kartenkasten after «Rückgängig». */
   restoreProgress(entry: LearnProgress): void;
+  /**
+   * Coins for learning – only while coins are on, at most up to the daily limit.
+   * Returns the coins actually added.
+   */
+  earnCoins(learner: string, amount: number, reason: string): number;
+  /** Pays for a round or a purchase; false when there are not enough coins. */
+  spendCoins(learner: string, amount: number, reason: string): boolean;
+  /** Parents add (positive) or take (negative) coins – not limited by the daily limit. */
+  giftCoins(learner: string, amount: number): void;
+  /** Buys a thing (e.g. a car) – free while coins are off. */
+  unlock(learner: string, item: string, price: number, reason: string): boolean;
+  /** Keeps a score when it is a new record; true when it is. */
+  recordBest(learner: string, key: string, score: number): boolean;
+  saveRewards(patch: Partial<Omit<RewardSettings, 'updatedAt'>>): void;
   applyRemote(payload: SyncPayload, sentRevision: number): void;
   resetFor(ownerId: string | null): void;
 }
@@ -98,6 +121,8 @@ const empty = {
   stacks: {} as Record<string, LearnStack>,
   progress: {} as Record<string, LearnProgress>,
   topics: {} as Record<string, LearnTopic>,
+  wallets: {} as Record<string, CoinWallet>,
+  rewards: null as RewardSettings | null,
   revision: 0,
   syncedRevision: 0,
   lastSyncAt: null as number | null,
@@ -374,8 +399,77 @@ export const useData = create<DataState>()(
         }));
       },
 
+      earnCoins(learner, amount, reason) {
+        const rewards = get().rewards;
+        if (!rewards?.enabled || amount <= 0 || !learner.trim()) return 0;
+        const id = learnerId(learner);
+        const wallet = get().wallets?.[id] ?? emptyWallet(id, learner.trim(), stamp());
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const left = rewards.dailyMax > 0 ? Math.max(0, rewards.dailyMax - earnedSince(wallet, today.getTime())) : amount;
+        const credit = Math.min(Math.round(amount), left);
+        if (credit <= 0) return 0;
+        const next = bookCoins(wallet, deviceId(), { id: createId(), at: stamp(), amount: credit, reason: reason.slice(0, LIMITS.coinReason) });
+        set((s) => ({ wallets: { ...s.wallets, [id]: next }, revision: s.revision + 1 }));
+        return credit;
+      },
+
+      spendCoins(learner, amount, reason) {
+        const id = learnerId(learner);
+        const wallet = get().wallets?.[id] ?? emptyWallet(id, learner.trim(), stamp());
+        if (amount <= 0) return true;
+        if (balance(wallet) < amount) return false;
+        const next = bookCoins(wallet, deviceId(), { id: createId(), at: stamp(), amount: -Math.round(amount), reason: reason.slice(0, LIMITS.coinReason) });
+        set((s) => ({ wallets: { ...s.wallets, [id]: next }, revision: s.revision + 1 }));
+        return true;
+      },
+
+      giftCoins(learner, amount) {
+        const id = learnerId(learner);
+        const wallet = get().wallets?.[id] ?? emptyWallet(id, learner.trim(), stamp());
+        // Never below zero.
+        const change = amount < 0 ? -Math.min(-amount, balance(wallet)) : amount;
+        if (change === 0) return;
+        const next = bookCoins(wallet, deviceId(), { id: createId(), at: stamp(), amount: change, reason: change > 0 ? 'Geschenk' : 'Abgezogen' });
+        set((s) => ({ wallets: { ...s.wallets, [id]: next }, revision: s.revision + 1 }));
+      },
+
+      unlock(learner, item, price, reason) {
+        const id = learnerId(learner);
+        const wallet = get().wallets?.[id] ?? emptyWallet(id, learner.trim(), stamp());
+        if (wallet.unlocks.includes(item)) return true;
+        let next = wallet;
+        if (get().rewards?.enabled && price > 0) {
+          if (balance(wallet) < price) return false;
+          next = bookCoins(wallet, deviceId(), { id: createId(), at: stamp(), amount: -price, reason: reason.slice(0, LIMITS.coinReason) });
+        }
+        next = { ...next, unlocks: [...next.unlocks, item].slice(0, LIMITS.walletUnlocks), updatedAt: stamp() };
+        set((s) => ({ wallets: { ...s.wallets, [id]: next }, revision: s.revision + 1 }));
+        return true;
+      },
+
+      recordBest(learner, key, score) {
+        const id = learnerId(learner);
+        const wallet = get().wallets?.[id] ?? emptyWallet(id, learner.trim(), stamp());
+        const rounded = Math.max(0, Math.round(score));
+        if ((wallet.best[key] ?? 0) >= rounded) return false;
+        const next = { ...wallet, best: { ...wallet.best, [key]: rounded }, updatedAt: stamp() };
+        set((s) => ({ wallets: { ...s.wallets, [id]: next }, revision: s.revision + 1 }));
+        return true;
+      },
+
+      saveRewards(patch) {
+        const current = get().rewards ?? { ...DEFAULT_REWARDS, updatedAt: 0 };
+        set((s) => ({ rewards: { ...current, ...patch, updatedAt: stamp() }, revision: s.revision + 1 }));
+      },
+
       applyRemote(payload, sentRevision) {
         set((s) => ({
+          wallets: (payload.wallets ?? []).reduce(
+            (all, remote) => ({ ...all, [remote.id]: mergeWallet(all[remote.id], remote) }),
+            s.wallets ?? {},
+          ),
+          rewards: payload.rewards && (!s.rewards || payload.rewards.updatedAt >= s.rewards.updatedAt) ? payload.rewards : (s.rewards ?? null),
           library: pruneTombstones(mergeRecords(s.library, payload.library, (i) => i.gameId)),
           groups: pruneTombstones(mergeRecords(s.groups, payload.groups, (g) => g.id)),
           stacks: pruneTombstones(mergeRecords(s.stacks, payload.stacks ?? [], (x) => x.id)),
@@ -400,6 +494,8 @@ export const useData = create<DataState>()(
         stacks: s.stacks,
         progress: s.progress,
         topics: s.topics,
+        wallets: s.wallets,
+        rewards: s.rewards,
         revision: s.revision,
         syncedRevision: s.syncedRevision,
         lastSyncAt: s.lastSyncAt,
@@ -503,3 +599,17 @@ export function useDueByStack(): Record<string, number> {
 }
 
 export const useHasPendingChanges = (): boolean => useData((s) => s.revision !== s.syncedRevision);
+
+/* ------------------------------------------------------------------ coins */
+
+/** The settings of «Belohnungen» (defaults until someone changes them). */
+export function useRewards(): RewardSettings {
+  const rewards = useData((s) => s.rewards);
+  return useMemo(() => rewards ?? { ...DEFAULT_REWARDS, updatedAt: 0 }, [rewards]);
+}
+
+/** The wallet of a person (or an empty one). */
+export function useWallet(learner: string | null | undefined): CoinWallet {
+  const wallet = useData((s) => (learner ? s.wallets?.[learnerId(learner)] : undefined));
+  return useMemo(() => wallet ?? emptyWallet(learner ? learnerId(learner) : '', learner ?? '', 0), [wallet, learner]);
+}

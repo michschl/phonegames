@@ -154,6 +154,8 @@ die Daten in der Schweiz.
 | `learn_topics` | `user_id`, `id`, `data` (JSON: Titel, Fach, Stufe, Prüfungsdatum, Lernziele mit Kernstoff, Notizen, Quelle), `created_at`, `updated_at`, `deleted` – synchronisiert wie die Stapel |
 | `learn_documents` | `user_id`, `id`, `topic_id`, `kind` (`quiz`/`tasks`/`exam`), `status` (`pending`/`ready`/`failed`), `data` (JSON: Titel, Anleitung, Dauer, Schwierigkeit, Aufgaben mit Musterlösungen, Ergebnisse), Zeitstempel – nicht im Sync, sondern über `/api/tasks/documents` |
 | `task_usage` | `user_id`, `month`, `count` – Monatslimit der Unterlagen |
+| `coin_wallets` | `user_id`, `id` (aus dem Namen), `data` (JSON: Name, Münzen verdient/ausgegeben **pro Gerät**, letzte 40 Buchungen, Gekauftes, Rekorde), `updated_at`, `deleted` |
+| `reward_settings` | `user_id`, `data` (JSON: Münzen an/aus, Hash des Codes, Münzen pro Karte/Punkt, Tageslimit, Preis pro Runde), `updated_at` |
 | `learn_shares` | `id` (zufällig, 128 Bit), `owner_id`, `stack_id` (ein Link pro Stapel), `data` (JSON: Kopie der Karten ohne Lernstand), `imports`, `signups`, Zeitstempel |
 
 Migrationen stehen in [`server/src/db.ts`](../server/src/db.ts) und laufen beim Start automatisch. Neue
@@ -186,9 +188,10 @@ Alle Antworten sind JSON. Fehler haben die Form `{ "error": "code", "message": "
 | `PATCH /api/account` | ✅ | `{ name?, avatar?, color?, email?, password?, passkeyHintDismissed? }` | `{ user }` |
 | `POST /api/account/password` | ✅ | `{ currentPassword, newPassword }` | `204` |
 | `POST /api/account/terms` | ✅ | `{ version }` | `{ user }` – Zustimmung zu Nutzungsbedingungen und Datenschutzerklärung (`shared/legal.ts`) |
+| `POST /api/account/check-password` | ✅ | `{ password }` | `204` · `403 invalid_password` – setzt einen vergessenen Code von «Belohnungen» zurück |
 | `DELETE /api/account` | ✅ | `{ password }` | `204` |
 | `GET /api/account/export` | ✅ | – | JSON-Datei mit allen Daten |
-| `POST /api/sync` | ✅ | `{ library, groups, stacks, progress, topics }` (ältere Apps ohne `stacks`/`progress`/`topics` gehen auch) | `{ library, groups, stacks, progress, topics, serverTime }` |
+| `POST /api/sync` | ✅ | `{ library, groups, stacks, progress, topics, wallets, rewards }` (ältere Apps ohne die neueren Felder gehen auch) | `{ library, groups, stacks, progress, topics, wallets, rewards, serverTime }` |
 | `GET /api/learn/usage` | ✅ | – | `{ available, used, limit, remaining, resetsOn, maxPhotos }` |
 | `GET /api/shares/mine` | ✅ | – | `{ shares: LearnShareInfo[] }` |
 | `POST /api/shares` | ✅ | `{ stackId, title, subject, languages, cards, suggestedModes }` | `{ share }` – legt den Link an oder aktualisiert die Karten dahinter |
@@ -366,3 +369,27 @@ schlecht in Karten fassen lässt.
 - **Lernkarten daraus machen:** `POST /api/tasks/cards` schreibt Karten zum Kernstoff (zweiter Prüfaufruf wie bei
   erfundenen Karten); sie landen in der Prüfansicht von «Neuer Stapel».
 - **Heute dran:** Prüfungen der nächsten 7 Tage stehen oben in «Heute dran» (`upcomingExams`).
+
+## Allein spielen und Belohnungen
+
+- **Bereich:** Der Tab «Spiele» hat oben «Zusammen | Allein» (`PlayAreaSwitch`, `settings.playArea`); `/allein`
+  zeigt die Spiele aus [`client/src/solo/registry.ts`](../client/src/solo/registry.ts), `/allein/:id` Start,
+  Spiel und Ergebnis (`pages/SoloPages.tsx`). Die Spiele laufen im gemeinsamen Spielrahmen (`GameShell`) und
+  bekommen `level` (1 = 6–9, 2 = 8–12 Jahre), die Person und – im Rennen – das Auto; sie melden Punkte, Sterne und
+  eine Zusammenfassung zurück. Die Regeln (Memo-Punkte, Muster-Rätsel, Sortier-Sets, Tempo) stehen getestet in
+  `solo/logic.ts`; das Rennen zeichnet auf ein Canvas.
+- **Münzen** (`shared/coins.ts`): Eine Brieftasche pro Person (`CoinWallet`, Id aus dem Namen wie der Lernstand)
+  zählt verdiente und ausgegebene Münzen **pro Gerät** (`earned[device]`, `spent[device]`). Beim Zusammenführen
+  gilt pro Gerät der grössere Zähler, Verlauf, Gekauftes und Rekorde werden vereinigt (`mergeWallet`) – zwei Handys,
+  die gleichzeitig Münzen gutschreiben, verlieren nichts, und nichts lässt sich durch alte Daten überschreiben.
+  Server und App verwenden dieselbe Funktion; der Server bereinigt die Werte (`cleanWallet`). Die Geräte-Id liegt im
+  `localStorage` (`deviceId`).
+- **Verdienen:** Nach einer Runde im Kartenkasten (ohne Übungsrunden) und im Lückentext gibt es pro gewusste Karte
+  bzw. Lücke `perCard` Münzen, für Ergebnisse in «Aufgaben» (in der App oder vom Papier) `perPoint` pro Punkt
+  (`CoinGain`, `earnCoins`) – höchstens `dailyMax` pro Person und Tag (Geschenke zählen nicht). Nur solange die
+  Münzen an sind.
+- **Ausgeben:** Eine Runde kostet `pricePerRound` (`spendCoins`), Autos im Rennen 30/60/120 (`unlock`). Mit
+  Münzen aus ist alles frei.
+- **Einstellungen** (`RewardSettings`, letzte Änderung gewinnt) gelten auf allen Geräten. Der Code ist eine
+  Kindersicherung, kein Passwort: gespeichert als Hash mit Salz (`lib/rewards.ts`), geprüft im Gerät (auch offline),
+  geöffnet für 10 Minuten. Wer ihn vergessen hat, entfernt ihn mit dem Passwort des Kontos.

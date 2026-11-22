@@ -79,6 +79,8 @@ export const api = {
   changePassword: (body: { currentPassword: string; newPassword: string }) =>
     request<void>('POST', '/api/account/password', body),
   deleteAccount: (body: { password: string }) => request<void>('DELETE', '/api/account', body),
+  /** Confirms the password (a forgotten code of «Belohnungen»). */
+  checkPassword: (password: string) => request<void>('POST', '/api/account/check-password', { password }),
   /** Agree to the terms of use and the privacy notice (shared/legal.ts). */
   acceptTerms: (version: string) => request<{ user: PublicUser }>('POST', '/api/account/terms', { version }),
   exportData: () => request<unknown>('GET', '/api/account/export'),

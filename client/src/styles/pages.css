@@ -3167,3 +3167,566 @@
 .paper-result > .notice {
   margin-bottom: 14px;
 }
+
+/* ======================================================= Belohnungen (Münzen) */
+
+.coin-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 11px 3px 8px;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  background: var(--yellow);
+  color: var(--ink);
+  font-weight: 900;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.coin-gain {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 6px auto 4px;
+  padding: 8px 16px;
+  width: fit-content;
+  max-width: 100%;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  font-weight: 700;
+  text-align: center;
+}
+
+.coin-gain.is-plus {
+  background: var(--yellow-soft);
+  animation: coin-pop 0.5s var(--ease-spring) 0.2s both;
+}
+
+.coin-gain__coin {
+  font-size: 22px;
+  animation: coin-spin 0.9s ease-out 0.3s both;
+}
+
+@keyframes coin-pop {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+}
+
+@keyframes coin-spin {
+  from {
+    transform: rotateY(0) translateY(-10px);
+  }
+  to {
+    transform: rotateY(720deg) translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coin-gain.is-plus,
+  .coin-gain__coin {
+    animation: none;
+  }
+}
+
+.list__coin {
+  font-size: 22px;
+  width: 24px;
+  text-align: center;
+}
+
+.link-btn {
+  justify-self: center;
+  padding: 6px 10px;
+  background: none;
+  border: none;
+  color: var(--ink-2);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.rewards-page {
+  padding-bottom: calc(var(--safe-bottom) + 40px);
+}
+
+.reward-intro {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+  padding: 14px;
+  border-radius: var(--radius-lg);
+  border: var(--border);
+  background: var(--yellow-soft);
+  line-height: 1.5;
+  font-weight: 600;
+}
+
+.reward-intro p {
+  margin: 0;
+}
+
+.reward-intro__coin {
+  font-size: 34px;
+  line-height: 1;
+}
+
+.reward-who {
+  margin: 8px 4px 0;
+}
+
+.reward-lock {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+  padding-top: 10px;
+}
+
+.reward-lock__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.reward-lock__text {
+  margin: 0;
+  color: var(--ink-2);
+}
+
+.reward-lock__form {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  max-width: 340px;
+  margin-top: 8px;
+  text-align: left;
+}
+
+.stepper-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.stepper-row__label {
+  font-weight: 800;
+  flex: 1 1 10em;
+}
+
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--paper);
+  overflow: hidden;
+}
+
+.stepper__btn {
+  width: 42px;
+  height: 40px;
+  border: none;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.stepper__btn:disabled {
+  opacity: 0.35;
+}
+
+.stepper__value {
+  min-width: 7.5em;
+  padding: 0 8px;
+  text-align: center;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.wallet-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wallet-row {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  border: var(--border);
+  background: var(--paper);
+}
+
+.wallet-row__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wallet-row__name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.coin-history {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+}
+
+.coin-history li {
+  display: grid;
+  grid-template-columns: 3.2em 1fr auto;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.coin-history .is-plus {
+  color: var(--green);
+  font-weight: 900;
+}
+
+.coin-history .is-minus {
+  color: var(--red);
+  font-weight: 900;
+}
+
+.coin-history small {
+  color: var(--muted);
+}
+
+.gift-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.gift-btn {
+  height: 56px;
+  border-radius: var(--radius);
+  border: var(--border);
+  background: var(--yellow-soft);
+  box-shadow: var(--shadow-sm);
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.gift-btn.is-minus {
+  background: var(--paper);
+}
+
+/* ======================================================= Allein spielen */
+
+.play-area {
+  margin: 14px 0 4px;
+}
+
+.solo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.solo-tile {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 3px;
+  min-height: 170px;
+  padding: 14px;
+  border-radius: var(--radius-lg);
+  border: var(--border);
+  background:
+    radial-gradient(circle at 85% 12%, rgba(255, 255, 255, 0.45) 0 18%, transparent 19%),
+    linear-gradient(150deg, var(--c1), var(--c2));
+  box-shadow: var(--shadow-lg);
+  color: var(--ink);
+  text-decoration: none;
+  animation: tile-in 0.55s var(--ease-spring) both;
+  transition: transform 0.15s ease;
+}
+
+.solo-tile:active {
+  transform: translateY(3px) scale(0.98);
+}
+
+.solo-tile__emoji {
+  font-size: 46px;
+  line-height: 1.1;
+  filter: drop-shadow(0 3px 0 rgba(29, 27, 38, 0.25));
+}
+
+.solo-tile__name {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.solo-tile__tag {
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.solo-tile__skills {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 800;
+  opacity: 0.75;
+}
+
+.solo-tile__best {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  font-size: 12.5px;
+  font-weight: 900;
+}
+
+.coin-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0 4px;
+  padding: 12px 14px;
+  border-radius: var(--radius-lg);
+  border: var(--border);
+  background: var(--yellow-soft);
+  box-shadow: var(--shadow-sm);
+}
+
+.coin-card__coin {
+  font-size: 34px;
+}
+
+.coin-card__text {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.coin-card__text small {
+  color: var(--ink-2);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.coin-pill--small {
+  padding: 1px 7px 1px 5px;
+  font-size: 12.5px;
+  border-width: 1.5px;
+}
+
+.solo-soon {
+  margin: 18px 0 6px;
+  text-align: center;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.solo-rewards-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0 0 24px;
+  color: var(--ink-2);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.solo-start,
+.solo-result-page {
+  padding-bottom: calc(var(--safe-bottom) + 170px);
+}
+
+.solo-hero {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 18px 16px;
+  border-radius: var(--radius-lg);
+  border: var(--border);
+  background: linear-gradient(150deg, var(--c1), var(--c2));
+  box-shadow: var(--shadow);
+  text-align: center;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.solo-hero p {
+  margin: 0;
+}
+
+.solo-hero__emoji {
+  font-size: 64px;
+  line-height: 1.1;
+  animation: solo-bounce 2.4s ease-in-out infinite;
+}
+
+@keyframes solo-bounce {
+  50% {
+    transform: translateY(-6px) rotate(-4deg);
+  }
+}
+
+.solo-hero__meta {
+  font-size: 13px;
+  font-weight: 800;
+  opacity: 0.8;
+}
+
+.solo-best {
+  margin: 10px 0 0;
+  font-weight: 800;
+}
+
+.solo-price {
+  max-width: calc(var(--page-max) - 40px);
+  margin: 0 auto 8px;
+  text-align: center;
+  font-weight: 800;
+}
+
+.garage {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.garage__car {
+  position: relative;
+  display: grid;
+  justify-items: start;
+  gap: 2px;
+  padding: 12px;
+  border-radius: var(--radius);
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow-sm);
+  color: var(--ink);
+  text-align: left;
+}
+
+.garage__car.is-active {
+  background: var(--yellow);
+}
+
+.garage__car.is-locked {
+  border-style: dashed;
+  box-shadow: none;
+}
+
+.garage__body {
+  width: 30px;
+  height: 46px;
+  margin-bottom: 4px;
+  border-radius: 10px;
+  border: 2.5px solid var(--ink);
+  box-shadow: inset 0 10px 0 rgba(180, 225, 255, 0.9), inset 0 -6px 0 rgba(0, 0, 0, 0.12);
+}
+
+.garage__name {
+  font-weight: 900;
+}
+
+.garage__perk {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+  line-height: 1.3;
+}
+
+.garage__price {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.solo-result {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.solo-result__stars {
+  margin: 0;
+  font-size: 46px;
+  letter-spacing: 6px;
+  color: rgba(29, 27, 38, 0.15);
+}
+
+.solo-result__stars .is-on {
+  color: #ffc107;
+  -webkit-text-stroke: 2px var(--ink);
+  display: inline-block;
+  animation: solo-star 0.5s var(--ease-spring) both;
+}
+
+@keyframes solo-star {
+  from {
+    transform: scale(0) rotate(-90deg);
+  }
+}
+
+.solo-result__score {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 800;
+}
+
+.solo-result__record {
+  margin: 0;
+  padding: 4px 14px;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  background: var(--yellow);
+  font-weight: 900;
+}
+
+.solo-result__best,
+.solo-result__summary {
+  margin: 0;
+  color: var(--ink-2);
+  font-weight: 700;
+}
+
+.solo-broke {
+  margin-top: 16px;
+}
+
+.solo-loading {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+}

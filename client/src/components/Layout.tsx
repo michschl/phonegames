@@ -59,12 +59,15 @@ export function TabBar() {
   const { pathname } = useLocation();
   // «Lernen» opens the area used last: Karten or Aufgaben.
   const learnArea = useSettings((s) => s.learnArea);
+  // «Spiele» opens the area used last: together or alone.
+  const playArea = useSettings((s) => s.playArea);
   // Cards to repeat today – shown as a red badge on «Lernen».
   const due = useDueTotal();
   const active = Math.max(
     0,
-    TABS.findIndex((tab) => (tab.to === '/' ? pathname === '/' : pathname.startsWith(tab.to))),
+    TABS.findIndex((tab) => (tab.to === '/' ? pathname === '/' || pathname.startsWith('/allein') : pathname.startsWith(tab.to))),
   );
+  const target = (to: string) => (to === '/lernen' && learnArea === 'aufgaben' ? '/lernen/aufgaben' : to === '/' && playArea === 'allein' ? '/allein' : to);
   return (
     <nav
       className="tabbar"
@@ -75,7 +78,7 @@ export function TabBar() {
       {TABS.map((tab) => (
         <NavLink
           key={tab.to}
-          to={tab.to === '/lernen' && learnArea === 'aufgaben' ? '/lernen/aufgaben' : tab.to}
+          to={target(tab.to)}
           end={tab.to === '/'}
           aria-label={tab.to === '/lernen' && due > 0 ? `${tab.label}, ${due} ${due === 1 ? 'Karte' : 'Karten'} fällig` : undefined}
           className="tabbar__item"

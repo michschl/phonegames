@@ -4,6 +4,7 @@ import { GameHero, GameMini, GameTile } from '../components/GameCard.tsx';
 import { Icon } from '../components/Icon.tsx';
 import { OfflinePill } from '../components/Layout.tsx';
 import { PasskeyHint } from '../components/PasskeyHint.tsx';
+import { PlayAreaSwitch } from './SoloPages.tsx';
 import { Avatar, EmptyState } from '../components/ui.tsx';
 import { GAMES, getCatalogGame } from '../games/registry.ts';
 import type { GameDefinition } from '../games/types.ts';
@@ -69,6 +70,7 @@ export function HomePage() {
           {greeting()}, <span className="home-greeting__name">{firstName}</span>! <span className="wave">👋</span>
         </h1>
         <p className="page__subtitle">Worauf habt ihr heute Lust?</p>
+        <PlayAreaSwitch area="zusammen" />
 
         {continueGame && continueGame.status === 'available' ? (
           <div className="home-hero">

@@ -50,10 +50,13 @@ export async function logout(): Promise<void> {
 
 /** The server says the subscription has ended: load the account again – the app then shows «Abo». */
 onSubscriptionRequired(() => {
-  if (!useAuth.getState().user) return;
+  const before = useAuth.getState().user;
+  if (!before) return;
   api
     .me()
-    .then(({ user }) => keepUser(user))
+    .then(({ user }) => {
+      if (useAuth.getState().user === before) keepUser(user);
+    })
     .catch(() => undefined);
 });
 
@@ -77,9 +80,12 @@ export function hasAccess(user: PublicUser | null): boolean {
 
 /** Validate the stored session with the server (when online). */
 export async function refreshSession(): Promise<void> {
-  if (!useAuth.getState().user || !navigator.onLine) return;
+  const before = useAuth.getState().user;
+  if (!before || !navigator.onLine) return;
   try {
     const { user } = await api.me();
+    // Changed meanwhile (e.g. the subscription was just confirmed): that answer is newer than this one.
+    if (useAuth.getState().user !== before) return;
     keepUser(user);
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) handleSessionExpired();

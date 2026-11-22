@@ -6,13 +6,14 @@ import { Icon } from '../components/Icon.tsx';
 import { BottomBar, Page, Section } from '../components/Layout.tsx';
 import { Notepad, type NoteStroke } from '../components/Notepad.tsx';
 import { Avatar, Button, ConfirmSheet } from '../components/ui.tsx';
+import { CoinGain } from '../components/Coins.tsx';
 import { sound } from '../lib/audio.ts';
 import { haptic } from '../lib/device.ts';
 import { grade, KIND_INFO, totalPoints, TYPE_LABEL, usesGrid } from '../lib/taskDocs.ts';
 import { attemptPoints, attemptSummary, autoScore, formatGrade, formatPoints, goalStatus, GOAL_LEVEL } from '../lib/taskResults.ts';
 import { createId } from '../lib/util.ts';
 import { useAuth } from '../store/auth.ts';
-import { useTopic } from '../store/data.ts';
+import { useData, useRewards, useTopic } from '../store/data.ts';
 import { saveAttempt, useDocuments } from '../store/documents.ts';
 import { useLearners } from '../store/learners.ts';
 import { useGameSettings } from '../store/settings.ts';
@@ -164,6 +165,7 @@ function PointsPicker({ max, value, onChange, label }: { max: number; value: num
 /** /aufgaben/:topicId/:docId/loesen */
 export function SolvePage() {
   const { doc, topic } = useDocAndTopic();
+  const rewards = useRewards();
   const ownerId = useAuth((s) => s.user?.id ?? '');
   const stored = useSolve((s) => (doc ? s.sessions[doc.id] : undefined));
   const session = stored && stored.ownerId === ownerId ? stored : undefined;
@@ -173,7 +175,7 @@ export function SolvePage() {
   const notes = useRef<Record<string, NoteStroke[]>>({});
   const [, setNotesVersion] = useState(0);
   const [padOpen, setPadOpen] = useState<Record<string, boolean>>({});
-  const [result, setResult] = useState<{ points: number; summary: string; queued: boolean } | null>(null);
+  const [result, setResult] = useState<{ points: number; summary: string; queued: boolean; learner: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [confirmSubmit, setConfirmSubmit] = useState(false);
 
@@ -195,6 +197,7 @@ export function SolvePage() {
           <p className="solve-result__text">
             {share >= 0.8 ? 'Stark – das sitzt!' : share >= 0.5 ? 'Gut gemacht! Ein paar Dinge noch üben.' : 'Dranbleiben – beim nächsten Mal geht’s besser.'}
           </p>
+          <CoinGain learner={result.learner} amount={Math.round(result.points) * rewards.perPoint} reason={`${KIND_INFO[doc.kind].label} «${topic.title}»`} />
           {result.queued && <p className="notice notice--info">Ohne Internet gespeichert – wird später übertragen.</p>}
         </div>
         {goals.length > 0 && (
@@ -283,7 +286,7 @@ export function SolvePage() {
         end(doc.id);
         sound.fanfare();
         haptic([20, 40, 20]);
-        setResult({ points: attemptPoints(attempt), summary: attemptSummary(doc, attempt), queued: how === 'queued' });
+        setResult({ points: attemptPoints(attempt), summary: attemptSummary(doc, attempt), queued: how === 'queued', learner: session.learner });
       } catch {
         toast('Das Ergebnis konnte nicht gespeichert werden.', { tone: 'error' });
         setSaving(false);
@@ -485,7 +488,11 @@ export function PaperResultPage() {
     try {
       const how = await saveAttempt(doc.id, attempt);
       sound.fanfare();
-      toast(`${attemptSummary(doc, attempt)}${how === 'queued' ? ' – wird übertragen, sobald du online bist' : ''}`, { tone: 'success' });
+      const earned = solver ? useData.getState().earnCoins(solver, Math.round(points) * (useData.getState().rewards?.perPoint ?? 0), `${KIND_INFO[doc.kind].label} «${topic.title}»`) : 0;
+      toast(
+        `${attemptSummary(doc, attempt)}${earned > 0 ? ` · +${earned} 🪙 für ${solver}` : ''}${how === 'queued' ? ' – wird übertragen, sobald du online bist' : ''}`,
+        { tone: 'success' },
+      );
       navigate(`/aufgaben/${topic.id}`, { replace: true, viewTransition: true });
     } catch {
       toast('Das Ergebnis konnte nicht gespeichert werden.', { tone: 'error' });

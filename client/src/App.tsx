@@ -15,6 +15,8 @@ import { GroupEditPage, GroupsPage } from './pages/GroupsPage.tsx';
 import { NewStackPage, StackEditPage } from './pages/StackPages.tsx';
 import { DocumentPage, NewDocumentPage, NewTopicPage, TasksHubPage, TopicEditPage, TopicPage } from './pages/TaskPages.tsx';
 import { PaperResultPage, SolvePage } from './pages/TaskSolvePages.tsx';
+import { RewardsPage } from './pages/RewardsPage.tsx';
+import { SoloGamePage, SoloHubPage } from './pages/SoloPages.tsx';
 import { SharePage } from './pages/SharePage.tsx';
 import { LegalPage } from './legal/LegalPages.tsx';
 import { HomePage } from './pages/HomePage.tsx';
@@ -148,6 +150,7 @@ const router = createBrowserRouter([
             element: <TabsLayout />,
             children: [
               { path: '/', element: <HomePage /> },
+              { path: '/allein', element: <SoloHubPage /> },
               { path: '/lernen', element: <LearnHubPage /> },
               { path: '/lernen/aufgaben', element: <TasksHubPage /> },
               { path: '/entdecken', element: <DiscoverPage /> },
@@ -156,6 +159,8 @@ const router = createBrowserRouter([
             ],
           },
           { path: '/gruppen/:groupId', element: <GroupEditPage /> },
+          { path: '/belohnungen', element: <RewardsPage /> },
+          { path: '/allein/:gameId', element: <SoloGamePage /> },
           // The stack list moved into the «Lernen» tab.
           { path: '/stapel', element: <Navigate to="/lernen" replace /> },
           { path: '/stapel/neu', element: <NewStackPage /> },

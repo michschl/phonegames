@@ -164,6 +164,22 @@ const MIGRATIONS: string[] = [
     PRIMARY KEY (user_id, month)
   );
   `,
+  `
+  -- «Belohnungen»: coins per person (merged per device, shared/coins.ts) and the settings of the account.
+  CREATE TABLE coin_wallets (
+    user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    id         TEXT NOT NULL,
+    data       TEXT NOT NULL,
+    updated_at INTEGER NOT NULL,
+    deleted    INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (user_id, id)
+  );
+  CREATE TABLE reward_settings (
+    user_id    TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    data       TEXT NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
+  `,
 ];
 
 export function openDatabase(file: string): Database {

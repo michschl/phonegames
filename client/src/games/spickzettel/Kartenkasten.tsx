@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { LearnCard, LearnStack, Player } from '../../../../shared/types.ts';
 import { Button } from '../../components/ui.tsx';
+import { CoinGain } from '../../components/Coins.tsx';
 import { sound } from '../../lib/audio.ts';
 import { confetti } from '../../lib/confetti.ts';
 import { haptic } from '../../lib/device.ts';
@@ -22,7 +23,7 @@ import {
 } from '../../lib/learn.ts';
 import { sameName } from '../../lib/learners.ts';
 import { normalize, shuffle } from '../../lib/util.ts';
-import { useData, useGroups, useProgress } from '../../store/data.ts';
+import { useData, useRewards, useGroups, useProgress } from '../../store/data.ts';
 import { useLearnDirection, useLearners, useStreak } from '../../store/learners.ts';
 import { Actions, GameShell, Headline, Stage } from '../shared/GameShell.tsx';
 import { PlayerPicker } from '../shared/players.tsx';
@@ -75,6 +76,7 @@ export function Kartenkasten({
   const [phase, setPhase] = useState<Phase>(learner ? 'overview' : 'who');
   const progress = useProgress(stack.id, learner?.name);
   const recordAnswer = useData((s) => s.recordAnswer);
+  const rewards = useRewards();
   const tiles = useKastenTiles(stack.id);
   const streak = useStreak(learner?.name);
   const learners = useLearners(stack.id);
@@ -449,6 +451,7 @@ export function Kartenkasten({
               {finishedRight} von {results.length} gewusst
             </span>
           </div>
+          {!practice && <CoinGain learner={learner.name} amount={finishedRight * rewards.perCard} reason={`Kartenkasten «${stack.title}»`} />}
           {practice ? (
             <p className="gs-text">Übungsrunde – dein Kartenkasten bleibt, wie er ist.</p>
           ) : (

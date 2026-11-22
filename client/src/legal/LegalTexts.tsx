@@ -243,6 +243,10 @@ export function PrivacyText() {
             Ergebnisse (Vorname, Datum, Punkte pro Aufgabe). Antworten und Notizen beim Lösen in der App bleiben auf dem Gerät.
           </li>
           <li>
+            <strong>Belohnungen und «Allein spielen»:</strong> pro Vorname der Münzstand mit einem kurzen Verlauf, gekaufte Autos
+            und Rekorde sowie die Einstellungen der Belohnungen. Ein Code wird nur als Prüfwert (Hash) gespeichert.
+          </li>
+          <li>
             <strong>Fotos und Stichworte für Lernstapel und Themen:</strong> Der Server leitet sie zur Auswertung an die KI von
             Infomaniak weiter, ebenso die Lernziele eines Themas, wenn du Unterlagen oder Lernkarten erstellen lässt. Fotos
             werden weder gespeichert noch protokolliert – es bleiben nur die erkannten Karten bzw. Lernziele. Die KI ist angewiesen, Namen,

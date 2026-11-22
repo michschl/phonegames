@@ -52,3 +52,20 @@ export const isIos = (): boolean =>
 export const isStandalone = (): boolean =>
   window.matchMedia('(display-mode: standalone)').matches ||
   (navigator as Navigator & { standalone?: boolean }).standalone === true;
+
+let device: string | null = null;
+
+/** A random id of this device – it counts its own coins (see shared/coins.ts). */
+export function deviceId(): string {
+  if (device) return device;
+  try {
+    device = localStorage.getItem('phonegames-device');
+    if (!device) {
+      device = `d${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
+      localStorage.setItem('phonegames-device', device);
+    }
+  } catch {
+    device ??= `d${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
+  }
+  return device;
+}

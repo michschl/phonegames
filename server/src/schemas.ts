@@ -171,6 +171,36 @@ export const syncSchema = z.object({
   stacks: z.array(learnStackSchema).max(LIMITS.stacks * 2).default([]),
   progress: z.array(learnProgressSchema).max(LIMITS.stacks * 2 * LIMITS.playersPerGroup).default([]),
   topics: z.array(learnTopicSchema).max(LIMITS.topics * 2).default([]),
+  // Checked loosely here and cleaned in shared/coins.ts (cleanWallet, cleanRewards).
+  wallets: z
+    .array(
+      z.object({
+        id: z.string().min(1).max(64),
+        learner: z.string().max(LIMITS.nameMax),
+        earned: z.record(z.string().max(64), z.number()),
+        spent: z.record(z.string().max(64), z.number()),
+        history: z.array(z.object({ id: z.string().max(64), at: z.number(), amount: z.number(), reason: z.string().max(200) })).max(LIMITS.walletHistory * 2),
+        unlocks: z.array(z.string().max(40)).max(LIMITS.walletUnlocks * 2),
+        best: z.record(z.string().max(40), z.number()),
+        updatedAt: timestamp,
+        deleted: z.boolean(),
+      }),
+    )
+    .max(LIMITS.wallets * 2)
+    .default([]),
+  rewards: z
+    .object({
+      enabled: z.boolean(),
+      codeHash: z.string().max(128),
+      codeSalt: z.string().max(64),
+      perCard: z.number(),
+      perPoint: z.number(),
+      dailyMax: z.number(),
+      pricePerRound: z.number(),
+      updatedAt: timestamp,
+    })
+    .nullable()
+    .default(null),
 });
 
 /* ---------------------------------------------------------------- passkeys */
