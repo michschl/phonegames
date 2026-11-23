@@ -34,7 +34,7 @@ export default defineConfig({
         id: '/',
         name: 'Phonegames – Partyspiele',
         short_name: 'Phonegames',
-        description: 'Ein Handy. Die ganze Runde. 17 Partyspiele und Lernen – auch offline.',
+        description: 'Ein Handy. Die ganze Runde. 30 Spiele – zusammen, allein und in 3D – und Lernen, auch offline.',
         lang: 'de-CH',
         start_url: '/',
         scope: '/',
@@ -50,7 +50,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2,webmanifest}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,webp,woff2,webmanifest}'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//],
         cleanupOutdatedCaches: true,

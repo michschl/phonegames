@@ -151,9 +151,20 @@
 }
 
 .icon-btn--small {
-  width: 38px;
-  height: 38px;
+  position: relative;
+  width: 40px;
+  height: 40px;
   border-radius: 12px;
+}
+
+/* A small control is still easy to hit: the touch area reaches 44 × 44. */
+.icon-btn--small::after,
+.player-chip__remove::after,
+.toast__close::after,
+.mini-card__add::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
 }
 
 /* ================================================================= Fields */
@@ -544,6 +555,7 @@
   align-content: center;
   gap: 1px;
   min-width: 0;
+  min-height: 44px;
   padding: 9px 4px;
   overflow-wrap: break-word;
   hyphens: auto;
@@ -732,6 +744,11 @@
   overflow-wrap: anywhere;
 }
 
+/* A title with a long word (often chosen by the user: «Französisch Unité 3») gets smaller instead of breaking. */
+.page__title.is-long {
+  font-size: clamp(21px, 6.2vw, 30px);
+}
+
 .page__subtitle {
   margin-top: 4px;
   color: var(--muted);
@@ -823,7 +840,18 @@
   margin-bottom: 0;
 }
 
+.section__lead {
+  margin: -4px 0 12px;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 600;
+}
+
 .section__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 2px;
   font-weight: 800;
   font-size: 15px;
   color: var(--ink);
@@ -888,7 +916,7 @@
   gap: 2px;
   color: var(--ink-2);
   /* Five labels side by side: «Entdecken» still fits on a 280 px phone. */
-  font-size: clamp(9.5px, 3.1vw, 11.5px);
+  font-size: clamp(10.5px, 3.2vw, 12.5px);
   font-weight: 800;
   letter-spacing: -0.01em;
   text-decoration: none;
@@ -936,9 +964,12 @@
 /* ================================================================= Toasts */
 
 .toaster {
+  /* At the bottom, where the thumb is – above the tab bar or the start button, so the page head stays visible.
+     While a sheet is open (its buttons are at the bottom) the notices go to the top. */
+  --toast-bottom: 16px;
   position: fixed;
   z-index: 2000;
-  top: calc(var(--safe-top) + 12px);
+  bottom: calc(var(--safe-bottom) + var(--toast-bottom));
   left: 50%;
   transform: translateX(-50%);
   width: min(calc(100vw - 24px), 460px);
@@ -996,10 +1027,11 @@
 }
 
 .toast__close {
+  position: relative;
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   border: 0;
   border-radius: 50%;
   background: none;
@@ -1009,8 +1041,27 @@
 @keyframes toast-in {
   from {
     opacity: 0;
-    transform: translateY(-24px) rotate(-3deg) scale(0.9);
+    transform: translateY(24px) rotate(-3deg) scale(0.9);
   }
+}
+
+:root:has(.tabbar) .toaster {
+  --toast-bottom: calc(var(--tabbar-h) + 24px);
+}
+
+:root:has(.start-bar) .toaster {
+  --toast-bottom: 104px;
+}
+
+:root:has(.sheet) .toaster {
+  top: calc(var(--safe-top) + 12px);
+  bottom: auto;
+}
+
+/* In a game the answer buttons are at the bottom: notices go below the bar with «Spiel beenden». */
+:root.is-playing .toaster {
+  top: calc(var(--safe-top) + 70px);
+  bottom: auto;
 }
 
 /* ============================================================== Game cards */
@@ -1082,11 +1133,12 @@
 
 .game-tile__body {
   padding: 10px 12px 12px;
+  container-type: inline-size;
 }
 
 .game-tile__title {
   font-family: var(--font-display);
-  font-size: 15.5px;
+  font-size: clamp(14px, 11.5cqi, 15.5px);
   font-weight: 800;
   line-height: 1.15;
   letter-spacing: -0.01em;
@@ -1187,11 +1239,15 @@
 .hero-card__body {
   flex: 1;
   min-width: 0;
+  container-type: inline-size;
 }
 
 .hero-card__eyebrow {
   display: inline-block;
   max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   padding: 3px 10px;
   border-radius: 999px;
   border: 2px solid var(--ink);
@@ -1205,9 +1261,10 @@
 .hero-card__title {
   margin-top: 8px;
   font-family: var(--font-display);
-  font-size: clamp(17px, 5.2vw, 22px);
+  /* Grows with the room it has: a long word like «Wahrheit» never breaks in the middle. */
+  font-size: clamp(15px, 11.5cqi, 22px);
   hyphens: manual;
-  overflow-wrap: break-word;
+  text-wrap: balance;
   font-weight: 900;
   line-height: 1.1;
   color: #fff;
@@ -1235,6 +1292,24 @@
 
 .hero-card__play .icon {
   margin-left: 3px;
+}
+
+/* On a small phone the title gets the room: smaller picture, no play button (the whole card starts the game). */
+@media (max-width: 389px) {
+  .hero-card {
+    gap: 12px;
+    padding: 16px 14px;
+  }
+
+  .hero-card__art {
+    width: 72px;
+    height: 72px;
+    border-radius: 22px;
+  }
+
+  .hero-card__play {
+    display: none;
+  }
 }
 
 @keyframes pulse-ring {
@@ -1355,6 +1430,40 @@
 .game-row__toggle.is-added {
   background: var(--lime);
   animation: stamp 0.45s var(--ease-spring);
+}
+
+/* Allein and Arena: the picture of the game; the emoji shows while it loads (or offline without it). */
+.game-row__art--cover {
+  position: relative;
+}
+
+.game-row__art--cover .game-art__emoji {
+  font-size: 40px;
+}
+
+.game-row__art--cover img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.game-row--play .game-row__link {
+  padding-right: 14px;
+}
+
+.game-row__go {
+  display: grid;
+  place-items: center;
+  flex: none;
+  margin-left: auto;
+  color: var(--muted);
+  transition: transform 0.2s var(--ease-out);
+}
+
+.game-row--play:hover .game-row__go {
+  transform: translateX(3px);
 }
 
 @keyframes stamp {
@@ -1498,10 +1607,11 @@
 }
 
 .player-chip__remove {
+  position: relative;
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border: 0;
   border-radius: 50%;
   background: rgba(27, 16, 51, 0.1);
@@ -1807,6 +1917,7 @@
   border: 0;
   background: none;
   text-align: left;
+  text-decoration: none;
   color: var(--ink);
   transition: background 0.15s;
 }

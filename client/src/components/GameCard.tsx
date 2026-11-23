@@ -161,3 +161,58 @@ export function GameRow({
     </article>
   );
 }
+
+/**
+ * A row for a game of «Allein» or the «Arena» in the catalogue: same look as GameRow, with the picture of
+ * the game instead of the emoji. It opens the game's page – there is nothing to add to «Meine Spiele».
+ */
+export function PlayRow({
+  to,
+  name,
+  tagline,
+  cover,
+  emoji,
+  colors,
+  tags,
+  index = 0,
+}: {
+  to: string;
+  name: string;
+  tagline: string;
+  cover: string;
+  emoji: string;
+  colors: [string, string];
+  tags: string[];
+  index?: number;
+}) {
+  return (
+    <article
+      className="game-row game-row--play"
+      style={{ '--g1': colors[0], '--g2': colors[1], animationDelay: `${Math.min(index, 8) * 50}ms` } as CSSProperties}
+    >
+      {/* «Zurück» on the game's page leads back here. */}
+      <Link to={to} state={{ from: '/entdecken' }} className="game-row__link" viewTransition>
+        <div className="game-row__art game-row__art--cover">
+          <span className="game-art__emoji" aria-hidden="true">
+            {emoji}
+          </span>
+          <img src={cover} alt="" loading="lazy" decoding="async" />
+        </div>
+        <div className="game-row__body">
+          <h3 className="game-row__title">{breakableName(name)}</h3>
+          <p className="game-row__tagline">{tagline}</p>
+          <div className="game-row__tags">
+            {tags.map((tag) => (
+              <span key={tag} className="tag">
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+        <span className="game-row__go" aria-hidden="true">
+          <Icon name="next" size={20} strokeWidth={3} />
+        </span>
+      </Link>
+    </article>
+  );
+}

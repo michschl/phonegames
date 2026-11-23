@@ -15,11 +15,12 @@ export function FamilyRanking({ scoreKey, current, unit = 'Punkte', limit = 5 }:
   const shown = ranking.slice(0, limit);
   if (mine && !shown.includes(mine)) shown.push(mine);
   return (
-    <ol className="ranking" aria-label="Rangliste der Familie">
-      {shown.map((entry) => (
-        <li key={entry.learner} className={`ranking__row ${entry === mine ? 'is-me' : ''}`}>
+    // From two people on, the best three stand on a podium (the list order stays 1, 2, 3 for screen readers).
+    <ol className={`ranking${shown.length >= 2 ? ' ranking--podium' : ''}`} aria-label="Rangliste der Familie">
+      {shown.map((entry, i) => (
+        <li key={entry.learner} className={`ranking__row ${entry === mine ? 'is-me' : ''} ${i < 3 && shown.length >= 2 ? `is-step is-place${Math.min(3, entry.place)}` : ''}`}>
           <span className="ranking__place">{MEDALS[entry.place - 1] ?? `${entry.place}.`}</span>
-          <Avatar name={entry.learner} color={learnerColor(entry.learner)} size={28} />
+          <Avatar name={entry.learner} color={learnerColor(entry.learner)} size={i < 3 && shown.length >= 2 ? 44 : 28} />
           <span className="ranking__name">{entry.learner}</span>
           <span className="ranking__score">
             {entry.score.toLocaleString('de-CH')} <small>{unit}</small>

@@ -531,7 +531,9 @@ export class Confetti extends THREE.InstancedMesh<THREE.PlaneGeometry, THREE.Mes
       s[o + 12] = s[o + 12]! + dt;
       const age = s[o + 12]!;
       if (age < 0) {
+        // Still waiting for its start: hidden, but the burst is not over.
         scale.setScalar(0);
+        alive++;
       } else {
         const falling = s[o + 4]! < 0;
         const drag = Math.max(0, 1 - (falling ? 3.2 : 1.1) * dt);

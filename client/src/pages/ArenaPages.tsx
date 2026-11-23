@@ -14,11 +14,12 @@ import { Button, ConfirmSheet, Segmented } from '../components/ui.tsx';
 import { sound } from '../lib/audio.ts';
 import { confetti } from '../lib/confetti.ts';
 import { haptic } from '../lib/device.ts';
+import { breakableName } from '../lib/util.ts';
 import { requestTiltPermission } from '../lib/motion.ts';
 import { familyRanking, placeOf } from '../lib/ranking.ts';
 import { useData, useRewards, useWallet } from '../store/data.ts';
 import { useGameSettings } from '../store/settings.ts';
-import { PlayAreaSwitch, PlayerChips, usePlayer } from './SoloPages.tsx';
+import { PlayAreaSwitch, PlayerChips, useBackTo, usePlayer } from './SoloPages.tsx';
 
 /*
  * «Arena» (/arena): 3D games for teenagers from 13, the third area of the «Spiele» tab. Parents can hide
@@ -35,11 +36,12 @@ function ArenaTile({ game, index, best }: { game: ArenaGame; index: number; best
       style={{ '--c1': game.colors[0], '--c2': game.colors[1], animationDelay: `${index * 70}ms` } as CSSProperties}
       viewTransition
     >
-      <span className="arena-tile__glow" aria-hidden="true" />
+      <img className="arena-tile__cover" src={`/covers/arena-${game.id}.webp`} alt="" loading="lazy" decoding="async" />
+      <span className="arena-tile__shade" aria-hidden="true" />
       <span className="arena-tile__emoji" aria-hidden="true">
         {game.emoji}
       </span>
-      <span className="arena-tile__name">{game.name}</span>
+      <span className="arena-tile__name">{breakableName(game.name)}</span>
       <span className="arena-tile__tag">{game.tagline}</span>
       <span className="arena-tile__skills">{game.skills.join(' · ')}</span>
       {best !== undefined && best > 0 && (
@@ -145,6 +147,7 @@ function LevelPicker({ value, onChange, reached, times, count, prefix }: { value
 export function ArenaGamePage() {
   const { gameId } = useParams();
   const game = getArenaGame(gameId);
+  const back = useBackTo(ARENA);
   const rewards = useRewards();
   const [player, setPlayer, players] = usePlayer();
   const wallet = useWallet(player);
@@ -239,7 +242,7 @@ export function ArenaGamePage() {
     const mine = placeOf(ranking, player);
     const nextLevel = !!game.levels && (result.records?.[`${game.id}:level`] ?? 0) > option && option + 1 < game.levels;
     return (
-      <Page title={game.name} back={ARENA} className="solo-result-page arena-page">
+      <Page title={breakableName(game.name)} back={back} className="solo-result-page arena-page">
         <div className="solo-result">
           <Mascot size={120} mood={result.stars >= 3 ? 'party' : result.stars >= 1 ? 'happy' : 'wink'} />
           <p className="solo-result__stars" aria-label={`${result.stars} von 3 Sternen`}>
@@ -284,8 +287,9 @@ export function ArenaGamePage() {
   const buySkin = buy ? game.skins.find((s) => s.id === buy) : null;
   const rankingKey = arenaKey(game, option);
   return (
-    <Page title={game.name} subtitle={game.tagline} back={ARENA} className="solo-start arena-page">
+    <Page title={breakableName(game.name)} subtitle={game.tagline} back={back} className="solo-start arena-page">
       <div className="arena-hero" style={{ '--c1': game.colors[0], '--c2': game.colors[1] } as CSSProperties}>
+        <img className="arena-hero__cover" src={`/covers/arena-${game.id}.webp`} alt="" decoding="async" />
         <span className="arena-hero__emoji" aria-hidden="true">
           {game.emoji}
         </span>

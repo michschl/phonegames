@@ -1,5 +1,5 @@
 import { Suspense, useCallback, useEffect, useState, type CSSProperties } from 'react';
-import { Link, Navigate, useNavigate, useParams } from 'react-router';
+import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router';
 import { balance } from '../../../shared/coins.ts';
 import { Mascot } from '../components/Brand.tsx';
 import { CoinPill } from '../components/Coins.tsx';
@@ -11,6 +11,7 @@ import { Avatar, Button, ConfirmSheet, Segmented } from '../components/ui.tsx';
 import { sound } from '../lib/audio.ts';
 import { confetti } from '../lib/confetti.ts';
 import { haptic } from '../lib/device.ts';
+import { breakableName } from '../lib/util.ts';
 import { CARS, getCar, getSoloGame, SOLO_GAMES } from '../solo/registry.ts';
 import { LEVEL_LABEL, type SoloGame, type SoloLevel, type SoloResult } from '../solo/types.ts';
 import { useAuth } from '../store/auth.ts';
@@ -55,6 +56,12 @@ export function PlayAreaSwitch({ area }: { area: 'zusammen' | 'allein' | 'arena'
   );
 }
 
+/** Where «Zurück» leads on a game page: back to «Entdecken» when the game was opened there, else to its area. */
+export function useBackTo(area: string): string {
+  const from = (useLocation().state as { from?: string } | null)?.from;
+  return from === '/entdecken' ? from : area;
+}
+
 /** Who plays: the names of «Wer lernt?» (or the account), remembered per device. */
 export function usePlayer(): [string, (name: string) => void, { id: string; name: string; color: string }[]] {
   const learners = useLearners();
@@ -96,10 +103,11 @@ function SoloTile({ game, best, index }: { game: SoloGame; best: number | undefi
       style={{ '--c1': game.colors[0], '--c2': game.colors[1], animationDelay: `${index * 60}ms` } as CSSProperties}
       viewTransition
     >
-      <span className="solo-tile__emoji" aria-hidden="true">
-        {game.emoji}
+      <span className="solo-tile__cover" aria-hidden="true">
+        <img src={`/covers/solo-${game.id}.webp`} alt="" loading="lazy" decoding="async" />
+        <span className="solo-tile__emoji">{game.emoji}</span>
       </span>
-      <span className="solo-tile__name">{game.name}</span>
+      <span className="solo-tile__name">{breakableName(game.name)}</span>
       <span className="solo-tile__tag">{game.tagline}</span>
       <span className="solo-tile__skills">{game.skills.join(' · ')}</span>
       {best !== undefined && best > 0 && <span className="solo-tile__best">🏆 {best}</span>}
@@ -160,6 +168,7 @@ export function SoloHubPage() {
 export function SoloGamePage() {
   const { gameId } = useParams();
   const game = getSoloGame(gameId);
+  const back = useBackTo(SOLO);
   const [player, setPlayer, players] = usePlayer();
   const rewards = useRewards();
   const wallet = useWallet(player);
@@ -225,7 +234,7 @@ export function SoloGamePage() {
 
   if (phase === 'result' && result) {
     return (
-      <Page title={game.name} back={SOLO} className="solo-result-page">
+      <Page title={breakableName(game.name)} back={back} className="solo-result-page">
         <div className="solo-result">
           <Mascot size={130} mood={result.stars >= 3 ? 'party' : result.stars >= 1 ? 'happy' : 'wink'} />
           <p className="solo-result__stars" aria-label={`${result.stars} von 3 Sternen`}>
@@ -259,10 +268,11 @@ export function SoloGamePage() {
 
   const buyCar = buy ? getCar(buy) : null;
   return (
-    <Page title={game.name} subtitle={game.tagline} back={SOLO} className="solo-start">
+    <Page title={breakableName(game.name)} subtitle={game.tagline} back={back} className="solo-start">
       <div className="solo-hero" style={{ '--c1': game.colors[0], '--c2': game.colors[1] } as CSSProperties}>
-        <span className="solo-hero__emoji" aria-hidden="true">
-          {game.emoji}
+        <span className="solo-hero__cover" aria-hidden="true">
+          <img src={`/covers/solo-${game.id}.webp`} alt="" decoding="async" />
+          <span className="solo-hero__emoji">{game.emoji}</span>
         </span>
         <p>{game.description}</p>
         <p className="solo-hero__meta">

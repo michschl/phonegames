@@ -96,4 +96,9 @@ test('Arena: 3D-Spiele ab 13, Familien-Rangliste, Level in Kugelbahn, Orbit und 
   await expect(areas.getByRole('radio')).toHaveText(['Zusammen', 'Allein']);
   await page.goto('/arena');
   await expect(page).toHaveURL('/allein');
+  // … and in «Entdecken».
+  await page.goto('/entdecken');
+  await expect(page.locator('.page__subtitle')).toHaveText('22 Spiele – zusammen und allein');
+  await expect(page.getByRole('heading', { name: /^Allein spielen/ })).toBeVisible();
+  await expect(page.locator('a[href^="/arena/"]')).toHaveCount(0);
 });

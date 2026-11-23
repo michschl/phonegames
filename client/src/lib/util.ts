@@ -91,6 +91,16 @@ const NAME_JOINTS: Record<string, string> = {
   Schätzmeister: 'Schätz­meister',
   Zufallsfinger: 'Zufalls­finger',
   Hutspiel: 'Hut­spiel',
+  Wahrheit: 'Wahr­heit',
+  Spickzettel: 'Spick­zettel',
+  Pistenjagd: 'Pisten­jagd',
+  Kugelbahn: 'Kugel­bahn',
+  Raumdenker: 'Raum­denker',
+  Golfinsel: 'Golf­insel',
+  Kettenreaktion: 'Ketten­reaktion',
+  Parcours: 'Par­cours',
+  Spielgruppen: 'Spiel­gruppen',
+  Belohnungen: 'Beloh­nungen',
 };
 
 /**

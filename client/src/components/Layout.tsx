@@ -112,6 +112,11 @@ export function TabBar() {
 }
 
 /** Standard page with a sticky header. */
+/** Length of the longest word – a long one («Französisch», «Bruchrechnen») needs a smaller title to fit unbroken. */
+function longestWord(text: string): number {
+  return Math.max(0, ...text.replace(/\u00ad/g, '').split(/[\s/–-]+/).map((w) => w.length));
+}
+
 export function Page({
   title,
   subtitle,
@@ -160,7 +165,7 @@ export function Page({
           </button>
         )}
         <div className="page__titles">
-          <h1 className="page__title">{title}</h1>
+          <h1 className={`page__title${typeof title === 'string' && longestWord(title) > 11 ? ' is-long' : ''}`}>{title}</h1>
           {subtitle && <p className="page__subtitle">{subtitle}</p>}
         </div>
         <div className="page__actions">

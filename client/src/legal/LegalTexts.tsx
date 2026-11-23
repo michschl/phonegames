@@ -83,11 +83,16 @@ export function TermsText() {
 
       <Section title="2. Was phonegames bietet">
         <p>
-          phonegames ist eine Web-App mit Spielen für eine Runde auf einem Handy und mit Lernfunktionen: Lernstapel erfassen (auch
+          phonegames ist eine Web-App mit Spielen für eine Runde auf einem Handy, mit Spielen für eine Person («Allein spielen»
+          für Kinder, 3D-Spiele der «Arena» ab 13) und mit Lernfunktionen: Lernstapel erfassen (auch
           per Foto), mit dem Kartenkasten und weiteren Spielformen lernen, Lernstapel per Link teilen und sich mit Themen,
           Lernzielen und von einer KI erstellten Unterlagen (Wissenstests, Übungsaufgaben, Probeprüfungen) auf Prüfungen
           vorbereiten. Deine Daten werden zwischen deinen Geräten synchronisiert. Von der KI erstellte Inhalte können Fehler
           enthalten; prüfe sie, bevor du dich darauf verlässt.
+        </p>
+        <p>
+          Wenn du die Belohnungen einschaltest, verdienen Lernende Münzen und lösen damit Spiele, Autos und Ausrüstungen ein.
+          Münzen haben keinen Geldwert, lassen sich nicht kaufen, auszahlen oder übertragen.
         </p>
         <p>
           Wir entwickeln phonegames laufend weiter; Funktionen können sich ändern, dazukommen oder wegfallen. Wir bemühen uns um
@@ -98,7 +103,7 @@ export function TermsText() {
 
       <Section title="3. Konto">
         <ul>
-          <li>Ein Konto eröffnen Erwachsene ab 18 Jahren. Kinder nutzen phonegames über das Konto ihrer Eltern oder einer anderen erwachsenen Person, die dafür verantwortlich ist.</li>
+          <li>Ein Konto eröffnen Erwachsene ab 18 Jahren. Kinder und Jugendliche nutzen phonegames über das Konto ihrer Eltern oder einer anderen erwachsenen Person, die dafür verantwortlich ist.</li>
           <li>Ein Konto ist für dich und deinen Haushalt gedacht – zum Beispiel für die ganze Familie auf mehreren Geräten.</li>
           <li>Deine Angaben müssen stimmen. Halte dein Passwort geheim und melde dich bei uns, wenn jemand dein Konto missbraucht.</li>
         </ul>
@@ -239,12 +244,15 @@ export function PrivacyText() {
           <li>
             <strong>Was du in der App erfasst:</strong> deine Spieleliste, Spielgruppen mit Vornamen und Farben der Mitspielenden,
             Lernstapel, der Lernstand pro lernender Person (Vorname, Fächer, Lerntage), geteilte Lernstapel (eine Kopie der
-            Karten sowie die Zahl der Übernahmen), Themen mit Lernzielen und Prüfungsdatum, die Unterlagen dazu und deren
+            Karten sowie die Zahl der Übernahmen und der Registrierungen über den Link), Themen mit Lernzielen und Prüfungsdatum, die Unterlagen dazu und deren
             Ergebnisse (Vorname, Datum, Punkte pro Aufgabe). Antworten und Notizen beim Lösen in der App bleiben auf dem Gerät.
           </li>
           <li>
-            <strong>Belohnungen und «Allein spielen»:</strong> pro Vorname der Münzstand mit einem kurzen Verlauf, gekaufte Autos
-            und Rekorde sowie die Einstellungen der Belohnungen. Ein Code wird nur als Prüfwert (Hash) gespeichert.
+            <strong>Belohnungen, «Allein spielen», Arena und Ranglisten:</strong> pro Vorname der Münzstand mit einem kurzen
+            Verlauf, eingelöste Autos und Ausrüstungen, Rekorde und Bestwerte der Allein- und Arena-Spiele, die Punkte, Siege und
+            Zahl der Runden aus den gemeinsamen Spielen (für die Familien-Rangliste) sowie die Einstellungen der Belohnungen (auch,
+            ob die Arena angezeigt wird). Damit sich die Zähler mehrerer Geräte richtig zusammenzählen, steht bei ihnen eine
+            zufällig erzeugte Kennung des Geräts – keine Gerätenummer. Ein Code wird nur als Prüfwert (Hash) gespeichert.
           </li>
           <li>
             <strong>Fotos und Stichworte für Lernstapel und Themen:</strong> Der Server leitet sie zur Auswertung an die KI von
@@ -262,7 +270,8 @@ export function PrivacyText() {
           </li>
           <li>
             <strong>Technische Daten:</strong> ein Sitzungs-Cookie für die Anmeldung (technisch notwendig, bis 180 Tage),
-            Browserangaben deiner Sitzungen sowie IP-Adressen in den Server-Protokollen und zum Schutz vor Missbrauch.
+            Browserangaben deiner Sitzungen, wie oft dein Konto die KI-Auswertung im laufenden Monat genutzt hat (für die
+            Monatsgrenzen) sowie IP-Adressen in den Server-Protokollen und zum Schutz vor Missbrauch.
           </li>
           <li>
             <strong>Auf deinem Gerät:</strong> Einstellungen und eine Kopie deiner Daten im Speicher des Browsers, damit
@@ -331,8 +340,8 @@ export function PrivacyText() {
 
       <Section title="9. Kinder">
         <p>
-          Kinder nutzen phonegames über das Konto einer erwachsenen Person. Diese entscheidet, welche Namen sie für Mitspielende
-          und Lernende erfasst – ein Vorname genügt.
+          Kinder und Jugendliche nutzen phonegames über das Konto einer erwachsenen Person. Diese entscheidet, welche Namen sie
+          für Mitspielende und Lernende erfasst – ein Vorname genügt – und ob Münzen und die Arena eingeschaltet sind.
         </p>
       </Section>
 

@@ -94,6 +94,44 @@ export function kastenStatus(stack: LearnStack, progress: LearnProgress | undefi
   return { state, due, fresh, nextDue: due === 0 && Number.isFinite(next) ? next : null };
 }
 
+/**
+ * How far a stack is learned, over everyone learning it: how many card answers are still new and how many
+ * sit in each box of the Kartenkasten, and the share of the way to box 5 (0–1).
+ */
+export function stackMastery(stack: LearnStack, progress: LearnProgress[]): { fresh: number; boxes: number[]; share: number } {
+  const learners = progress.filter((entry) => !entry.deleted && !entry.removed && entry.stackId === stack.id);
+  const boxes = new Array<number>(BOXES).fill(0);
+  let fresh = 0;
+  let points = 0;
+  for (const entry of learners.length > 0 ? learners : [undefined]) {
+    for (const card of stack.cards) {
+      const box = entry?.cards[card.id]?.box;
+      if (!box) fresh += 1;
+      else {
+        boxes[Math.min(BOXES, Math.max(1, box)) - 1]! += 1;
+        points += box / BOXES;
+      }
+    }
+  }
+  const total = fresh + boxes.reduce((a, b) => a + b, 0);
+  return { fresh, boxes, share: total > 0 ? points / total : 0 };
+}
+
+/** The last `count` days up to today (local, oldest first) and on which of them a person learned. */
+export function learningWeek(progress: LearnProgress[], player: string, now = Date.now(), count = 7): { day: string; learned: boolean; today: boolean }[] {
+  const days = new Set<string>();
+  for (const entry of progress) {
+    if (entry.deleted || normalize(entry.player) !== normalize(player)) continue;
+    for (const day of entry.days ?? []) days.add(day);
+  }
+  const today = localDay(now);
+  return Array.from({ length: count }, (_, i) => {
+    // At noon, so a change to or from summer time does not skip a day.
+    const day = localDay(startOfDay(now) + DAY / 2 - (count - 1 - i) * DAY);
+    return { day, learned: days.has(day), today: day === today };
+  });
+}
+
 /** The next repetition after today: when, and how many cards are due by the end of that day. */
 export function nextRepetition(
   stack: LearnStack,

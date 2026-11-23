@@ -83,6 +83,49 @@
   font-weight: 900;
 }
 
+/* What is inside, in three cards. */
+.welcome__pillars {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+  max-width: 400px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+  animation: rise-in 0.7s 0.95s var(--ease-out) both;
+}
+
+.welcome__pillars li {
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  padding: 10px 6px 9px;
+  border-radius: var(--radius);
+  border: var(--border);
+  background: var(--c);
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+}
+
+.welcome__pillars span {
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.welcome__pillars strong {
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.welcome__pillars small {
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--muted);
+}
+
 .welcome__bands {
   display: grid;
   gap: 12px;
@@ -207,6 +250,10 @@
 }
 
 .auth__switch a {
+  /* A link in a sentence, but a finger-sized target. */
+  display: inline-block;
+  padding: 11px 4px;
+  margin: -11px -4px;
   color: var(--ink);
   font-weight: 900;
   text-decoration-thickness: 2px;
@@ -216,6 +263,7 @@
 /* A link that is a button («Abmelden», «Ich habe einen Einladungscode»). */
 .auth__link-btn {
   justify-self: center;
+  min-height: 44px;
   padding: 6px 4px;
   border: 0;
   background: none;
@@ -332,6 +380,10 @@
   overflow-wrap: break-word;
 }
 
+.home-greeting__keep {
+  white-space: nowrap;
+}
+
 .home-greeting__name {
   background: linear-gradient(transparent 58%, var(--yellow) 58%, var(--yellow) 92%, transparent 92%);
   padding: 0 4px;
@@ -344,6 +396,21 @@
 
 .discover-featured {
   margin-bottom: 22px;
+}
+
+.discover-featured + .discover-section {
+  margin-top: 8px;
+}
+
+.discover-section__count {
+  padding: 1px 9px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1.5px solid var(--line);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink-2);
 }
 
 .hero-card__title,
@@ -429,8 +496,8 @@
   right: -10px;
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   border: var(--border);
   background: var(--yellow);
@@ -568,22 +635,35 @@
 
 .size-filter__options {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: clamp(4px, 1.8cqi, 6px);
+  container-type: inline-size;
 }
 
+/* All seven in one row, even on a 320-pixel phone: the numbers shrink a little instead of breaking. */
 .size-pill {
+  position: relative;
+  min-width: 0;
+  padding: 0;
+  white-space: nowrap;
   height: 40px;
   border-radius: 12px;
   border: 2.5px solid var(--ink);
   background: var(--paper);
   box-shadow: 0 2px 0 var(--ink);
   font-weight: 800;
-  font-size: 14.5px;
+  font-size: clamp(12px, 5cqi, 14.5px);
   transition:
     transform 0.12s,
     box-shadow 0.12s,
     background 0.2s;
+}
+
+/* A little more touch area around the pill, up to the middle of the gap. */
+.size-pill::after {
+  content: '';
+  position: absolute;
+  inset: -4px -2px;
 }
 
 .size-pill:active {
@@ -661,13 +741,165 @@
   display: grid;
 }
 
+/* ------------------------------------------------ learning made visible */
+
+/* How far a stack is learned: the boxes of the Kartenkasten from red (box 1) to green (box 5). */
+.mastery {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.mastery__bar {
+  flex: 1;
+  display: flex;
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  background: var(--surface-3);
+}
+
+.mastery__part {
+  height: 100%;
+  transform-origin: left;
+  animation: bar-grow 0.8s var(--ease-out) both;
+}
+
+.mastery__part + .mastery__part {
+  border-left: 1.5px solid var(--ink);
+}
+
+.mastery__part.is-box1 {
+  background: #ff7a7f;
+}
+.mastery__part.is-box2 {
+  background: var(--orange);
+}
+.mastery__part.is-box3 {
+  background: var(--yellow);
+}
+.mastery__part.is-box4 {
+  background: var(--lime);
+}
+.mastery__part.is-box5 {
+  background: var(--green);
+}
+
+.mastery__value {
+  min-width: 38px;
+  font-size: 13px;
+  font-weight: 900;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes bar-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* «Diese Woche»: a dot for every day somebody learned. */
+.learn-week {
+  display: grid;
+  gap: 8px;
+  padding: 14px 14px 12px;
+  border-radius: var(--radius-lg);
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow-sm);
+}
+
+.learn-week__head,
+.learn-week__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) repeat(7, 26px) 40px;
+  align-items: center;
+  gap: 4px;
+}
+
+.learn-week__head span {
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+  color: var(--muted);
+}
+
+.learn-week__head span.is-today {
+  color: var(--ink);
+  font-size: 11px;
+}
+
+.learn-week__who {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-weight: 800;
+}
+
+.learn-week__who > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.learn-week__day {
+  justify-self: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px dashed var(--line);
+}
+
+.learn-week__day.is-on {
+  border: 2px solid var(--ink);
+  background: var(--c);
+  box-shadow: 0 2px 0 var(--ink);
+  animation: tile-in 0.5s var(--ease-spring) both;
+}
+
+.learn-week__day.is-today:not(.is-on) {
+  border-color: var(--ink);
+  border-style: dashed;
+}
+
+.learn-week__streak {
+  font-size: 13px;
+  font-weight: 900;
+  text-align: right;
+  white-space: nowrap;
+}
+
+@media (max-width: 370px) {
+  .learn-week__head,
+  .learn-week__row {
+    grid-template-columns: minmax(0, 1fr) repeat(7, 22px) 34px;
+    gap: 3px;
+  }
+
+  .learn-week__day {
+    width: 19px;
+    height: 19px;
+  }
+
+  .learn-week__who .avatar {
+    display: none;
+  }
+}
+
 .group-card__name {
   font-family: var(--font-display);
   font-weight: 800;
   font-size: 17px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .group-card__count {
@@ -771,6 +1003,7 @@
 
 .setup-hero {
   position: relative;
+  container-type: inline-size;
   display: flex;
   align-items: flex-end;
   flex-wrap: wrap;
@@ -807,12 +1040,33 @@
 
 .setup-hero__text {
   position: relative;
-  max-width: 62%;
+  max-width: calc(100% - 132px);
+}
+
+/* A narrow phone: a smaller picture, so the line beside it stays readable. */
+@container (max-width: 340px) {
+  .setup-hero__art {
+    width: 92px;
+    height: 92px;
+    border-radius: 28px;
+    font-size: 56px;
+  }
+
+  .setup-hero__art > svg {
+    width: 100px;
+    height: 100px;
+  }
+
+  .setup-hero__text {
+    max-width: calc(100% - 100px);
+  }
 }
 
 .setup-hero__tagline {
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: clamp(16px, 6cqi, 22px);
+  hyphens: manual;
+  text-wrap: balance;
   font-weight: 900;
   line-height: 1.2;
   color: #fff;
@@ -1015,12 +1269,12 @@
 }
 
 .group-picker {
+  /* A few groups wrap into lines – nothing is cut off at the edge. */
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  margin: 0 -20px 16px;
-  padding: 2px 20px 8px;
-  overflow-x: auto;
-  scrollbar-width: none;
+  margin: 0 0 16px;
+  padding: 2px 0 8px;
 }
 
 .group-picker::-webkit-scrollbar {
@@ -2342,7 +2596,9 @@
 
 .legal-links a,
 .legal-links__btn {
-  padding: 4px 2px;
+  /* Small text, but a finger-sized target. */
+  display: inline-block;
+  padding: 12px 6px;
   border: 0;
   background: none;
   color: var(--ink-2);
@@ -3451,6 +3707,7 @@
 
 .solo-tile {
   position: relative;
+  container-type: inline-size;
   display: grid;
   align-content: start;
   gap: 3px;
@@ -3472,17 +3729,49 @@
   transform: translateY(3px) scale(0.98);
 }
 
+.solo-tile__cover {
+  position: relative;
+  display: block;
+  height: 98px;
+  margin: -14px -14px 16px;
+  border-bottom: var(--border);
+  border-radius: calc(var(--radius-lg) - 3px) calc(var(--radius-lg) - 3px) 0 0;
+  background: color-mix(in srgb, var(--c1) 40%, var(--paper));
+}
+
+.solo-tile__cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+/* The emoji sits like a sticker on the edge of the picture. */
 .solo-tile__emoji {
-  font-size: 46px;
-  line-height: 1.1;
-  filter: drop-shadow(0 3px 0 rgba(29, 27, 38, 0.25));
+  position: absolute;
+  left: 10px;
+  bottom: -18px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: 0 2px 0 var(--ink);
+  font-size: 22px;
+  line-height: 1;
+  transform: rotate(-8deg);
 }
 
 .solo-tile__name {
   font-family: var(--font-display);
-  font-size: 19px;
+  font-size: clamp(15px, 13cqi, 19px);
   font-weight: 800;
   line-height: 1.15;
+  hyphens: manual;
+  text-wrap: balance;
 }
 
 .solo-tile__tag {
@@ -3500,6 +3789,7 @@
 
 .solo-tile__best {
   position: absolute;
+  z-index: 1;
   top: 10px;
   right: 10px;
   padding: 1px 8px;
@@ -3557,6 +3847,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
+  min-height: 44px;
   margin: 0 0 24px;
   color: var(--ink-2);
   font-size: 14px;
@@ -3586,9 +3877,40 @@
   margin: 0;
 }
 
+.solo-hero__cover {
+  position: relative;
+  display: block;
+  width: calc(100% + 32px);
+  height: 150px;
+  margin: -18px -16px 26px;
+  border-bottom: var(--border);
+  border-radius: calc(var(--radius-lg) - 3px) calc(var(--radius-lg) - 3px) 0 0;
+  background: color-mix(in srgb, var(--c1) 40%, var(--paper));
+}
+
+.solo-hero__cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
 .solo-hero__emoji {
-  font-size: 64px;
-  line-height: 1.1;
+  position: absolute;
+  left: 50%;
+  bottom: -28px;
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  margin-left: -30px;
+  border-radius: 50%;
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow-sm);
+  font-size: 34px;
+  line-height: 1;
   animation: solo-bounce 2.4s ease-in-out infinite;
 }
 
@@ -3781,6 +4103,103 @@
   color: var(--muted);
 }
 
+/* The podium: second, first, third side by side; the rest as rows below. */
+.ranking--podium {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 8px 6px;
+}
+
+.ranking--podium > .ranking__row:not(.is-step) {
+  order: 4;
+  grid-column: 1 / -1;
+}
+
+.ranking__row.is-step {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: center;
+  animation: rise-in 0.6s var(--ease-spring) both;
+}
+
+.ranking__row.is-step:nth-child(1) {
+  order: 2;
+}
+
+.ranking__row.is-step:nth-child(2) {
+  order: 1;
+  animation-delay: 0.12s;
+}
+
+.ranking__row.is-step:nth-child(3) {
+  order: 3;
+  animation-delay: 0.24s;
+}
+
+.ranking__row.is-step .ranking__place {
+  width: auto;
+  font-size: 26px;
+  line-height: 1;
+}
+
+.ranking__row.is-step .ranking__name {
+  max-width: 100%;
+  padding: 0 4px;
+  font-weight: 900;
+}
+
+.ranking__row.is-step.is-me .ranking__name {
+  border-radius: 8px;
+  background: var(--yellow);
+}
+
+.ranking__row.is-step .ranking__score {
+  font-size: 14px;
+}
+
+/* The step itself: highest for first place. */
+.ranking__row.is-step::after {
+  content: '';
+  order: 9;
+  width: 100%;
+  height: var(--step, 34px);
+  margin-top: 4px;
+  border: 2px solid var(--ink);
+  border-bottom: 0;
+  border-radius: 12px 12px 0 0;
+  background:
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.35) 0 8px, transparent 8px 16px),
+    var(--step-color, #e8b98a);
+}
+
+.ranking__row.is-place1::after {
+  --step: 64px;
+  --step-color: var(--yellow);
+}
+
+.ranking__row.is-place2::after {
+  --step: 46px;
+  --step-color: #d9dbe8;
+}
+
+.ranking__row.is-place3::after {
+  --step-color: #f0b987;
+}
+
+.ranking--podium::after {
+  content: '';
+  order: 3;
+  grid-column: 1 / -1;
+  height: 0;
+  margin-top: -8px;
+  border-top: 2.5px solid var(--ink);
+}
+
 .ranking__empty {
   margin: 0;
   color: var(--muted);
@@ -3797,10 +4216,11 @@
 
 .arena-tile {
   position: relative;
+  container-type: inline-size;
   display: grid;
   align-content: end;
   gap: 3px;
-  min-height: 190px;
+  min-height: 214px;
   padding: 14px;
   overflow: hidden;
   border-radius: var(--radius-lg);
@@ -3817,28 +4237,48 @@
   transform: translateY(3px) scale(0.98);
 }
 
-.arena-tile__glow {
+.arena-tile__cover {
   position: absolute;
-  inset: auto -30% -40% auto;
-  width: 120%;
-  height: 70%;
-  background: radial-gradient(closest-side, color-mix(in srgb, var(--c2) 55%, transparent), transparent);
-  filter: blur(6px);
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s var(--ease-out);
+}
+
+.arena-tile:hover .arena-tile__cover {
+  transform: scale(1.05);
+}
+
+/* Dark below, so the white name stays readable on any picture. */
+.arena-tile__shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(14, 10, 32, 0) 22%, rgba(14, 10, 32, 0.72) 55%, rgba(14, 10, 32, 0.94) 100%);
   pointer-events: none;
 }
 
 .arena-tile__emoji {
   position: absolute;
-  top: 12px;
-  left: 12px;
-  font-size: 44px;
-  filter: drop-shadow(0 0 14px var(--c1));
+  top: 10px;
+  left: 10px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(14, 10, 32, 0.55);
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(6px);
+  font-size: 22px;
 }
 
 .arena-tile__name {
   position: relative;
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: clamp(15px, 13.5cqi, 20px);
+  hyphens: manual;
+  text-wrap: balance;
   font-weight: 800;
   line-height: 1.1;
   text-shadow: 0 0 18px var(--c1);
@@ -3864,17 +4304,20 @@
   right: 10px;
   padding: 1px 8px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.16);
+  background: rgba(14, 10, 32, 0.6);
   border: 1.5px solid rgba(255, 255, 255, 0.5);
   font-size: 12.5px;
   font-weight: 900;
 }
 
 .arena-hero {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
   display: grid;
   justify-items: center;
   gap: 6px;
-  padding: 18px 16px;
+  padding: 120px 16px 18px;
   border-radius: var(--radius-lg);
   border: var(--border);
   background: radial-gradient(120% 90% at 80% 0%, var(--c1), transparent 65%), linear-gradient(160deg, #1b1530, #2c2350);
@@ -3889,8 +4332,19 @@
   margin: 0;
 }
 
+.arena-hero__cover {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 30%;
+  mask-image: linear-gradient(180deg, #000 30%, transparent 72%);
+}
+
 .arena-hero__emoji {
-  font-size: 60px;
+  font-size: 54px;
   filter: drop-shadow(0 0 18px var(--c1));
   animation: solo-bounce 2.4s ease-in-out infinite;
 }

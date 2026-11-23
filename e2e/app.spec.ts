@@ -47,6 +47,39 @@ test('Tabs und Seiten sind zugänglich und scrollen nie seitlich', async ({ page
   }
 });
 
+test('Entdecken zeigt auch die Spiele von «Allein» und der Arena', async ({ page }) => {
+  await register(page);
+  await page.goto('/entdecken');
+  for (const title of ['Zusammen spielen', 'Allein spielen', 'Arena']) {
+    await expect(page.getByRole('heading', { name: new RegExp(`^${title}`) })).toBeVisible();
+  }
+  await expect(page.locator('a[href^="/allein/"]')).toHaveCount(5);
+  await expect(page.locator('a[href^="/arena/"]')).toHaveCount(8);
+  await expectAccessible(page);
+
+  // Alone: the games of «Allein» and the Arena, no game for a group.
+  const alone = page.getByRole('radio', { name: '1', exact: true });
+  await alone.click();
+  await expect(page.getByRole('heading', { name: '14 Spiele gefunden' })).toBeVisible();
+  await expect(page.locator('a[href="/allein/memo"]')).toBeVisible();
+  await expect(page.locator('a[href="/arena/piste"]')).toBeVisible();
+  await expect(page.locator('a[href="/spiel/bombe"]')).toHaveCount(0);
+  await alone.click();
+
+  // The search finds them too; «Zurück» leads back to «Entdecken».
+  await page.getByLabel('Spiele suchen').fill('Paare');
+  await expect(page.locator('.game-list a')).toHaveCount(1);
+  await page.locator('a[href="/allein/memo"]').click();
+  await expect(page).toHaveURL('/allein/memo');
+  await page.getByRole('button', { name: 'Zurück' }).first().click();
+  await expect(page).toHaveURL('/entdecken');
+  await page.goto('/entdecken');
+  await page.locator('a[href="/arena/kette"]').click();
+  await expect(page).toHaveURL('/arena/kette');
+  await page.getByRole('button', { name: 'Zurück' }).first().click();
+  await expect(page).toHaveURL('/entdecken');
+});
+
 test('Jedes Spiel hat eine Startseite mit Weg zurück', async ({ page }) => {
   await register(page);
   await page.goto('/entdecken');
@@ -55,7 +88,7 @@ test('Jedes Spiel hat eine Startseite mit Weg zurück', async ({ page }) => {
   // Lernen is a section of its own (tab), not a game of the catalogue.
   expect(links).not.toContain('/spiel/spickzettel');
   await expect(page.getByText('Schulstoff spielend repetieren')).toHaveCount(0);
-  await expect(page.locator('.page__subtitle')).toHaveText('17 Spiele für jede Runde');
+  await expect(page.locator('.page__subtitle')).toHaveText('30 Spiele – zusammen, allein und in 3D');
   await page.setViewportSize({ width: 320, height: 720 });
   for (const href of links) {
     await page.goto(href);

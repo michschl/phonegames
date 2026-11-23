@@ -5,7 +5,7 @@ import { Icon } from '../components/Icon.tsx';
 import { OfflinePill } from '../components/Layout.tsx';
 import { PasskeyHint } from '../components/PasskeyHint.tsx';
 import { PlayAreaSwitch } from './SoloPages.tsx';
-import { Avatar, EmptyState } from '../components/ui.tsx';
+import { Avatar } from '../components/ui.tsx';
 import { GAMES, getCatalogGame } from '../games/registry.ts';
 import type { GameDefinition } from '../games/types.ts';
 import { sound } from '../lib/audio.ts';
@@ -16,6 +16,9 @@ import { useAuth } from '../store/auth.ts';
 import { useData, useGroup, useGroups, useLibraryIds } from '../store/data.ts';
 import { useSettings } from '../store/settings.ts';
 import { toast } from '../store/ui.ts';
+
+/** Easy to start with any group – what a new account sees before it picked its own games. */
+const STARTERS = ['bombe', 'wer-bin-ich', 'pantomime', 'spion', 'verbotene-woerter', 'wahrheit-oder-pflicht'];
 
 function greeting(): string {
   const hour = new Date().getHours();
@@ -39,6 +42,7 @@ export function HomePage() {
     .map((id) => getCatalogGame(id))
     .filter((g): g is GameDefinition => g !== undefined && g.status === 'available');
   const suggestions = GAMES.filter((g) => g.status === 'available' && !ids.includes(g.id));
+  const starters = STARTERS.map((id) => getCatalogGame(id)).filter((g): g is GameDefinition => g !== undefined && g.status === 'available');
   const continueGame = lastPlayed ? getCatalogGame(lastPlayed.gameId) : undefined;
   const firstName = user.name.split(' ')[0];
 
@@ -67,7 +71,10 @@ export function HomePage() {
 
       <div className="page__content">
         <h1 className="home-greeting">
-          {greeting()}, <span className="home-greeting__name">{firstName}</span>! <span className="wave">👋</span>
+          {greeting()},{' '}
+          <span className="home-greeting__keep">
+            <span className="home-greeting__name">{firstName}</span>! <span className="wave">👋</span>
+          </span>
         </h1>
         <p className="page__subtitle">Worauf habt ihr heute Lust?</p>
         <PlayAreaSwitch area="zusammen" />
@@ -107,18 +114,20 @@ export function HomePage() {
         )}
 
         {games.length === 0 ? (
-          <EmptyState
-            mascot="wow"
-            emoji="🎲"
-            title="Noch keine Spiele"
-            text="Such dir ein paar Spiele aus – Phoni freut sich schon auf den Spieleabend!"
-            action={
-              <Link to="/entdecken" className="btn btn--primary btn--lg" viewTransition>
-                <Icon name="compass" />
-                <span>Spiele entdecken</span>
+          <section className="section">
+            <div className="section__head">
+              <h2 className="section__title">Zum Start</h2>
+              <Link to="/entdecken" className="section__link" viewTransition>
+                Alle Spiele
               </Link>
-            }
-          />
+            </div>
+            <p className="section__lead">Sofort spielbar, mit jeder Runde. Mit «Zu meinen Spielen» kommen deine Lieblinge hierher.</p>
+            <div className="tile-grid">
+              {starters.map((game, i) => (
+                <GameTile key={game.id} game={game} index={i} />
+              ))}
+            </div>
+          </section>
         ) : (
           <section className="section">
             <div className="section__head">
@@ -139,7 +148,7 @@ export function HomePage() {
           </section>
         )}
 
-        {suggestions.length > 0 && (
+        {games.length > 0 && suggestions.length > 0 && (
           <section className="section">
             <div className="section__head">
               <h2 className="section__title">Neu für euch</h2>

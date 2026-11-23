@@ -6,6 +6,8 @@ describe('breakableName', () => {
   it('marks the word joint of long compound names with a soft hyphen', () => {
     expect(breakableName('Zufallsfinger')).toBe('Zufalls­finger');
     expect(breakableName('Hutspiel-Marathon')).toBe('Hut­spiel-Marathon');
+    expect(breakableName('Kettenreaktion')).toBe('Ketten­reaktion');
+    expect(breakableName('Wahrheit oder Pflicht')).toBe('Wahr­heit oder Pflicht');
   });
 
   it('leaves other names untouched', () => {

@@ -343,8 +343,8 @@ export function RewardsPage() {
         </div>
       </div>
       <p className="settings-panel__hint reward-who">
-        Für jüngere Kinder schalten meist die Eltern die Münzen ein und schützen die Einstellungen mit einem Code. Jugendliche mit eigenem Konto
-        lassen sie aus – oder nutzen sie als eigenen Ansporn.
+        Für jüngere Kinder schalten meist die Eltern die Münzen ein und schützen die Einstellungen mit einem Code. Bei Jugendlichen bleiben
+        sie oft aus – oder dienen als eigener Ansporn.
       </p>
 
       {rewards.enabled && (
@@ -377,7 +377,7 @@ export function RewardsPage() {
           <div className="list__item list__item--toggle">
             <Toggle
               label="Arena anzeigen"
-              description={rewards.arena ? '3D-Spiele für Jugendliche im Tab «Spiele».' : 'Ausgeblendet – auf allen Geräten dieses Kontos.'}
+              description={rewards.arena ? '3D-Spiele für Jugendliche – im Tab «Spiele» und unter «Entdecken».' : 'Ausgeblendet – auf allen Geräten dieses Kontos.'}
               checked={rewards.arena}
               onChange={(arena) => saveRewards({ arena })}
             />
