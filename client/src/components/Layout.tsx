@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { NavLink, useLocation, useNavigate } from 'react-router';
+import { NavLink, useLocation, useNavigate, useNavigationType } from 'react-router';
 import { Icon, type IconName } from './Icon.tsx';
 import { haptic } from '../lib/device.ts';
 import { useData } from '../store/data.ts';
@@ -127,6 +127,30 @@ export function TabBar() {
   );
 }
 
+/*
+ * The pages visited in this tab, by their place in the browser's history. With it «Zurück» really goes back
+ * when the page it leads to is the one before – and that page is where it was left (same scroll position),
+ * instead of opening anew at its top.
+ */
+const trail: string[] = [];
+const historyIndex = (): number | null => {
+  const idx = (window.history.state as { idx?: unknown } | null)?.idx;
+  return typeof idx === 'number' ? idx : null;
+};
+
+/** Keeps the trail; once, at the root of the app. */
+export function useTrail(): void {
+  const location = useLocation();
+  const type = useNavigationType();
+  useEffect(() => {
+    const idx = historyIndex();
+    if (idx === null) return;
+    trail[idx] = location.pathname + location.search;
+    // A new page replaces what lay ahead.
+    if (type === 'PUSH') trail.length = idx + 1;
+  }, [location, type]);
+}
+
 /** Standard page with a sticky header. */
 /** Length of the longest word – a long one («Französisch», «Bruchrechnen») needs a smaller title to fit unbroken. */
 function longestWord(text: string): number {
@@ -165,7 +189,8 @@ export function Page({
 
   const goBack = () => {
     haptic(6);
-    if (back === true) navigate(-1);
+    const idx = historyIndex();
+    if (back === true || (back && idx !== null && idx > 0 && trail[idx - 1] === back)) navigate(-1);
     else if (back) navigate(back, { viewTransition: true });
   };
 

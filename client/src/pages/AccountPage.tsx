@@ -261,7 +261,7 @@ function SubscriptionSection() {
   // Back from the customer portal: ask Stripe what changed.
   useEffect(() => {
     if (params.get('abo') !== '1') return;
-    setParams({}, { replace: true });
+    setParams({}, { replace: true, preventScrollReset: true });
     api
       .billingRefresh()
       .then(({ user: updated }) => useAuth.setState({ user: updated }))

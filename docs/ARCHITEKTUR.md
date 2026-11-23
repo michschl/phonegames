@@ -50,6 +50,11 @@ Ordnung auf der Seite:
   Plus wird erst geöffnet gelb. Hinweise sind gestrichelt.
 - **Formen im Hintergrund stehen im Rand**, nie unter Text: Auf dem Handy schauen drei davon nur aus dem Seitenrand
   hervor, ab 900 px Breite rahmen sechs die Inhaltsspalte ein.
+- **Eine neue Seite beginnt oben, «Zurück» führt an die verlassene Stelle.** `<ScrollRestoration />` von React Router
+  setzt die Scroll-Position bei jedem Seitenwechsel zurück und stellt sie beim Zurückgehen wieder her. Der
+  Zurück-Knopf der Seiten (`Page` mit `back`) geht dafür wirklich in der Browser-History zurück, wenn die Zielseite die
+  vorherige war (`useTrail()` merkt sich den Weg) – sonst öffnet er sie neu. Wer aus der Mitte von «Entdecken» ein
+  Spiel öffnet und zurückgeht, steht wieder bei diesem Spiel.
 - **Der grosse Knopf unten ist nie eine Sackgasse.** Fehlen Mitspielende, heisst er «Mitspielende hinzufügen» bzw.
   «Noch 2 Personen hinzufügen» und führt zum Namensfeld (`useAddMissing()`), statt ausgegraut zu sein.
 - **Reihen, die seitlich scrollen** (Kategorien, «Neu für euch», Symbole) blenden am Rand aus und rasten am Seitenrand

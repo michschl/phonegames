@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import { createBrowserRouter, Link, Navigate, Outlet, RouterProvider } from 'react-router';
-import { Backdrop, TabBar, Toaster } from './components/Layout.tsx';
+import { createBrowserRouter, Link, Navigate, Outlet, RouterProvider, ScrollRestoration } from 'react-router';
+import { Backdrop, TabBar, Toaster, useTrail } from './components/Layout.tsx';
 import { UpdateHint, useAutoUpdate } from './components/UpdateHint.tsx';
 import { EmptyState } from './components/ui.tsx';
 import { setHapticsEnabled } from './lib/device.ts';
@@ -34,12 +34,15 @@ function Root() {
 
   useEffect(() => setHapticsEnabled(haptics), [haptics]);
   useAutoUpdate();
+  useTrail();
 
   return (
     <>
       <Backdrop />
       <Outlet />
       <Toaster before={<UpdateHint />} />
+      {/* A new page starts at its top; «Zurück» returns to where the list was left. */}
+      <ScrollRestoration />
     </>
   );
 }

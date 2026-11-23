@@ -68,8 +68,12 @@ test('Lernen: Einführung, Stapelseite, allein ohne Gruppe, Badge auf dem Tab un
   await expectAccessible(page);
   await row.click();
   await expect(page.locator('.learn-card__prompt')).toHaveText('7 × 8');
-  await page.getByRole('button', { name: 'Antwort zeigen' }).click();
-  await page.getByRole('button', { name: 'Gewusst', exact: true }).click();
+  // The card turns with a tap on it, too; what the thumb taps stays at the bottom of the screen.
+  await page.locator('.learn-card').click();
+  await expect(page.locator('.learn-card__answer p')).toHaveText('56');
+  const knew = page.getByRole('button', { name: 'Gewusst', exact: true });
+  expect((await knew.boundingBox())!.y).toBeGreaterThan(page.viewportSize()!.height * 0.6);
+  await knew.click();
   await expect(page.locator('.result-banner__title')).toHaveText('1 von 1 gewusst');
   await page.getByRole('button', { name: 'Fertig' }).click();
   await expect(page).toHaveURL(/\/lernen$/);
