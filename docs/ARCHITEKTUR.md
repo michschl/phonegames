@@ -14,6 +14,8 @@
                                    │ Fastify (Node.js 24)    │
                                    │  /api/auth  /api/account│
                                    │  /api/sync  /api/health │
+                                   │  /api/learn /api/tasks  │
+                                   │  /api/shares /api/tts … │
                                    │  + statische PWA-Dateien│
                                    └────────────┬────────────┘
                                                 │ node:sqlite
@@ -72,14 +74,17 @@ die Dateien neue Namen – Browser und Homescreens halten Icons sonst unter der 
 
 ## Offline-first
 
-**Was offline geht:** alles nach der Anmeldung – Spiele starten und spielen, Spielgruppen anlegen und
-bearbeiten, Spiele zur Liste hinzufügen oder entfernen.
-**Was online sein muss:** Registrierung, Anmeldung, Profil-/Passwortänderungen, Datenexport und Konto löschen.
+**Was offline geht:** alles nach der Anmeldung – Spiele starten und spielen (auch «Allein» und die Arena),
+Spielgruppen anlegen und bearbeiten, Spiele zur Liste hinzufügen oder entfernen, mit vorhandenen Stapeln lernen,
+Unterlagen lesen und lösen, Münzen verdienen und ausgeben.
+**Was online sein muss:** Registrierung, Anmeldung, Profil-/Passwortänderungen, Datenexport und Konto löschen, alles
+mit der KI (Fotos auswerten, Lernziele, Unterlagen und Lernkarten erstellen), Teilen und das Abo.
 
 ### Caching (Service Worker)
 
 `vite-plugin-pwa` erzeugt beim Build einen Workbox-Service-Worker, der alle Dateien des Builds vorab cacht
-(App-Shell, JavaScript aller 17 Spiele inklusive Inhalten, CSS, Schriften, Icons – zusammen rund 1 MB). Navigationen fallen offline auf
+(App-Shell, JavaScript aller Spiele inklusive Inhalten, three.js für die Arena, pdfmake, CSS, Schriften, Icons und
+Bilder der Spiele – zusammen rund 4 MB). Navigationen fallen offline auf
 `index.html` zurück. `/api/*` wird **nicht** gecacht – die Daten verwaltet die App selbst.
 
 **Neue Versionen ohne Neustart** ([`lib/pwa.ts`](../client/src/lib/pwa.ts),
@@ -103,7 +108,8 @@ bearbeiten, Spiele zur Liste hinzufügen oder entfernen.
 
 ### Synchronisation
 
-Die Nutzerdaten (Spieleliste und Spielgruppen) werden **zuerst lokal** gespeichert (Zustand + `localStorage`)
+Die Nutzerdaten (Spieleliste, Spielgruppen, Lernstapel und Lernstand, Themen, Münzen und Einstellungen der
+Belohnungen) werden **zuerst lokal** gespeichert (Zustand + `localStorage`)
 und im Hintergrund mit dem Server abgeglichen ([`client/src/lib/sync.ts`](../client/src/lib/sync.ts)):
 
 - Jeder Datensatz hat `updatedAt` und `deleted` (Löschungen bleiben 180 Tage als «Grabstein» erhalten,
@@ -120,10 +126,12 @@ und im Hintergrund mit dem Server abgeglichen ([`client/src/lib/sync.ts`](../cli
   `restorePlayer`), damit der Datensatz auch auf anderen Geräten zurückkommt. Stapel und Gruppen lassen sich in der
   Liste über «⋯» und auf ihrer Seite oben rechts löschen – nicht nur ganz unten.
 
-Die Datenmengen sind klein (Gruppen mit Namen), deshalb wird immer der komplette Stand übertragen – das ist
-einfach und robust.
+Die Datenmengen sind klein (Gruppen mit Namen, Karten als Text), deshalb wird immer der komplette Stand übertragen –
+das ist einfach und robust. Die Unterlagen von «Aufgaben» sind grösser und laufen nicht über den Sync, sondern über
+`/api/tasks/documents`.
 
-Spieleinstellungen (z. B. Zünddauer), Ton und Vibration sind **Geräteeinstellungen** und werden nicht synchronisiert.
+Spieleinstellungen (z. B. Zünddauer, «Grafik» der Arena), Ton und Vibration sind **Geräteeinstellungen** und werden
+nicht synchronisiert.
 
 ## Sicherheit
 

@@ -1,12 +1,15 @@
 # 📱 Phonegames – Partyspiele fürs Handy
 
-**Ein Handy. Die ganze Runde.** Phonegames ist eine Progressive Web App (PWA) mit 17 lustigen Gesellschaftsspielen
-und einem eigenen Bereich zum Lernen für das Mobiltelefon. Konto erstellen, Spiele entdecken, Spielgruppe anlegen – und los geht’s. Nach der Anmeldung
-funktioniert alles **auch offline**.
+**Ein Handy. Die ganze Runde.** Phonegames ist eine Progressive Web App (PWA) mit 30 Spielen für das Mobiltelefon –
+17 lustigen Gesellschaftsspielen für die ganze Runde, 5 Spielen für Kinder allein und 8 Spielen in 3D ab 13 – und
+einem eigenen Bereich zum Lernen. Konto erstellen, Spiele entdecken, Spielgruppe anlegen – und los geht’s. Nach der
+Anmeldung funktioniert alles **auch offline**.
 
 Mit dabei: vom tickenden Klassiker **💣 Bombe** über Bluff-Spiele wie **🕵️ Spion unter uns** und **🐺 Nachts im Dorf**
-(mit Erzählstimme) bis zu Team-Ratespielen, Schätzfragen und kleinen Helfern wie dem **☝️ Zufallsfinger**. Mit
-Im Tab **📝 Lernen** wird Schulstoff zum Spiel: Wörtliblatt fotografieren, eine KI in der Schweiz macht Lernkarten daraus.
+(mit Erzählstimme) bis zu Team-Ratespielen, Schätzfragen und kleinen Helfern wie dem **☝️ Zufallsfinger**. Allein geht
+es mit **🏎️ Phoni-Rennen** oder **🧠 Memo-Blitz**, in der **Arena** mit **🎿 Pistenjagd** oder **⛳ Golfinsel** in 3D.
+Im Tab **📝 Lernen** wird Schulstoff zum Spiel: Wörtliblatt fotografieren, eine KI in der Schweiz macht Lernkarten daraus –
+und unter «Aufgaben» Tests und Probeprüfungen für grössere Themen.
 
 <p align="center">
   <img src="docs/screenshots/welcome.jpg" width="180" alt="Willkommen mit Phoni">
@@ -44,13 +47,13 @@ Im Tab **📝 Lernen** wird Schulstoff zum Spiel: Wörtliblatt fotografieren, ei
 
 | Bereich | Was es kann |
 | --- | --- |
-| **Start** | «Weiterspielen» mit dem zuletzt gespielten Spiel und der Gruppe · kompakte Kacheln für «Meine Spiele» · Vorschläge zum direkten Hinzufügen |
-| **Konto** | Registrieren mit Name, E-Mail und Passwort – **Jahresabo** über Stripe (7 Tage gratis, danach CHF 5 pro Jahr; TWINT, Apple Pay, Google Pay, Karte; verwalten und kündigen im Stripe-Kundenportal) oder kostenlos mit Einladungscode (auch als Link `/registrieren?code=…`) · Zustimmung zu Nutzungsbedingungen und Datenschutzerklärung (auch für bestehende Konten, erneut bei Änderungen) · öffentliche Seiten Impressum, AGB, Datenschutz · Anmelden/Abmelden · **Passkeys** (Face ID, Fingerabdruck, Geräte-PIN) einrichten, verwalten und damit anmelden – Hinweis auf dem Startbildschirm, der sich dauerhaft wegklicken lässt · Name, E-Mail, Avatar (Emoji + Farbe) und Passwort ändern · Datenexport (JSON) · Konto löschen |
-| **Entdecken** | «Spiel des Tages» · Filter «Wie viele seid ihr?» · Volltextsuche (umlaut-tolerant) und Kategorien · Spiele mit einem Tipp hinzufügen/entfernen |
+| **Start** | Willkommensseite mit den drei Teilen der App (Partyspiele, Allein & 3D, Lernen) · «Weiterspielen» mit dem zuletzt gespielten Spiel und der Gruppe · kompakte Kacheln für «Meine Spiele» – neue Konten sehen stattdessen «Zum Start» mit sechs sofort spielbaren Spielen · Vorschläge zum direkten Hinzufügen |
+| **Konto** | Registrieren mit Name, E-Mail und Passwort – kostenlos mit Einladungscode (auch als Link `/registrieren?code=…`) oder mit **Jahresabo** über Stripe (7 Tage gratis, danach CHF 5 pro Jahr; TWINT, Apple Pay, Google Pay, Karte; verwalten und kündigen im Stripe-Kundenportal). Das Abo ist fertig, aber erst mit dem Secret `STRIPE_SECRET_KEY` eingeschaltet – vorerst ist es aus, neue Konten brauchen einen Einladungscode · Zustimmung zu Nutzungsbedingungen und Datenschutzerklärung (auch für bestehende Konten, erneut bei Änderungen) – aktiv, sobald die Betreiberangaben eingetragen sind · öffentliche Seiten Impressum, AGB, Datenschutz · Anmelden/Abmelden · **Passkeys** (Face ID, Fingerabdruck, Geräte-PIN) einrichten, verwalten und damit anmelden – Hinweis auf dem Startbildschirm, der sich dauerhaft wegklicken lässt · Name, E-Mail, Avatar (Emoji + Farbe) und Passwort ändern · Datenexport (JSON) · Konto löschen |
+| **Entdecken** | Alle 30 Spiele an einem Ort («30 Spiele – zusammen, allein und in 3D») · ohne Filter «⭐ Tagestipp» und drei Abschnitte mit Anzahl: «Zusammen spielen» (17, mit + zu «Meine Spiele» hinzufügen/entfernen), «Allein spielen» (5) und «Arena» (8) – diese mit Bild aus dem Spiel; ein Tipp öffnet ihre Seite (`/allein/…`, `/arena/…`), «Zurück» führt wieder zu Entdecken · Filter «Wie viele seid ihr?» ab **1** (allein: die Spiele von «Allein» und «Arena» und Gruppenspiele, die auch eine Person spielen kann, z. B. «Mehr oder weniger») · Volltextsuche (umlaut-tolerant, auch nach dem, was ein Spiel übt) und Kategorien, darunter «Allein» und «Arena» – mit Suche oder Filter eine gemeinsame Liste «N Spiele gefunden» · haben die Eltern die Arena ausgeblendet, fehlt sie auch hier (22 Spiele) |
 | **Spielgruppen** | Gruppen mit Namen, Symbol und Mitspielenden anlegen · beim Spielstart wird die Gruppe angezeigt und kann direkt angepasst werden (Personen hinzufügen/entfernen) |
 | **Spiele** | Oben «Zusammen \| Allein \| Arena» (der Tab öffnet den zuletzt benutzten Bereich) · 17 Partyspiele mit über 2’500 Begriffen, Fragen und Karten · **Allein spielen:** 5 Spiele für eine Person von 6 bis 12 Jahren mit zwei Altersstufen, Rekorden pro Person und – im Phoni-Rennen – Autos zum Kaufen · **Arena:** 8 Spiele in 3D für Jugendliche ab 13 (three.js, erst beim Spielen geladen) mit Leuchteffekten, Spiegelungen und Partikeln – «Grafik: Automatisch / Schön / Schnell» passt sie dem Handy an –, Skins, Eltern können sie ausblenden · **Familien-Rangliste** für alle Einzelspiele und die Gemeinschaftsspiele mit Wertung (Punkte pro Person, Siege, Partien – in Teamspielen zählt, wer erklärt oder darstellt) – siehe Tabellen unten |
-| **Belohnungen** | Münzen fürs Lernen, ein- und ausschaltbar (Konto → Belohnungen): pro gewusste Karte im Kartenkasten und Lückentext und pro Punkt in Aufgaben, mit Tageslimit · eine Runde «Allein spielen» kostet Münzen · Kontostand pro Person mit Verlauf, Münzen schenken oder abziehen · Einstellungen mit Code schützen (Code vergessen → Passwort des Kontos) · passt für Eltern jüngerer Kinder; Jugendliche mit eigenem Konto lassen es aus oder nutzen es als eigenen Ansporn · Münzen gehen beim Synchronisieren nie verloren (Zähler pro Gerät) |
-| **Lernen** | Eigener Bereich (Tab, mit rotem Badge für alle fälligen Karten), kein Spiel im Katalog · Spielformen: **Kartenkasten** (Lernkartei mit 5 Fächern, Lernstand und Lernserie pro Person, allein ohne Spielgruppe; Lernstand pro Stapel als farbiger Balken, «Diese Woche» mit den Lerntagen jeder Person; aufdecken, Auswahl aus vier oder eintippen; Wörtli wie erfasst, umgekehrt oder gemischt abfragen), **Lückentext** (Wortbank oder eintippen), **Duell** (zu zweit, geteilter Bildschirm), **Blitzrunde** (Teams, eine Person fragt ab), **Schätzrunde** (Zahlen und Jahreszahlen, alle schätzen geheim) · «Heute dran» (wer welche Karten wiederholen soll, ein Tipp startet die erste Karte) und alle Stapel · Stapelseite mit «Wer lernt?» (ohne Spielgruppe, Personen hinzufügen und entfernen), Kartenkasten mit Fächern und Antwortart pro Person, Lückentext und den Spielformen zum Zusammenspielen · Lernstoff per Foto erfassen (bis 6 Seiten; Auswertung mit einem Qwen-Modell bei Infomaniak in der Schweiz, Fotos werden nicht gespeichert) oder abtippen · erkannte Karten prüfen und korrigieren · Monatslimit pro Person · Stapel und Lernstand werden synchronisiert · **per Link teilen** (der Link gilt als Einladung, Empfänger übernehmen eine eigene Kopie) |
+| **Belohnungen** | Münzen fürs Lernen, ein- und ausschaltbar (Konto → Belohnungen): pro gewusste Karte im Kartenkasten und Lückentext und pro Punkt in Aufgaben, mit Tageslimit · eine Runde «Allein spielen», Autos im Phoni-Rennen und Skins der Arena kosten Münzen (mit Münzen aus ist alles frei) · Arena ein- oder ausblenden · Kontostand pro Person mit Verlauf, Münzen schenken oder abziehen · Einstellungen mit Code schützen (Code vergessen → Passwort des Kontos) · passt für Eltern jüngerer Kinder; Jugendliche mit eigenem Konto lassen es aus oder nutzen es als eigenen Ansporn · Münzen gehen beim Synchronisieren nie verloren (Zähler pro Gerät) |
+| **Lernen** | Eigener Bereich (Tab, mit rotem Badge für alle fälligen Karten), kein Spiel im Katalog · Spielformen: **Kartenkasten** (Lernkartei mit 5 Fächern, Lernstand und Lernserie pro Person, allein ohne Spielgruppe; Lernstand pro Stapel als farbiger Balken, «Diese Woche» mit den Lerntagen jeder Person; aufdecken, Auswahl aus vier oder eintippen; Wörtli wie erfasst, umgekehrt oder gemischt abfragen), **Lückentext** (Wortbank oder eintippen), **Duell** (zu zweit, geteilter Bildschirm), **Blitzrunde** (Teams, eine Person fragt ab), **Schätzrunde** (Zahlen und Jahreszahlen, alle schätzen geheim) · «Heute dran» (wer welche Karten wiederholen soll, ein Tipp startet die erste Karte) und alle Stapel · Stapelseite mit «Wer lernt?» (ohne Spielgruppe, Personen hinzufügen und entfernen), Kartenkasten mit Fächern und Antwortart pro Person, Lückentext und den Spielformen zum Zusammenspielen · Lernstoff per Foto erfassen (bis 6 Seiten; Auswertung mit einem Qwen-Modell bei Infomaniak in der Schweiz, Fotos werden nicht gespeichert) oder abtippen · erkannte Karten prüfen und korrigieren · Monatslimit pro Person · Stapel und Lernstand werden synchronisiert · **per Link teilen** (Vorschau für alle mit dem Link; Empfänger übernehmen eine eigene Kopie, wer noch kein Konto hat, registriert sich zuerst) |
 | **Aufgaben** | Zweiter Bereich im Tab «Lernen» («Karten \| Aufgaben») für die Prüfungsvorbereitung · Thema mit Lernzielen und Kernstoff aus Fotos (Lernziel-Blatt, Buchseiten) oder Stichworten, passend zur Stufe (Lehrplan 21), oder selbst geschrieben · Prüfungsdatum (steht in den letzten 7 Tagen in «Heute dran») · **Unterlagen** von der KI: Wissenstest, Übungsaufgaben oder Probeprüfung (15/30/45 Minuten, drei Schwierigkeiten, ausgewählte Lernziele), mit Musterlösungen und zweiter Kontrolle · Vorschau mit/ohne Lösungen, **PDF** zum Ausdrucken (Häuschen in Mathe, Lösungen auf eigener Seite, Notenskala) · **in der App lösen** mit Notizblatt für Finger und Stift (iPad), Auswertung und Selbstbewertung · Ergebnisse vom Papier eintragen · Stand pro Lernziel («sitzt», «fast», «üben») und «Gezielt üben» · Lernkarten aus einem Thema · 20 Unterlagen pro Monat |
 | **Sound & Stimme** | Eigenes Sounddesign pro Spiel (Trommelwirbel, Herzschlag, Fanfaren …, alles synthetisiert) · natürliche Erzählstimmen «Thorsten» und «Kerstin» vom eigenen Server (Piper) – auf jedem Gerät gleich, auch auf dem iPhone, Ansagen offline verfügbar; sonst die beste Stimme des Geräts · Stimmenauswahl mit Hörprobe unter Konto → Erzählstimme |
 | **PWA** | Installierbar (Android & iOS) · komplett offline spielbar · Offline-Änderungen werden automatisch synchronisiert · Update-Hinweis bei neuer Version · Bildschirm bleibt während des Spiels an |
@@ -112,17 +115,20 @@ Alle Inhalte sind in Schweizer Hochdeutsch geschrieben (ohne «ß») und funktio
 - **Knöpfe zum Draufdrücken:** Alles Klickbare senkt sich beim Antippen spürbar ein – mit Vibration und Sound.
 - **Für kleine Handys gemacht:** Titel passen sich der Kartenbreite an, jede Tippfläche ist mindestens 44 px gross,
   Meldungen erscheinen unten beim Daumen. Neue Konten sehen sofort sechs Spiele zum Start statt einer leeren Liste.
-- **Bilder aus den Spielen:** Die Kacheln von «Allein» und «Arena» zeigen echte Aufnahmen der Spiele; Ranglisten
+- **Bilder aus den Spielen:** Die Kacheln von «Allein» und «Arena» und ihre Einträge in «Entdecken» zeigen echte Aufnahmen der Spiele; Ranglisten
   stehen auf einem Podest.
 - **Spiele:** helle, farbige Bühnen pro Spiel; bewusst dunkel sind nur die Nacht im Dorf und der Knall der Bombe.
 
 ## Technik
 
 - **Frontend:** React 19, TypeScript, Vite 8, React Router 7, Zustand, `vite-plugin-pwa` (Workbox)
+- **3D (Arena):** three.js mit Nachbearbeitung (Bloom, Vignette, FXAA) und eigenen Shadern für Himmel, Wasser und Partikel – in einem eigenen Teil des Bundles, den nur die Arena-Spiele laden
+- **PDF:** pdfmake im Browser (Unterlagen in «Aufgaben», erst bei Bedarf geladen)
 - **Backend:** Node.js 24, Fastify 5, SQLite über das eingebaute `node:sqlite` (keine nativen Abhängigkeiten), Zod
-- **Sound & Effekte:** Web Audio API (alle Sounds werden zur Laufzeit erzeugt), Erzählstimme mit [Piper](https://github.com/OHF-Voice/piper1-gpl) im eigenen Container bzw. Web Speech API, Canvas (Explosion, Konfetti, Zeichenfläche), CSS-Animationen, View Transitions
-- **Geräte-APIs:** Bewegungssensor (Kipp-Steuerung), Multi-Touch, Vibration, Wake Lock, Kamera/Fotos (Lernstapel)
-- **KI:** Foto-Auswertung für Lernstapel über die OpenAI-kompatible Schnittstelle der Infomaniak AI Tools (Rechenzentren in der Schweiz), festes JSON-Schema
+- **Sound & Effekte:** Web Audio API (alle Sounds werden zur Laufzeit erzeugt), Erzählstimme mit [Piper](https://github.com/OHF-Voice/piper1-gpl) im eigenen Container bzw. Web Speech API, Canvas (Explosion, Konfetti, Zeichenfläche, Phoni-Rennen), WebGL, CSS-Animationen, View Transitions
+- **Geräte-APIs:** Bewegungssensor (Kipp-Steuerung), Multi-Touch, Pointer Events mit Stift-Druck (Notizblatt), Vibration, Wake Lock, Kamera/Fotos (Lernstapel, Aufgaben)
+- **KI:** Foto-Auswertung für Lernstapel und Lernziele, Unterlagen und Lernkarten für «Aufgaben» über die OpenAI-kompatible Schnittstelle der Infomaniak AI Tools (Rechenzentren in der Schweiz), festes JSON-Schema
+- **Zahlungen:** Stripe (Jahresabo, ohne Webhooks) – vorbereitet, eingeschaltet erst mit `STRIPE_SECRET_KEY`
 - **Betrieb:** Docker, Caddy (automatisches HTTPS mit Let’s Encrypt), GitHub Actions → GitHub Container Registry → Infomaniak VPS
 
 ## Schnellstart (Entwicklung)
@@ -156,7 +162,7 @@ npm run preview
 | `npm run build` | PWA nach `dist/client` bauen |
 | `npm start` | Produktionsserver starten (liefert API **und** PWA aus) |
 | `npm run preview` | Build + Produktionsserver |
-| `npm test` | Tests (Vitest): API, Sync-Logik, Spiellogik und Inhalte |
+| `npm test` | Tests (Vitest): API, Sync-Logik, Münzen, Spiellogik (auch «Allein» und «Arena») und Inhalte |
 | `npm run test:e2e` | Browser-Tests (Playwright): baut die App und spielt die wichtigsten Abläufe auf einem Handy-Bildschirm durch – siehe [`e2e/`](e2e) |
 | `npm run typecheck` | TypeScript-Prüfung |
 | `npm run icons` | App-Icons aus `client/public/icons/phoni.svg` neu erzeugen |
@@ -165,25 +171,29 @@ npm run preview
 
 ```
 ├── client/                 PWA (React)
-│   ├── public/             Icons, Favicon
+│   ├── public/             Icons, Favicon, covers/ (Bilder der Spiele von «Allein» und «Arena», WebP)
 │   └── src/
-│       ├── components/     UI-Bausteine (Buttons, Sheets, Roulette, Spieler-Editor …)
-│       ├── games/          Spiele – je Spiel ein Ordner + registry.ts
-│       │   ├── shared/     Spielrahmen, Timer, Weitergeben & Aufdecken, Teams, Team-Engine …
+│       ├── components/     UI-Bausteine (Buttons, Sheets, Roulette, Spieler-Editor, Rangliste, Lernstand …)
+│       ├── games/          Spiele für die Runde – je Spiel ein Ordner + registry.ts
+│       │   ├── shared/     Spielrahmen, Timer, Weitergeben & Aufdecken, Teams, Team-Engine, Punkte pro Person …
 │       │   ├── bombe/      Fragen, Logik, Timer, Sounds, Explosion, Grafik
+│       │   ├── spickzettel/ Spielformen von «Lernen» (Kartenkasten, Lückentext, Duell …) – kein Spiel im Katalog
 │       │   └── …           16 weitere Spiele mit Logik und Inhalten
 │       ├── solo/           «Allein spielen» – registry.ts, logic.ts (Regeln, getestet), je Spiel ein Ordner
 │       ├── arena/          «Arena» (3D) – engine.ts (three.js, Nachbearbeitung), fx.ts (Himmel, Meer, Partikel …), input.ts, Regeln je Spiel (logic/beat/raum/drone/golf/orbit/chain.ts, getestet), je Spiel ein Ordner
-│       ├── lib/            API-Client, Sync, Audio, Konfetti, PWA, Geräte-APIs
-│       ├── pages/          Seiten (Willkommen, Spiele, Lernen, Entdecken, Gruppen, Konto, Spiel)
-│       ├── store/          Zustand-Stores (Auth, Daten, Einstellungen, UI)
+│       ├── legal/          Impressum, AGB, Datenschutz – Betreiberangaben in operator.ts
+│       ├── lib/            API-Client, Sync, Audio, Konfetti, PWA, Geräte-APIs, Lernen, Rangliste, PDF
+│       ├── pages/          Seiten (Willkommen, Start, Allein, Arena, Lernen, Aufgaben, Entdecken, Gruppen, Konto, Belohnungen, Spiel)
+│       ├── store/          Zustand-Stores (Auth, Daten, Einstellungen, Unterlagen, UI)
 │       └── styles/         Design-System (CSS)
 ├── server/                 API (Fastify + SQLite)
-│   ├── src/                app.ts, routes/, repo.ts (Datenbank), security.ts …
-│   └── test/               API-Tests
-├── e2e/                    Browser-Tests (Playwright) mit eigenem Testserver und Schein-KI
-├── shared/                 Typen und Sync-Logik für Client und Server
-├── deploy/                 docker-compose.yml, Caddyfile, setup-vps.sh, backup.sh
+│   ├── src/                app.ts, routes/, repo.ts (Datenbank), billing.ts (Stripe), security.ts …
+│   └── test/               API-Tests (mit Schein-KI und Stripe-Attrappe)
+├── e2e/                    Browser-Tests (Playwright) mit eigenem Testserver, Schein-KI und Stripe-Attrappe
+├── shared/                 Typen, Sync-Logik, Münzen (coins.ts) und Version der Rechtstexte (legal.ts) für Client und Server
+├── tts/                    Erzählstimme (Piper) – eigenes Docker-Image
+├── scripts/                Dev-Start, App-Icons erzeugen
+├── deploy/                 docker-compose.yml, Caddyfile, setup-vps.sh, backup.sh, .env.example
 ├── docs/                   Dokumentation
 ├── .github/workflows/      CI und Deployment
 └── Dockerfile
@@ -193,12 +203,13 @@ npm run preview
 
 Jeder Push auf `main` wird getestet, als Docker-Image in die GitHub Container Registry gepusht und per SSH auf den
 Infomaniak-VPS ausgerollt. Die Schritt-für-Schritt-Anleitung (VPS bestellen, DNS, SSH-Schlüssel, GitHub-Secrets,
-Backups, Rollback) steht in **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**.
+Rechtstexte, Abo, KI, Backups, Rollback) steht in **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**.
 
 ## Weitere Dokumentation
 
 - [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) – Infomaniak-VPS einrichten und mit GitHub Actions ausrollen
-- [docs/ARCHITEKTUR.md](docs/ARCHITEKTUR.md) – Aufbau, Offline-Synchronisation, Sicherheit, API
-- [docs/SPIELE.md](docs/SPIELE.md) – Ein neues Spiel hinzufügen · Bausteine · Inhalte ergänzen
+- [docs/ARCHITEKTUR.md](docs/ARCHITEKTUR.md) – Aufbau, Offline-Synchronisation, Sicherheit, Rechtstexte, API, Allein und Münzen, Arena (3D-Grafik), Familien-Rangliste
+- [docs/SPIELE.md](docs/SPIELE.md) – Ein neues Spiel hinzufügen (auch für «Allein» und «Arena») · Bausteine · Inhalte ergänzen
+- [e2e/README.md](e2e/README.md) – Browser-Tests
 - [docs/KONZEPT-LERNSTAPEL.md](docs/KONZEPT-LERNSTAPEL.md) – Konzept und Etappen von «Lernen» (früher «Spickzettel»)
 - [docs/KONZEPT-AUFGABEN.md](docs/KONZEPT-AUFGABEN.md) – Konzept und Etappen von «Aufgaben» (Prüfungsvorbereitung)
