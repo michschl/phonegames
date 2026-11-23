@@ -1,5 +1,5 @@
 import { Suspense, useCallback, useEffect, useState, type CSSProperties } from 'react';
-import { Link, Navigate, useNavigate, useParams } from 'react-router';
+import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router';
 import { balance } from '../../../shared/coins.ts';
 import { Mascot } from '../components/Brand.tsx';
 import { CoinPill } from '../components/Coins.tsx';
@@ -54,6 +54,12 @@ export function PlayAreaSwitch({ area }: { area: 'zusammen' | 'allein' | 'arena'
       />
     </div>
   );
+}
+
+/** Where «Zurück» leads on a game page: back to «Entdecken» when the game was opened there, else to its area. */
+export function useBackTo(area: string): string {
+  const from = (useLocation().state as { from?: string } | null)?.from;
+  return from === '/entdecken' ? from : area;
 }
 
 /** Who plays: the names of «Wer lernt?» (or the account), remembered per device. */
@@ -162,6 +168,7 @@ export function SoloHubPage() {
 export function SoloGamePage() {
   const { gameId } = useParams();
   const game = getSoloGame(gameId);
+  const back = useBackTo(SOLO);
   const [player, setPlayer, players] = usePlayer();
   const rewards = useRewards();
   const wallet = useWallet(player);
@@ -227,7 +234,7 @@ export function SoloGamePage() {
 
   if (phase === 'result' && result) {
     return (
-      <Page title={breakableName(game.name)} back={SOLO} className="solo-result-page">
+      <Page title={breakableName(game.name)} back={back} className="solo-result-page">
         <div className="solo-result">
           <Mascot size={130} mood={result.stars >= 3 ? 'party' : result.stars >= 1 ? 'happy' : 'wink'} />
           <p className="solo-result__stars" aria-label={`${result.stars} von 3 Sternen`}>
@@ -261,7 +268,7 @@ export function SoloGamePage() {
 
   const buyCar = buy ? getCar(buy) : null;
   return (
-    <Page title={breakableName(game.name)} subtitle={game.tagline} back={SOLO} className="solo-start">
+    <Page title={breakableName(game.name)} subtitle={game.tagline} back={back} className="solo-start">
       <div className="solo-hero" style={{ '--c1': game.colors[0], '--c2': game.colors[1] } as CSSProperties}>
         <span className="solo-hero__cover" aria-hidden="true">
           <img src={`/covers/solo-${game.id}.webp`} alt="" decoding="async" />

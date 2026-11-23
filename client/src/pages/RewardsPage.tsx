@@ -377,7 +377,7 @@ export function RewardsPage() {
           <div className="list__item list__item--toggle">
             <Toggle
               label="Arena anzeigen"
-              description={rewards.arena ? '3D-Spiele für Jugendliche im Tab «Spiele».' : 'Ausgeblendet – auf allen Geräten dieses Kontos.'}
+              description={rewards.arena ? '3D-Spiele für Jugendliche – im Tab «Spiele» und unter «Entdecken».' : 'Ausgeblendet – auf allen Geräten dieses Kontos.'}
               checked={rewards.arena}
               onChange={(arena) => saveRewards({ arena })}
             />

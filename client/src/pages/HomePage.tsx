@@ -118,7 +118,7 @@ export function HomePage() {
             <div className="section__head">
               <h2 className="section__title">Zum Start</h2>
               <Link to="/entdecken" className="section__link" viewTransition>
-                Alle {GAMES.filter((g) => g.status === 'available').length} Spiele
+                Alle Spiele
               </Link>
             </div>
             <p className="section__lead">Sofort spielbar, mit jeder Runde. Mit «Zu meinen Spielen» kommen deine Lieblinge hierher.</p>

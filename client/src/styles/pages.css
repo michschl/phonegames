@@ -398,6 +398,21 @@
   margin-bottom: 22px;
 }
 
+.discover-featured + .discover-section {
+  margin-top: 8px;
+}
+
+.discover-section__count {
+  padding: 1px 9px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1.5px solid var(--line);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink-2);
+}
+
 .hero-card__title,
 .hero-card__text {
   display: block;
@@ -620,22 +635,35 @@
 
 .size-filter__options {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: clamp(4px, 1.8cqi, 6px);
+  container-type: inline-size;
 }
 
+/* All seven in one row, even on a 320-pixel phone: the numbers shrink a little instead of breaking. */
 .size-pill {
+  position: relative;
+  min-width: 0;
+  padding: 0;
+  white-space: nowrap;
   height: 40px;
   border-radius: 12px;
   border: 2.5px solid var(--ink);
   background: var(--paper);
   box-shadow: 0 2px 0 var(--ink);
   font-weight: 800;
-  font-size: 14.5px;
+  font-size: clamp(12px, 5cqi, 14.5px);
   transition:
     transform 0.12s,
     box-shadow 0.12s,
     background 0.2s;
+}
+
+/* A little more touch area around the pill, up to the middle of the gap. */
+.size-pill::after {
+  content: '';
+  position: absolute;
+  inset: -4px -2px;
 }
 
 .size-pill:active {
