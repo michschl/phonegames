@@ -12,6 +12,14 @@ test('Arena: 3D-Spiele ab 13, Familien-Rangliste, Level in Kugelbahn, Orbit und 
   await expect(page).toHaveURL('/arena');
   await expect(page.locator('.arena-tile')).toHaveCount(8);
   await expectAccessible(page);
+  // How much is drawn: all effects, or none – for old phones and to save battery. The choice stays.
+  const graphics = page.getByRole('radiogroup', { name: 'Grafik' });
+  await expect(graphics.getByRole('radio', { name: 'Automatisch' })).toBeChecked();
+  await graphics.getByRole('radio', { name: 'Schnell' }).click();
+  await expect(page.getByText('Ohne Leuchteffekte: schont den Akku')).toBeVisible();
+  await page.reload();
+  await expect(graphics.getByRole('radio', { name: 'Schnell' })).toBeChecked();
+  await graphics.getByRole('radio', { name: 'Automatisch' }).click();
 
   // Another person of the family already has a record in the Raumdenker.
   const wallet = { id: 'learner-tim', learner: 'Tim', earned: {}, spent: {}, history: [], unlocks: [], best: { raum: 5000 }, updatedAt: Date.now() - 1000, deleted: false };

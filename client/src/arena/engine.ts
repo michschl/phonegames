@@ -41,11 +41,6 @@ export interface ArenaInfo {
   effects: boolean;
 }
 
-/** Registers something to free when the scene ends (render targets, textures in shader uniforms). */
-export function onDispose(scene: THREE.Scene, free: () => void): void {
-  ((scene.userData.disposers ??= []) as (() => void)[]).push(free);
-}
-
 function disposeScene(scene: THREE.Scene): void {
   scene.traverse((object) => {
     const mesh = object as THREE.Mesh;
@@ -56,6 +51,7 @@ function disposeScene(scene: THREE.Scene): void {
       material.dispose();
     }
   });
+  // What fx.ts registered with onDispose (render targets).
   for (const free of (scene.userData.disposers ?? []) as (() => void)[]) free();
   scene.environment?.dispose();
 }
@@ -133,12 +129,15 @@ export function useArenaScene(
     renderer.toneMappingExposure = 1.05;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
-    const maxRatio = Math.min(window.devicePixelRatio || 1, 2);
+    const wish = arenaGraphics();
+    // «Schnell» also draws fewer pixels: that saves the most battery.
+    const maxRatio = Math.min(window.devicePixelRatio || 1, wish === 'schnell' ? 1.5 : 2);
     let ratio = maxRatio;
     renderer.setPixelRatio(ratio);
 
-    const wish = arenaGraphics();
-    let effects = wish === 'schoen' || (wish === 'auto' && !softwareRendering(renderer));
+    // The passes need pictures with more than 8 bits per colour; a chip that cannot draw into those gets none.
+    const deep = renderer.extensions.has('EXT_color_buffer_half_float') || renderer.extensions.has('EXT_color_buffer_float');
+    let effects = deep && (wish === 'schoen' || (wish === 'auto' && !softwareRendering(renderer)));
     const stage = factory.current(renderer, { effects });
     current.current = stage;
     const fx = stage.fx ?? {};
@@ -259,37 +258,4 @@ export function useArenaScene(
   }, [canvasRef, key]);
 
   return current;
-}
-
-/** A soft sky gradient as scene background. */
-export function skyTexture(top: string, bottom: string): THREE.CanvasTexture {
-  const canvas = document.createElement('canvas');
-  canvas.width = 2;
-  canvas.height = 256;
-  const ctx = canvas.getContext('2d')!;
-  const gradient = ctx.createLinearGradient(0, 0, 0, 256);
-  gradient.addColorStop(0, top);
-  gradient.addColorStop(1, bottom);
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, 2, 256);
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  return texture;
-}
-
-/** A round, soft glow for sparkles and lights (additive sprites). */
-export function glowTexture(color = '#ffffff'): THREE.CanvasTexture {
-  const canvas = document.createElement('canvas');
-  canvas.width = 64;
-  canvas.height = 64;
-  const ctx = canvas.getContext('2d')!;
-  const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-  gradient.addColorStop(0, color);
-  gradient.addColorStop(0.35, `${color}aa`);
-  gradient.addColorStop(1, `${color}00`);
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, 64, 64);
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  return texture;
 }

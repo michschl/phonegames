@@ -210,7 +210,6 @@ export default function ChainGame({ skin: skinId, option, onFinish, onQuit }: Ar
   onStar.current = (n) => setStars(n);
 
   useArenaScene(canvasRef, (renderer) => {
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 200);
     // A room at dusk around the box: its light also shows as reflections on balls and blocks.
@@ -414,6 +413,15 @@ export default function ChainGame({ skin: skinId, option, onFinish, onQuit }: Ar
 
     const rebuild = () => {
       const { world, hints: hintParts } = sim.current;
+      // What was made for the last state alone goes back to the graphics memory (shapes and looks are shared and stay).
+      for (const trail of trails) {
+        trail.geometry.dispose();
+        trail.material.dispose();
+      }
+      for (const halo of starGlows) {
+        halo.material.map?.dispose();
+        halo.material.dispose();
+      }
       scene.remove(dynamic);
       dynamic = new THREE.Group();
       scene.add(dynamic);

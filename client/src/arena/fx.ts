@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { onDispose } from './engine.ts';
 
 /*
  * The effects the Arena games share: a sky drawn by a shader (sun, clouds, stars, northern lights), its
@@ -7,6 +6,11 @@ import { onDispose } from './engine.ts';
  * All shaders write scene light and leave the mapping to the screen to three.js, so they look the same with
  * and without the passes of engine.ts.
  */
+
+/** Registers something to free when the scene ends (render targets); engine.ts calls it. */
+export function onDispose(scene: THREE.Scene, free: () => void): void {
+  ((scene.userData.disposers ??= []) as (() => void)[]).push(free);
+}
 
 const NOISE = /* glsl */ `
   float hash12(vec2 p) {

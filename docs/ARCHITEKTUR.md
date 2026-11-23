@@ -407,6 +407,26 @@ schlecht in Karten fassen lässt.
   Auflösung, wenn Bilder länger als 26 ms brauchen (und hebt sie wieder), und gibt beim Verlassen Geometrien,
   Materialien und den WebGL-Kontext frei. Gesteuert wird mit dem Finger (Ziehen ab der Berührung), Pfeiltasten oder
   durch Neigen (`useSteer`, relativ zur Haltung beim Start; iOS fragt einmal um Erlaubnis).
+- **Grafik:** Mit Effekten zeichnet die Engine in hohem Dynamikumfang und bearbeitet das Bild nach
+  (`EffectComposer`): Helles leuchtet (Bloom – nur was heller ist als weisses Papier im vollen Licht, also
+  Lampen, Funken, Neon), eigener Ausgabe-Pass mit Vignette, ACES-Abbildung und sRGB, danach Kantenglättung
+  (FXAA). Ein Spiel beschreibt seinen Look in `ArenaScene.fx` und darf ihn laufend ändern (die Beat-Bahn leuchtet
+  stärker, je länger die Serie). Reicht die Leistung auch mit der kleinsten Auflösung nicht, schaltet die Engine
+  die Effekte für den Rest des Spiels ab; ohne Grafikchip (Testbrowser) sind sie von Anfang an aus. Die
+  Einstellung «Grafik» in der Arena (`gameSettings.arena.grafik`: `auto`, `schoen`, `schnell`) erzwingt oder
+  verhindert sie; «Schnell» zeichnet zudem weniger Pixel. Ein einzelner ungültiger Pixel (nicht darstellbare
+  Zahl, etwa von einer auf Höhe 0 gestauchten Fläche) würde vom Bloom über das ganze Bild verschmiert – der
+  Helligkeitsfilter lässt solche Werte deshalb aus.
+- **Effekt-Baukasten** (`arena/fx.ts`, getestet soweit ohne Grafik möglich): `Sky` (Verlauf, Sonne mit Hof,
+  ziehende Wolken, funkelnde Sterne, Polarlicht) und `environmentFrom` (das Licht dieses Himmels als Spiegelung
+  auf allen Standard-Materialien), `Nebula` (Gaswolken und Sterne auf einer fernen Ebene – verschiebt sich gegen
+  die Szene), `Water` (Wellen mit Sonnenglitzern oder Lava mit glühenden Rissen), `Particles` (ein Ring-Puffer
+  weicher Punkte: Funken, Staub, Glut), `Trail` (leuchtendes Band, das der Kamera zugewandt bleibt), `Confetti`
+  (Papierschnipsel im Bild der Kamera), `Shake`. Alle Shader schreiben Szenenlicht und überlassen die Abbildung
+  auf den Bildschirm three.js – so sehen sie mit und ohne Nachbearbeitung gleich aus. Farben für Flächen werden
+  als Bildschirmfarben angegeben (`setHSL(…, SRGBColorSpace)`); als Lichtmenge gelesen wirken sie viel blasser.
+  Viele dünne Leuchtlinien (Kachelkanten) bleiben knapp unter der Bloom-Schwelle und tragen ihren Schein in der
+  Textur – sonst summieren sie sich zu einem Schleier.
 - **Spiele:** Die Regeln stehen getestet ausserhalb der 3D-Szenen – Pisten (`makeCourse`, kein Hindernis in einem
   Tor), Kugelbahn-Level (`kugelLevel`, `solvable` prüft per Breitensuche mit Schalterzustand), Songs der Beat-Bahn
   (`makeSong`, `judge`: ±60 ms «Perfekt», ±130 ms «Gut»), Aufgaben des Raumdenkers (`project`, die 24 Drehungen,

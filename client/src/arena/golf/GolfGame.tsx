@@ -411,7 +411,14 @@ export default function GolfGame({ skin: skinId, option, onFinish, onQuit }: Are
     const load = (index: number) => {
       if (holeScene) {
         scene.remove(holeScene.group);
-        holeScene.group.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
+        holeScene.group.traverse((o) => {
+          const mesh = o as THREE.Mesh;
+          mesh.geometry?.dispose();
+          for (const material of Array.isArray(mesh.material) ? mesh.material : mesh.material ? [mesh.material] : []) {
+            (material as THREE.MeshStandardMaterial).map?.dispose();
+            material.dispose();
+          }
+        });
       }
       holeScene = buildHole(course.holes[index]!.map, skin.accent, theme);
       scene.add(holeScene.group);

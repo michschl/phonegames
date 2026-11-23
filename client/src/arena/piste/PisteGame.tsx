@@ -232,8 +232,8 @@ export default function PisteGame({ player, skin: skinId, option, tilt, onFinish
     Object.assign(sun.shadow.camera, { left: -22, right: 22, top: 22, bottom: -22, near: 1, far: 140 });
     scene.add(hemi, sun, sun.target);
     // At night a lamp on the helmet lights the snow ahead.
-    const lamp = new THREE.PointLight(0xfff0d0, mood.night ? 16 : 0, 60, 1.2);
-    scene.add(lamp);
+    const lamp = new THREE.PointLight(0xfff0d0, 16, 60, 1.2);
+    if (mood.night) scene.add(lamp);
 
     const heightAt = (x: number, d: number) => {
       const off = Math.abs(x - course.center(d)) - course.run.halfWidth;
