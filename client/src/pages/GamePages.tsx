@@ -10,6 +10,7 @@ import { getGame } from '../games/registry.ts';
 import type { GameDefinition } from '../games/types.ts';
 import { sound } from '../lib/audio.ts';
 import { haptic } from '../lib/device.ts';
+import { launch } from '../lib/launch.ts';
 import { breakableName } from '../lib/util.ts';
 import { useData, useGroup, useGroups, useLibraryIds } from '../store/data.ts';
 import { useGameSettings, useSettings } from '../store/settings.ts';
@@ -139,7 +140,7 @@ function GameSetup({ game }: { game: GameDefinition }) {
     haptic(20);
     if (group) setLastGroup(game.id, group.id);
     setLastPlayed(game.id, game.noGroup ? undefined : group?.id);
-    navigate(`/spiel/${game.id}/los`, { viewTransition: true });
+    launch({ colors: game.colors, emoji: game.emoji }, () => navigate(`/spiel/${game.id}/los`));
   };
 
   return (

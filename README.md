@@ -123,6 +123,11 @@ Alle Inhalte sind in Schweizer Hochdeutsch geschrieben (ohne «ß») und funktio
   Markerstrich unter dem Titel, in den Abschnittsmarken und als Tönung des Hintergrunds. Die Umschalter
   «Zusammen | Allein | Arena» und «Karten | Aufgaben» bleiben beim Wechseln an derselben Stelle.
 - **Knöpfe zum Draufdrücken:** Alles Klickbare senkt sich beim Antippen spürbar ein – mit Vibration und Sound.
+  Kacheln neigen sich dabei zum Finger.
+- **Bewegung mit Sinn:** Ein Spiel startet als Farbflut in seinen Farben, das Bild des angetippten Spiels fliegt in
+  seine Startkarte, Tabs gleiten zur Seite. Die grossen Karten glänzen wie Sticker im Licht, Phoni schaut dem
+  Finger nach und springt, wenn man ihn antippt. Wer im System «Bewegung reduzieren» eingestellt hat, bekommt
+  davon nichts.
 - **Nie verloren:** Eine neue Seite beginnt oben, «Zurück» führt an die Stelle zurück, an der man die Liste verlassen
   hat. Der grosse Knopf unten ist nie ausgegraut, sondern führt zu dem, was noch fehlt.
 - **Für kleine Handys gemacht:** Titel passen sich der Kartenbreite an, jede Tippfläche ist mindestens 44 px gross,

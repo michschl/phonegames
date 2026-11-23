@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { NavLink, useLocation, useNavigate, useNavigationType } from 'react-router';
 import { Icon, type IconName } from './Icon.tsx';
 import { haptic } from '../lib/device.ts';
+import { nextMove } from '../lib/transition.ts';
 import { useData } from '../store/data.ts';
 import { useDueTotal } from '../store/learners.ts';
 import { useSettings } from '../store/settings.ts';
@@ -102,14 +103,18 @@ export function TabBar() {
       style={{ '--index': active, '--tabs': TABS.length, '--tab-color': TABS[active]!.color } as CSSProperties}
     >
       <span className="tabbar__pill" aria-hidden="true" />
-      {TABS.map((tab) => (
+      {TABS.map((tab, i) => (
         <NavLink
           key={tab.to}
           to={target(tab.to)}
           end={tab.to === '/'}
           aria-label={tab.to === '/lernen' && due > 0 ? `${tab.label}, ${due} ${due === 1 ? 'Karte' : 'Karten'} fällig` : undefined}
           className="tabbar__item"
-          onClick={() => haptic(6)}
+          onClick={() => {
+            haptic(6);
+            // The page comes from the side of its tab.
+            if (i !== active) nextMove(i > active ? 'right' : 'left');
+          }}
           viewTransition
         >
           <span className="tabbar__icon">
@@ -190,6 +195,7 @@ export function Page({
   const goBack = () => {
     haptic(6);
     const idx = historyIndex();
+    nextMove('back');
     if (back === true || (back && idx !== null && idx > 0 && trail[idx - 1] === back)) navigate(-1);
     else if (back) navigate(back, { viewTransition: true });
   };

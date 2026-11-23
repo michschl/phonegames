@@ -63,6 +63,34 @@ Ordnung auf der Seite:
   sich auch per Tipp auf die Karte.
 - **Tablet und Desktop:** Kacheln stehen ab 600 px Breite zu dritt nebeneinander.
 
+Bewegung – die App fühlt sich an wie ein Ding, nicht wie Seiten:
+
+- **Spielstart als Farbflut** ([`lib/launch.ts`](../client/src/lib/launch.ts)): Beim Start eines Spiels (Zusammen,
+  Allein, Arena, Lernen) flutet die Farbe des Spiels vom angetippten Punkt aus den Bildschirm (`clip-path: circle`
+  per Web Animations API), sein Emoji poppt auf, dahinter wird das Spiel aufgebaut, dann hebt sich der Vorhang.
+  `launch(look, go, hold)` ruft `go` auf, sobald der Bildschirm bedeckt ist; bei Spielen, die sofort loslaufen, ist
+  `hold` kurz. Ohne die API (Tests einzelner Komponenten) oder mit «Bewegung reduzieren» startet das Spiel direkt.
+- **Übergänge mit Richtung** ([`lib/transition.ts`](../client/src/lib/transition.ts), View Transitions API): Tabs und
+  die Umschalter der Bereiche gleiten zu der Seite, auf die getippt wurde, «Zurück» (auch die Geste des Browsers)
+  holt die vorige Seite von links. `nextMove()` setzt dafür `data-vt` am Wurzelelement für genau einen Wechsel.
+- **Das Bild des Spiels fliegt mit:** Die angetippte Kachel bekommt im Moment des Tipps den Namen `game-art`, die
+  Startkarte der Zielseite trägt ihn immer (`.setup-hero__art`, `.solo-hero__cover`, `.arena-hero`) – der Browser
+  lässt das Bild von der Liste in die Karte fliegen. Tab-Leiste und Start-Knopf haben eigene Namen: Die Leiste
+  bleibt stehen, während Seiten gleiten, und macht dem Start-Knopf Platz, der von unten kommt.
+- **Lebendige Karten:** Die grossen Karten haben wandernde Streifen (`::before`), einen Lichtglanz, der alle paar
+  Sekunden darüberläuft (`::after`), und ein schwebendes Bild. Gedrückte Kacheln neigen sich zum Finger
+  (`--px`/`--py`, gesetzt beim `pointerdown`) und sinken in ihren Schatten.
+- **Phoni lebt:** Die grossen Maskottchen schauen dem Finger nach (`--lx`/`--ly`) und springen beim Antippen mit
+  einem Quietschen ([`Brand.tsx`](../client/src/components/Brand.tsx)). Ein Listener für alle, höchstens eine
+  Berechnung pro Bild.
+- **Start ohne leere Seite:** `index.html` zeigt Phoni, den Schriftzug und drei hüpfende Punkte, bis die App
+  geladen ist; React ersetzt das beim ersten Rendern.
+- **Tiefe:** Die Formen im Hintergrund bewegen sich beim Scrollen unterschiedlich schnell
+  (`animation-timeline: scroll()`, nur wo der Browser es kann).
+- **Leistung und Rücksicht:** Bewegt werden nur `transform`, `opacity` und `clip-path`. Mit «Bewegung reduzieren»
+  im Betriebssystem entfallen alle Animationen und Übergänge (globale Regel in `global.css`, `prefersReducedMotion()`
+  im Code).
+
 Regeln für Lesbarkeit und Bedienbarkeit (geprüft mit axe-core gegen WCAG 2.2 AA):
 
 - **Text auf Farbe ist Tinte**, nicht Weiss: Weiss auf Pink oder Rot erreicht nur 3:1, Tinte rund 6:1. Weisse Schrift

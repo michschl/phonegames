@@ -314,6 +314,50 @@ button:disabled {
   }
 }
 
+/*
+ * Depth: while the page scrolls the shapes move at their own pace, each a little differently – they are
+ * further away than the content. Where the browser cannot tie an animation to scrolling they just drift.
+ */
+@supports (animation-timeline: scroll()) {
+  .backdrop__shape {
+    animation:
+      drift-shape var(--d, 18s) ease-in-out infinite alternate,
+      shape-depth linear both;
+    animation-delay: var(--delay, 0s), 0s;
+    animation-timeline: auto, scroll(root block);
+  }
+
+  .backdrop__shape--star {
+    --depth: -150px;
+  }
+
+  .backdrop__shape--squiggle {
+    --depth: -70px;
+  }
+
+  .backdrop__shape--ring {
+    --depth: -230px;
+  }
+
+  .backdrop__shape--triangle {
+    --depth: -110px;
+  }
+
+  .backdrop__shape--plus {
+    --depth: -190px;
+  }
+
+  .backdrop__shape--dot {
+    --depth: -280px;
+  }
+}
+
+@keyframes shape-depth {
+  to {
+    translate: 0 var(--depth, -120px);
+  }
+}
+
 @keyframes drift-shape {
   from {
     transform: translate(0, 0) rotate(0deg);
@@ -351,6 +395,131 @@ button:disabled {
     opacity: 0;
     transform: translateY(18px) scale(1.01);
   }
+}
+
+/*
+ * With a sense of place (lib/transition.ts sets data-vt for one change of page): tabs and switches slide to the
+ * side the finger went, «Zurück» brings the page before back from the left.
+ */
+:root[data-vt='right']::view-transition-old(root),
+:root[data-vt='left']::view-transition-old(root),
+:root[data-vt='back']::view-transition-old(root) {
+  animation-duration: 0.22s;
+  animation-timing-function: cubic-bezier(0.4, 0, 1, 1);
+}
+
+:root[data-vt='right']::view-transition-new(root),
+:root[data-vt='left']::view-transition-new(root),
+:root[data-vt='back']::view-transition-new(root) {
+  animation-duration: 0.42s;
+}
+
+:root[data-vt='right']::view-transition-old(root) {
+  animation-name: vt-out-left;
+}
+
+:root[data-vt='right']::view-transition-new(root) {
+  animation-name: vt-in-right;
+}
+
+:root[data-vt='left']::view-transition-old(root),
+:root[data-vt='back']::view-transition-old(root) {
+  animation-name: vt-out-right;
+}
+
+:root[data-vt='left']::view-transition-new(root),
+:root[data-vt='back']::view-transition-new(root) {
+  animation-name: vt-in-left;
+}
+
+@keyframes vt-out-left {
+  to {
+    opacity: 0;
+    transform: translateX(-46px);
+  }
+}
+
+@keyframes vt-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(56px);
+  }
+}
+
+@keyframes vt-out-right {
+  to {
+    opacity: 0;
+    transform: translateX(46px);
+  }
+}
+
+@keyframes vt-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-56px);
+  }
+}
+
+/* The tab bar stays where it is while the pages move; its marker slides by itself. */
+.tabbar {
+  view-transition-name: tabbar;
+}
+
+::view-transition-old(tabbar):not(:only-child) {
+  display: none;
+}
+
+::view-transition-new(tabbar):not(:only-child) {
+  animation: none;
+}
+
+/* To a page without tabs it drops out, the big button of that page rises in its place – and the other way round. */
+.start-bar {
+  view-transition-name: start-bar;
+}
+
+::view-transition-old(tabbar):only-child,
+::view-transition-old(start-bar):only-child {
+  animation: vt-bar-out 0.2s cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+::view-transition-new(tabbar):only-child,
+::view-transition-new(start-bar):only-child {
+  animation: vt-bar-in 0.42s 0.08s var(--ease-spring) both;
+}
+
+@keyframes vt-bar-out {
+  to {
+    opacity: 0;
+    transform: translateY(46px);
+  }
+}
+
+@keyframes vt-bar-in {
+  from {
+    opacity: 0;
+    transform: translateY(56px);
+  }
+}
+
+/*
+ * The picture of the game that was tapped flies into the start card of its page: the tapped one gets the name
+ * for the moment of the tap (lib/transition.ts), the card on the page has it for good.
+ */
+.setup-hero__art,
+.solo-hero__cover,
+.arena-hero {
+  view-transition-name: game-art;
+}
+
+::view-transition-group(game-art) {
+  animation-duration: 0.52s;
+  animation-timing-function: cubic-bezier(0.3, 1.25, 0.45, 1);
+}
+
+::view-transition-old(game-art),
+::view-transition-new(game-art) {
+  animation-duration: 0.28s;
 }
 
 @keyframes rise-in {

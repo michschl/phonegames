@@ -1239,9 +1239,9 @@
   overflow: hidden;
   text-decoration: none;
   color: var(--ink);
+  /* The stripes are a layer of their own (::before, «Living cards»): they wander. */
   background:
     radial-gradient(circle at 92% 8%, rgba(255, 255, 255, 0.5) 0 16%, transparent 17%),
-    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.18) 0 12px, transparent 12px 24px),
     linear-gradient(135deg, var(--g1), var(--g2));
   border: var(--border);
   box-shadow: var(--shadow-lg);
@@ -2410,3 +2410,135 @@ button.list__item:active {
   white-space: nowrap;
 }
 
+
+/* ============================================================== Launch */
+
+/* The start of a game (lib/launch.ts): its colours flood the screen from the tap, its emoji pops up. */
+.launch {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 46%, rgba(255, 255, 255, 0.42) 0 18%, transparent 46%),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.16) 0 18px, transparent 18px 36px),
+    linear-gradient(140deg, var(--g1, var(--pink)), var(--g2, var(--orange)));
+  will-change: clip-path, opacity, transform;
+  touch-action: none;
+}
+
+.launch__emoji {
+  position: relative;
+  font-size: min(42vw, 190px);
+  line-height: 1;
+  filter: drop-shadow(7px 9px 0 rgba(27, 16, 51, 0.88));
+}
+
+.launch__ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(120vw, 620px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 14px solid rgba(255, 255, 255, 0.75);
+}
+
+/* ========================================================= Living cards */
+
+/*
+ * The big cards are stickers that catch the light: their stripes wander, a glint runs over the foil every few
+ * seconds and the picture floats. Only transforms move (cheap for the phone); «reduced motion» stops all of it.
+ */
+.hero-card,
+.setup-hero {
+  isolation: isolate;
+}
+
+.hero-card::before,
+.setup-hero::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  /* Wider than the card by one period of the pattern, so the stripes can wander without a seam. */
+  inset: 0 -34px 0 0;
+  background: repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.18) 0 12px, transparent 12px 24px);
+  animation: stripes-wander 2.8s linear infinite;
+  pointer-events: none;
+}
+
+/* 24 px across the stripes are 33.94 px along the card. */
+@keyframes stripes-wander {
+  to {
+    transform: translateX(-33.94px);
+  }
+}
+
+.hero-card::after,
+.setup-hero::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: -30%;
+  bottom: -30%;
+  left: 0;
+  width: 34%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.6) 42%, rgba(255, 255, 255, 0.22) 58%, transparent);
+  transform: translateX(-160%) skewX(-18deg);
+  animation: foil-glint 5.6s 0.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes foil-glint {
+  0% {
+    transform: translateX(-160%) skewX(-18deg);
+  }
+  24%,
+  100% {
+    transform: translateX(480%) skewX(-18deg);
+  }
+}
+
+.hero-card__art {
+  animation: art-float 4.2s ease-in-out infinite;
+}
+
+@keyframes art-float {
+  0%,
+  100% {
+    transform: rotate(-6deg) translateY(0);
+  }
+  50% {
+    transform: rotate(-2deg) translateY(-5px);
+  }
+}
+
+/*
+ * Pressed, a card leans towards the finger (--px/--py from -1 to 1, set on pointerdown in lib/transition.ts)
+ * while it sinks into its shadow – it feels like a thing, not like a picture of one.
+ */
+.game-tile:active,
+.hero-card:active {
+  transform: translate(3px, 4px) perspective(640px) rotateX(calc(var(--py, 0) * -8deg)) rotateY(calc(var(--px, 0) * 8deg));
+}
+
+.solo-tile:active,
+.arena-tile:active {
+  transform: translateY(3px) perspective(640px) rotateX(calc(var(--py, 0) * -8deg)) rotateY(calc(var(--px, 0) * 8deg)) scale(0.98);
+}
+
+/* The tab that was chosen answers with a little jump. */
+.tabbar__item.active .icon {
+  animation: tab-hop 0.5s var(--ease-spring);
+}
+
+@keyframes tab-hop {
+  0% {
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+  45% {
+    transform: translateY(-7px) scale(1.24) rotate(-12deg);
+  }
+}

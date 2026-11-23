@@ -14,6 +14,7 @@ import { Button, ConfirmSheet, Segmented } from '../components/ui.tsx';
 import { sound } from '../lib/audio.ts';
 import { confetti } from '../lib/confetti.ts';
 import { haptic } from '../lib/device.ts';
+import { launch } from '../lib/launch.ts';
 import { breakableName } from '../lib/util.ts';
 import { requestTiltPermission } from '../lib/motion.ts';
 import { familyRanking, placeOf } from '../lib/ranking.ts';
@@ -213,9 +214,15 @@ export function ArenaGamePage() {
     if (price > 0 && !spendCoins(player, price, game.name)) return;
     if (price > 0) sound.coin();
     if (next !== choice.option) setChoice({ ...choice, option: next });
-    setRound((r) => r + 1);
-    setResult(null);
-    setPhase('play');
+    launch(
+      { colors: game.colors, emoji: game.emoji },
+      () => {
+        setRound((r) => r + 1);
+        setResult(null);
+        setPhase('play');
+      },
+      140,
+    );
   };
 
   if (phase === 'play') {

@@ -1020,12 +1020,17 @@
   padding: 20px;
   border-radius: var(--radius-xl);
   overflow: hidden;
+  /* The stripes are a layer of their own (::before, «Living cards» in components.css): they wander. */
   background:
     radial-gradient(circle at 12% 18%, rgba(255, 255, 255, 0.45) 0 10%, transparent 11%),
-    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.17) 0 12px, transparent 12px 24px),
     linear-gradient(140deg, var(--g1), var(--g2));
   border: var(--border);
   box-shadow: var(--shadow-lg);
+}
+
+/* With the button «Zu meinen Spielen» below, the card is taller: the row of facts clears the picture. */
+.setup-hero:has(.setup-hero__add) {
+  min-height: 238px;
 }
 
 .setup-hero__art {
