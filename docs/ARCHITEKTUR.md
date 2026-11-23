@@ -53,10 +53,10 @@ Regeln für Lesbarkeit und Bedienbarkeit (geprüft mit axe-core gegen WCAG 2.2 A
 - **Meldungen (Toasts) erscheinen unten**, wo der Daumen ist – über der Tab-Leiste bzw. dem Start-Knopf (`:root:has(…)`),
   so bleiben Titel und Zurück-Knopf sichtbar. Ist ein Blatt (Sheet) offen oder läuft ein Spiel (Antwort-Knöpfe unten),
   stehen sie oben.
-- **Bilder der Spiele:** Die Kacheln und Startseiten von «Allein» und «Arena» zeigen echte Aufnahmen aus den Spielen
-  (`client/public/covers/*.webp`, 360 px breit, zusammen unter 80 KB, im Offline-Cache). Sie wurden mit Playwright im
-  Grafikmodus «Schön» aufgenommen, zugeschnitten und als WebP gespeichert; ändert sich ein Spiel sichtbar, werden sie neu
-  aufgenommen. Das Emoji bleibt als Sticker daneben – fehlt ein Bild, steht die Kachel trotzdem.
+- **Bilder der Spiele:** Die Kacheln, Startseiten und Einträge in «Entdecken» von «Allein» und «Arena» zeigen echte
+  Aufnahmen aus den Spielen (`client/public/covers/solo-<id>.webp` bzw. `arena-<id>.webp`, 360 px breit, zusammen
+  unter 80 KB, im Offline-Cache). Sie wurden mit Playwright im Grafikmodus «Schön» aufgenommen, zugeschnitten und als
+  WebP gespeichert; ändert sich ein Spiel sichtbar, werden sie neu aufgenommen. Das Emoji bleibt als Sticker daneben – fehlt ein Bild, steht die Kachel trotzdem.
 - **Lernen sichtbar machen** ([`components/LearnCharts.tsx`](../client/src/components/LearnCharts.tsx)): Jeder Stapel
   zeigt seinen Lernstand als Balken in den Farben der fünf Fächer (`stackMastery()`: über alle Lernenden, neue Karten
   sind der leere Rest, der Prozentwert ist der Weg bis Fach 5). «Diese Woche» zeigt pro Person einen Punkt für jeden
@@ -150,11 +150,14 @@ nicht synchronisiert.
 
 ### Datenschutz
 
-Gespeichert werden nur Name, E-Mail, Passwort-Hash, Avatar, die Spieleliste, die Spielgruppen (Vornamen der
-Mitspielenden), die Lernstapel und der Lernstand pro Person. Es gibt keine Tracker und keine externen Requests aus dem
-Browser (Schriften sind eingebettet). Fotos für Lernstapel reicht der Server an die Infomaniak AI Tools weiter
-(Rechenzentren in der Schweiz); sie werden weder gespeichert noch protokolliert, nur die erkannten Karten bleiben. Nutzer können
-ihre Daten als JSON exportieren und ihr Konto samt allen Daten selbst löschen. Das Jahresabo läuft über Stripe:
+Gespeichert werden nur Name, E-Mail, Passwort-Hash, Avatar, Passkeys (öffentlicher Schlüssel), Version und Zeitpunkt
+der Zustimmung, die Spieleliste, die Spielgruppen (Vornamen der Mitspielenden), die Lernstapel und der Lernstand pro
+Person, Themen mit Unterlagen und Ergebnissen sowie pro Vorname eine Brieftasche (Münzen, Gekauftes, Rekorde aus
+«Allein» und Arena, Punkte, Siege und Partien der Gemeinschaftsspiele) und die Einstellungen der Belohnungen. Es gibt
+keine Tracker und keine externen Requests aus dem Browser (Schriften sind eingebettet). Fotos für Lernstapel und
+Themen reicht der Server an die Infomaniak AI Tools weiter (Rechenzentren in der Schweiz); sie werden weder gespeichert
+noch protokolliert, nur die erkannten Karten bzw. Lernziele bleiben. Nutzer können ihre Daten als JSON exportieren und
+ihr Konto samt allen Daten selbst löschen. Das Jahresabo (nur mit `STRIPE_SECRET_KEY`) läuft über Stripe:
 Zahlungsdaten gibt man nur auf der Zahlungsseite und im Kundenportal von Stripe ein; der Server kennt nur die
 Kunden- und Abo-Nummer bei Stripe, den Status und das Ablaufdatum.
 
@@ -173,7 +176,7 @@ aktiv. Mit einem Infomaniak-VPS liegen die Daten in der Schweiz.
 
 | Tabelle | Inhalt |
 | --- | --- |
-| `users` | `id`, `email` (eindeutig, case-insensitive), `name`, `avatar`, `color`, `password_hash`, `passkey_hint_dismissed`, Zeitstempel |
+| `users` | `id`, `email` (eindeutig, case-insensitive), `name`, `avatar`, `color`, `password_hash`, `passkey_hint_dismissed`, `plan` (`free`/`paid`), `stripe_customer_id`, `stripe_subscription_id`, `subscription_status`, `subscription_until`, `subscription_cancel_at_end`, `subscription_checked_at`, `trial_used`, `terms_version`, `terms_accepted_at`, Zeitstempel |
 | `passkeys` | `id` (Credential-ID), `user_id`, `public_key`, `counter`, `transports`, `device_type`, `backed_up`, `name`, `created_at`, `last_used_at` |
 | `sessions` | `token_hash`, `user_id`, `expires_at`, `last_seen_at`, `user_agent` |
 | `library` | `user_id`, `game_id`, `added_at`, `updated_at`, `deleted` |
@@ -184,7 +187,7 @@ aktiv. Mit einem Infomaniak-VPS liegen die Daten in der Schweiz.
 | `learn_topics` | `user_id`, `id`, `data` (JSON: Titel, Fach, Stufe, Prüfungsdatum, Lernziele mit Kernstoff, Notizen, Quelle), `created_at`, `updated_at`, `deleted` – synchronisiert wie die Stapel |
 | `learn_documents` | `user_id`, `id`, `topic_id`, `kind` (`quiz`/`tasks`/`exam`), `status` (`pending`/`ready`/`failed`), `data` (JSON: Titel, Anleitung, Dauer, Schwierigkeit, Aufgaben mit Musterlösungen, Ergebnisse), Zeitstempel – nicht im Sync, sondern über `/api/tasks/documents` |
 | `task_usage` | `user_id`, `month`, `count` – Monatslimit der Unterlagen |
-| `coin_wallets` | `user_id`, `id` (aus dem Namen), `data` (JSON: Name, Münzen verdient/ausgegeben **pro Gerät**, letzte 40 Buchungen, Gekauftes, Rekorde), `updated_at`, `deleted` |
+| `coin_wallets` | `user_id`, `id` (aus dem Namen), `data` (JSON: Name, Münzen verdient/ausgegeben **pro Gerät**, letzte 40 Buchungen, Gekauftes, Rekorde, Punkte/Siege/Partien der Gemeinschaftsspiele pro Gerät), `updated_at`, `deleted` |
 | `reward_settings` | `user_id`, `data` (JSON: Münzen an/aus, Hash des Codes, Münzen pro Karte/Punkt, Tageslimit, Preis pro Runde, Arena sichtbar), `updated_at` |
 | `learn_shares` | `id` (zufällig, 128 Bit), `owner_id`, `stack_id` (ein Link pro Stapel), `data` (JSON: Kopie der Karten ohne Lernstand), `imports`, `signups`, Zeitstempel |
 
@@ -239,8 +242,10 @@ Alle Antworten sind JSON. Fehler haben die Form `{ "error": "code", "message": "
 | `DELETE /api/tasks/documents/:id/attempts/:attemptId` | ✅ | – | `{ document }` |
 | `POST /api/tasks/cards` | ✅ | `{ topic, goalIds, count: 5–30 }` | `{ draft, usage }` – Lernkarten zu den Lernzielen, zählt wie eine Foto-Auswertung |
 
-Sync, Lernen, Teilen (anlegen, übernehmen) und die Erzählstimme brauchen zusätzlich ein laufendes Abo oder ein
-kostenloses Konto, sonst `402 subscription_required`. Konto, Export und Löschen gehen immer.
+Sync, Lernen, Aufgaben, Teilen (anlegen, übernehmen) und die Erzählstimme brauchen zusätzlich ein laufendes Abo oder
+ein kostenloses Konto, sonst `402 subscription_required`. Konto, Export und Löschen gehen immer. Ohne
+`STRIPE_SECRET_KEY` (vorerst der Fall) ist das Abo aus: `billing` in `/api/auth/options` ist `null`, neue Konten
+sind immer kostenlos (`plan: 'free'`), und die Routen unter `/api/billing` antworten mit `404 billing_off`.
 
 Die Typen stehen in [`shared/types.ts`](../shared/types.ts).
 
@@ -258,7 +263,7 @@ Die Typen stehen in [`shared/types.ts`](../shared/types.ts).
 | `LOG_LEVEL` | `info` / `debug` | Fastify/Pino-Loglevel |
 | `APP_VERSION` | `dev` | Wird im Health-Check und in der App angezeigt |
 | `INVITE_CODES` | – | Einladungscodes, mit Komma getrennt. Ein Code gibt ein kostenloses Konto. Ohne Stripe: gesetzt = Registrierung nur mit Code; leer = offen |
-| `STRIPE_SECRET_KEY` | – | Geheimer Stripe-Schlüssel für das Jahresabo (CHF 5, 7 Tage gratis). Ohne Schlüssel kein Abo |
+| `STRIPE_SECRET_KEY` | – | Geheimer Stripe-Schlüssel für das Jahresabo (CHF 5, 7 Tage gratis). Ohne Schlüssel kein Abo – so läuft die App vorerst |
 | `STRIPE_API_URL` | `https://api.stripe.com` | Nur für Tests (Stripe-Attrappe) |
 | `TTS_URL` | – | Piper-Dienst für die Erzählstimme (Docker: `http://tts:5000`). Ohne Wert gibt es nur Gerätestimmen |
 | `APP_ORIGIN` | Dev: `http://localhost:5173,http://localhost:3000` | Öffentliche Adresse der App (Docker: `https://${APP_DOMAIN}`). Passkeys sind an diese Domain gebunden; ohne Wert sind sie in Produktion ausgeschaltet |
@@ -341,8 +346,10 @@ Die Typen stehen in [`shared/types.ts`](../shared/types.ts).
 - **Kartenkasten:** Lernkartei mit 5 Fächern. Gewusst → ein Fach weiter (fällig nach 0, 1, 3, 7, 14 Tagen; im
   letzten Fach nach 30 Tagen), nicht gewusst → Fach 1 und in derselben Runde noch einmal. Fällig sind zuerst die
   Karten aus den vorderen Fächern, neue zuletzt.
-- **Erinnerung:** Die Startseite zeigt fällige Karten (`LearnDue`): pro Person und Stapel die Karten mit Lernstand,
-  deren Fälligkeit erreicht ist. Der Link `/spiel/spickzettel?stapel=…&modus=kasten` wählt Stapel und Spielform vor.
+- **Erinnerung:** «Heute dran» im Tab «Lernen» zeigt fällige Karten (`DueRows` in `components/LearnDue.tsx`): pro
+  Person und Stapel die Karten mit Lernstand, deren Fälligkeit erreicht ist. Ein Tipp führt über
+  `/lernen/<stapel>/kasten?person=…` (`soloLearnPath`) direkt zur ersten Karte; das Symbol des Tabs trägt einen roten
+  Badge mit allen fälligen Karten (`useDueTotal`).
 - **Antworten eintippen:** `checkTypedAnswer` vergleicht ohne Gross-/Kleinschreibung, Leer- und Satzzeichen; ein
   fehlender Akzent oder Artikel und ein kleiner Tippfehler (Damerau-Levenshtein, ab 5 Zeichen 1, ab 10 Zeichen 2)
   gelten als «fast richtig» und zählen.
@@ -402,12 +409,23 @@ schlecht in Karten fassen lässt.
 
 ## Allein spielen und Belohnungen
 
-- **Bereich:** Der Tab «Spiele» hat oben «Zusammen | Allein» (`PlayAreaSwitch`, `settings.playArea`); `/allein`
+- **Bereich:** Der Tab «Spiele» hat oben «Zusammen | Allein | Arena» (`PlayAreaSwitch`, `settings.playArea`; der
+  Tab öffnet den zuletzt benutzten Bereich); `/allein`
   zeigt die Spiele aus [`client/src/solo/registry.ts`](../client/src/solo/registry.ts), `/allein/:id` Start,
   Spiel und Ergebnis (`pages/SoloPages.tsx`). Die Spiele laufen im gemeinsamen Spielrahmen (`GameShell`) und
   bekommen `level` (1 = 6–9, 2 = 8–12 Jahre), die Person und – im Rennen – das Auto; sie melden Punkte, Sterne und
   eine Zusammenfassung zurück. Die Regeln (Memo-Punkte, Muster-Rätsel, Sortier-Sets, Tempo) stehen getestet in
   `solo/logic.ts`; das Rennen zeichnet auf ein Canvas.
+- **Entdecken** (`pages/DiscoverPage.tsx`) führt alle drei Kataloge zusammen: `GAMES` (17), `SOLO_GAMES` (5) und
+  `ARENA_GAMES` (8) als Einträge einer Liste – blendet die Familie die Arena aus, fehlen ihre Spiele (22). Ohne Filter
+  stehen «⭐ Tagestipp» (ein Spiel für die Runde, für alle am selben Tag gleich) und drei Abschnitte «Zusammen spielen»,
+  «Allein spielen», «Arena» mit Anzahl; mit Suche oder Filter eine gemeinsame Liste «N Spiele gefunden» (Spiele für die
+  Runde zuerst, dann «Allein», Arena, «Demnächst»). Nur Spiele für die Runde lassen sich zu «Meine Spiele»
+  hinzufügen; die anderen sind Zeilen mit Bild (`PlayRow`), die ihre Seite öffnen und den Weg zurück im
+  Navigationszustand mitgeben (`state.from`, `useBackTo` – «Zurück» führt dann wieder zu Entdecken). Die Suche
+  durchsucht auch, was ein Spiel übt (`skills`); für die Kategorien tragen die Spiele von «Allein» die Etiketten
+  «Allein» und «Kinder», die der Arena «Allein» und «Arena». Die Grösse «1» zeigt «Allein» und Arena sowie Spiele
+  für die Runde mit `minPlayers: 1` (Werkzeuge mit `noGroup` nicht).
 - **Münzen** (`shared/coins.ts`): Eine Brieftasche pro Person (`CoinWallet`, Id aus dem Namen wie der Lernstand)
   zählt verdiente und ausgegebene Münzen **pro Gerät** (`earned[device]`, `spent[device]`). Beim Zusammenführen
   gilt pro Gerät der grössere Zähler, Verlauf, Gekauftes und Rekorde werden vereinigt (`mergeWallet`) – zwei Handys,
@@ -428,7 +446,7 @@ schlecht in Karten fassen lässt.
 
 - **Bereich:** «Arena» ist der dritte Teil von «Zusammen | Allein | Arena» (`/arena`, `/arena/:id`,
   `pages/ArenaPages.tsx`). Eltern blenden sie unter «Belohnungen» aus (`RewardSettings.arena`, gilt auf allen
-  Geräten des Kontos und hinter dem Code); dann leitet `/arena` auf «Allein» um.
+  Geräten des Kontos und hinter dem Code); dann leitet `/arena` auf «Allein» um, und auch «Entdecken» zeigt sie nicht.
 - **3D:** three.js (Version fest in `package.json`) liegt in einem eigenen Teil des Bundles, den nur die Spiele
   laden; die Seiten fragen die 3D-Fähigkeit über `arena/support.ts` ab, ohne three.js zu laden.
   `useArenaScene` (`arena/engine.ts`) erstellt Renderer, Szene und Kamera, folgt der Grösse, senkt die

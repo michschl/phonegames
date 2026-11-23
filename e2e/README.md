@@ -6,15 +6,24 @@ Die wichtigsten Abläufe der App, durchgespielt in Chromium auf einem Handy-Bild
 
 | Datei | Inhalt |
 | --- | --- |
-| `app.spec.ts` | Registrierung mit Einladungscode, Anmelden/Abmelden, Tabs, alle Spielseiten, Barrierefreiheit, 280 px |
-| `spickzettel.spec.ts` | Tab «Lernen» (Einführung, Heute dran), Stapelseite, allein ohne Gruppe, ein Tipp von der Startseite, Antwortart pro Person, Namenstafeln und Badges (auch 360 px), Ende der Runde mit Duell-Vorschlag, Lernserie, Stapelliste mit Suche |
+| `app.spec.ts` | Registrierung mit Einladungscode, Anmelden/Abmelden, Tabs, «Entdecken» mit allen 30 Spielen (Abschnitte, Filter «1», Suche, «Zurück» von «Allein» und Arena), alle Spielseiten, Barrierefreiheit, 280 px |
+| `spickzettel.spec.ts` | Tab «Lernen» (Einführung, Heute dran, Badge auf dem Tab), Stapelseite, allein ohne Gruppe, ein Tipp bis zur Karte, Antwortart pro Person, Abfragerichtung bei Wörtli, Personen entfernen und zurückholen (auch auf einem zweiten Gerät), Namenstafeln und Badges (auch 360 px), Ende der Runde mit Duell-Vorschlag, Lernserie, Stapelliste mit Suche |
 | `spielformen.spec.ts` | «Wer spielt mit?», Duell, Blitzrunde, Schätzrunde (kleines Handy, 360 × 520 px), Lückentext |
 | `stapel.spec.ts` | Fotos (Kamera/Galerie, genau übernehmen, neue Aufgaben erfinden), Teilen per Link, Löschen mit «Rückgängig» (Stapel, Karten, Gruppen, Personen) |
+| `aufgaben.spec.ts` | Thema aus Stichworten oder selbst geschrieben, Lernziele prüfen und bearbeiten, Wissenstest mit und ohne Lösungen, PDF, in der App lösen, Ergebnis vom Papier, «Gezielt üben», Lernkarten aus dem Thema, Prüfung in «Heute dran» |
+| `allein.spec.ts` | «Allein» im Tab «Spiele» (der Tab merkt sich den Bereich), Memo-Blitz mit Rekord, alle fünf Spiele starten und beenden; «Belohnungen»: Münzen an, mit Code schützen, im Kartenkasten verdienen, schenken, Runde und Auto bezahlen |
+| `arena.spec.ts` | Einstellung «Grafik», Raumdenker mit Familien-Rangliste, Level in Kugelbahn, Orbit und Kettenreaktion, Pistenjagd und Beat-Bahn starten; Eltern blenden die Arena aus (auch in «Entdecken») |
+| `rangliste.spec.ts` | Punkte pro Person in einem Gemeinschaftsspiel und die Rangliste der Familie auf seinem Startbildschirm |
+| `rechtliches.spec.ts` | Impressum, AGB und Datenschutz ohne Konto; Zustimmung bei der Registrierung und für bestehende Konten – bzw. ohne Betreiberangaben keine Zustimmung (je nach `legalReady()` läuft der eine oder der andere Teil) |
+| `abo.spec.ts` | Jahresabo: 7 Tage gratis testen, im Konto verwalten und kündigen, abgebrochene Zahlung, mit Einladungscode kostenlos |
 
-- **Testserver** ([`server.ts`](server.ts)): die echte App mit Datenbank im Speicher, ohne Rate-Limits und mit einer
-  Schein-KI, die immer dieselben Karten liefert – Infomaniak wird nie aufgerufen. Playwright startet ihn selbst
-  (Port 3100).
+- **Testserver** ([`server.ts`](server.ts)): die echte App mit Datenbank im Speicher, ohne Rate-Limits, mit einer
+  Schein-KI, die immer dieselben Karten, Lernziele und Unterlagen liefert, und einer Stripe-Attrappe – Infomaniak und
+  Stripe werden nie aufgerufen. Anders als vorerst in Produktion ist das Abo hier eingeschaltet; der Einladungscode
+  `PARTY-2026` gibt kostenlose Konten. Playwright startet ihn selbst (Port 3100).
 - **Service Worker** sind in den Tests ausgeschaltet; das Update-Verhalten der PWA ist hier nicht abgedeckt.
+- **3D:** Der Testbrowser zeichnet ohne Grafikkarte; die Arena-Spiele laufen darum ohne Effekte und langsam, der
+  Arena-Test hat entsprechend mehr Zeit.
 - **Barrierefreiheit**: `expectAccessible()` prüft mit axe-core (WCAG 2.2 AA), nachdem die Einblend-Animationen
   fertig sind.
 

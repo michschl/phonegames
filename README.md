@@ -13,8 +13,8 @@ und unter «Aufgaben» Tests und Probeprüfungen für grössere Themen.
 
 <p align="center">
   <img src="docs/screenshots/welcome.jpg" width="180" alt="Willkommen mit Phoni">
-  <img src="docs/screenshots/home.jpg" width="180" alt="Startseite mit Weiterspielen">
-  <img src="docs/screenshots/discover.jpg" width="180" alt="Entdecken mit Spiel des Tages">
+  <img src="docs/screenshots/home.jpg" width="180" alt="Startseite: Zusammen, Allein, Arena und Meine Spiele">
+  <img src="docs/screenshots/discover.jpg" width="180" alt="Entdecken: alle 30 Spiele mit Filter und Tagestipp">
   <img src="docs/screenshots/setup.jpg" width="180" alt="Spiel vorbereiten">
 </p>
 <p align="center">
@@ -28,6 +28,13 @@ und unter «Aufgaben» Tests und Probeprüfungen für grössere Themen.
   <img src="docs/screenshots/verbotene-woerter.jpg" width="180" alt="Verbotene Wörter">
   <img src="docs/screenshots/mehr-oder-weniger.jpg" width="180" alt="Mehr oder weniger">
   <img src="docs/screenshots/zufallsfinger.jpg" width="180" alt="Zufallsfinger">
+</p>
+<p align="center"><b>🎮 Allein spielen und Arena in 3D</b></p>
+<p align="center">
+  <img src="docs/screenshots/allein.jpg" width="180" alt="Allein spielen: fünf kurze Spiele für Kinder">
+  <img src="docs/screenshots/arena.jpg" width="180" alt="Arena: 3D-Spiele ab 13 mit Rekorden">
+  <img src="docs/screenshots/arena-golf.jpg" width="180" alt="Golfinsel: Minigolf über dem Meer">
+  <img src="docs/screenshots/arena-kette.jpg" width="180" alt="Kettenreaktion: Rampe, Brett und Dominos">
 </p>
 <p align="center"><b>📝 Lernen – Schulstoff als Spiel</b></p>
 <p align="center">

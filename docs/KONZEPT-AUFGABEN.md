@@ -17,7 +17,8 @@ im Tab «Lernen» (oben «Karten | Aufgaben»; der Tab öffnet den zuletzt benut
    auf dem iPad.
 4. **Auswerten:** Die App bewertet Auswahl-, Richtig/Falsch- und Kurzantworten selbst (tolerant wie beim
    Kartenkasten); bei ausführlichen Aufgaben vergleicht man mit der Musterlösung und gibt sich die Punkte. Auf
-   Papier gelöste Unterlagen bekommen ihre Punkte nachträglich.
+   Papier gelöste Unterlagen bekommen ihre Punkte nachträglich. Ist «Belohnungen» an, gibt jeder Punkt Münzen für
+   «Allein spielen» (bis zum Tageslimit pro Person).
 5. **Gezielt üben:** Jedes Lernziel zeigt, ob es «sitzt», «fast» sitzt oder noch geübt werden muss. «Gezielt
    üben» macht eine neue Unterlage nur dazu; «Lernkarten daraus machen» bringt den Kernstoff in den Kartenkasten.
    Prüfungen der nächsten 7 Tage stehen in «Heute dran».

@@ -132,7 +132,7 @@ Environment geladen ist.
 | `VPS_USER` | – | `deploy` | Standard: `deploy` |
 | `VPS_PORT` | – | `22` | Standard: `22` |
 | `APP_DIR` | – | `/opt/phonegames` | Standard: `/opt/phonegames` |
-| `INFOMANIAK_AI_PRODUCT_ID` | mit Token | `112859` | Produkt-ID der Infomaniak AI Tools (Foto-Auswertung für Lernstapel) |
+| `INFOMANIAK_AI_PRODUCT_ID` | mit Token | `112859` | Produkt-ID der Infomaniak AI Tools (Foto-Auswertung für Lernstapel, KI für «Aufgaben») |
 | `LEARN_MONTHLY_LIMIT` | – | `5` | Foto-Auswertungen pro Person und Kalendermonat (Standard: 5) |
 | `LEARN_GLOBAL_MONTHLY_LIMIT` | – | `2000` | Notbremse über alle Konten pro Monat (Standard: 2000) |
 | `LEARN_AI_MODEL` | – | `Qwen/Qwen3.8-27B-FP8` | Modell mit Bildverständnis (Standard: Qwen 3.8 27B) |
@@ -145,9 +145,9 @@ Unter **Settings → Environments → production → «Add environment secret»*
 | --- | --- | --- |
 | `VPS_SSH_KEY` | ✅ | Kompletter Inhalt von `phonegames_deploy` (privater Schlüssel, inkl. `-----BEGIN …` / `-----END …`) |
 | `VPS_KNOWN_HOSTS` | empfohlen | Ausgabe von `ssh-keyscan -H <host>` aus Schritt 4 |
-| `INVITE_CODES` | empfohlen | Einladungscodes für die Registrierung, mit Komma getrennt, z. B. `PARTY-2026,FAMILIE`. Nicht gesetzt = jede und jeder kann sich registrieren |
-| `INFOMANIAK_AI_TOKEN` | – | API-Token der Infomaniak AI Tools für die Foto-Auswertung der Lernstapel. Nicht gesetzt = Foto-Auswertung aus, Abtippen geht |
-| `STRIPE_SECRET_KEY` | – | Geheimer Schlüssel von Stripe für das Jahresabo (`sk_live_…`, zum Ausprobieren `sk_test_…`). Nicht gesetzt = kein Abo, neue Konten nur mit Einladungscode |
+| `INVITE_CODES` | empfohlen | Einladungscodes für die Registrierung, mit Komma getrennt, z. B. `PARTY-2026,FAMILIE`. Nicht gesetzt (und ohne Stripe) = jede und jeder kann sich registrieren |
+| `INFOMANIAK_AI_TOKEN` | – | API-Token der Infomaniak AI Tools für die Foto-Auswertung der Lernstapel und die KI in «Aufgaben» (Lernziele, Unterlagen, Lernkarten). Nicht gesetzt = KI aus, Abtippen und selbst geschriebene Lernziele gehen |
+| `STRIPE_SECRET_KEY` | – | Geheimer Schlüssel von Stripe für das Jahresabo (`sk_live_…`, zum Ausprobieren `sk_test_…`). Nicht gesetzt = kein Abo, neue Konten nur mit Einladungscode – vorerst so gewollt |
 
 Mit der GitHub-CLI geht das auch so:
 
@@ -264,14 +264,31 @@ normal an.
   `https://phonegames.example.ch/registrieren?code=PARTY-2026`
 - **Codes ändern:** Secret anpassen und neu ausrollen (**Actions → Deploy → Run workflow**). Ein entfernter Code
   funktioniert sofort nicht mehr.
-- **Registrierung für alle öffnen:** Secret löschen und neu ausrollen. Das Feld verschwindet dann aus dem Formular.
+- **Registrierung für alle öffnen:** Secret löschen und neu ausrollen (nur ohne Stripe – mit Abo braucht ein Konto
+  ohne Code das Abo). Das Feld verschwindet dann aus dem Formular.
 
 Wähle Codes, die man nicht leicht errät. Die Registrierung ist zusätzlich auf 20 Versuche pro 15 Minuten und
 IP-Adresse begrenzt.
 
+### Rechtstexte (Impressum, AGB, Datenschutz)
+
+Die Texte stehen in [`client/src/legal/`](../client/src/legal) und sind öffentlich unter `/impressum`, `/agb` und
+`/datenschutz` erreichbar. Vor dem Start die **Betreiberangaben** in `client/src/legal/operator.ts` eintragen
+(Firmenname mit Rechtsform bzw. Vor- und Nachname, Adresse, E-Mail, allenfalls UID) und neu ausrollen. Solange dort
+Platzhalter (`[…]`) stehen, sind sie auf den Seiten gelb markiert und die App fragt niemanden nach der Zustimmung;
+mit den echten Angaben stimmen neue Konten bei der Registrierung zu und bestehende einmal beim nächsten Öffnen. Wer
+die Texte später ändert, setzt `TERMS_VERSION` und `TERMS_DATE` in [`shared/legal.ts`](../shared/legal.ts) auf das
+neue Datum – dann stimmen alle erneut zu. Die Texte beschreiben, was die App tatsächlich speichert, ersetzen aber keine
+Prüfung durch eine Fachperson.
+
 ### Jahresabo (Stripe)
 
-Neue Konten ohne Einladungscode brauchen ein Jahresabo: **7 Tage gratis, danach CHF 5 pro Jahr**, verlängert sich
+**Stand: vorbereitet, aber ausgeschaltet.** Solange das Secret `STRIPE_SECRET_KEY` fehlt, gibt es kein Abo: Der Deploy
+warnt «Secret STRIPE_SECRET_KEY fehlt – kein Abo: neue Konten nur mit Einladungscode», der Server meldet im Log
+«… kein Abo (STRIPE_SECRET_KEY nicht gesetzt)», und neue Konten sind kostenlos – mit Einladungscode bzw. für alle,
+wenn auch `INVITE_CODES` fehlt. Alles Folgende gilt, sobald der Schlüssel hinterlegt ist.
+
+Neue Konten ohne Einladungscode brauchen dann ein Jahresabo: **7 Tage gratis, danach CHF 5 pro Jahr**, verlängert sich
 automatisch. Bezahlt wird auf der Zahlungsseite von Stripe (TWINT, Apple Pay, Google Pay, Karte); Kündigen,
 Zahlungsart ändern und Quittungen laufen über das Kundenportal von Stripe («Konto → Abo verwalten»). Die App sieht
 nie Zahlungsdaten. Konten von vor dem Abo und Konten mit Einladungscode bleiben kostenlos. Auch über einen geteilten
@@ -283,9 +300,8 @@ bei Stripe sofort.
 
 **Einrichten**
 
-0. Betreiberangaben in `client/src/legal/operator.ts` eintragen (Firmenname mit Rechtsform bzw. Vor- und Nachname,
-   Adresse, E-Mail) – gleich wie im Stripe-Konto. TWINT verlangt sie im Impressum; solange Platzhalter drinstehen,
-   sind sie auf den Seiten gelb markiert.
+0. Betreiberangaben in `client/src/legal/operator.ts` eintragen (siehe «Rechtstexte») – gleich wie im Stripe-Konto.
+   TWINT verlangt sie im Impressum.
 1. Konto bei [Stripe](https://dashboard.stripe.com) eröffnen (Firma oder Einzelfirma, Schweizer Bankkonto für die
    Auszahlungen in CHF).
 2. **Settings → Payment methods:** TWINT einschalten; Karten, Apple Pay und Google Pay sind normalerweise schon an.
@@ -306,10 +322,14 @@ noch drei Tage offen.
 sowie die Gebühr von Stripe Billing für Abos – bei CHF 5 etwa 40–45 Rappen pro Jahr und Abo (Stand November 2026,
 aktuelle Preise im Stripe-Dashboard). Unter CHF 100'000 Umsatz pro Jahr besteht in der Schweiz keine MWST-Pflicht.
 
-### Foto-Auswertung (Lernstapel)
+### Foto-Auswertung (Lernstapel) und KI für «Aufgaben»
 
 Die Fotos für Lernstapel wertet ein Modell der **Infomaniak AI Tools** aus (Rechenzentren in der Schweiz). Der Server
-reicht die Fotos nur weiter und speichert sie nicht.
+reicht die Fotos nur weiter und speichert sie nicht. Dasselbe Modell schreibt in «Aufgaben» die Lernziele (aus Fotos
+oder Stichworten), die Unterlagen (Wissenstests, Übungsaufgaben, Probeprüfungen) und Lernkarten zu einem Thema – mit
+demselben Token. Lernziele und Lernkarten zählen wie eine Foto-Auswertung; Unterlagen haben ein eigenes Limit von
+20 pro Person und Monat (`TASK_MONTHLY_LIMIT`, Standard des Servers – `docker-compose.yml` reicht keinen anderen Wert
+durch).
 
 1. Im [Infomaniak Manager](https://manager.infomaniak.com) die **AI Tools** bestellen bzw. öffnen.
 2. Unter **API-Token** einen eigenen Token für Phonegames erstellen, nur mit der Berechtigung für die AI Tools.

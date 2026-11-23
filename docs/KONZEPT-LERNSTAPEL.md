@@ -5,7 +5,9 @@ erfasst, eine KI in der Schweiz macht daraus Lernkarten, und derselbe Kartenstap
 verschiedenen Spielformen spielen, allein oder in der Gruppe. Stapel lassen sich per Link teilen.
 
 Stand: Etappen 1–4 umgesetzt (Erfassen per Foto und Text, Prüfen, Kartenkasten, Duell, Blitzrunde, Teilen per Link),
-dazu Schätzrunde und Lückentext.
+dazu Schätzrunde, Lückentext, ein eigener Tab «Lernen» mit Lernstand und «Diese Woche», Münzen fürs Lernen
+(«Belohnungen») und der zweite Bereich «Aufgaben» für die Prüfungsvorbereitung (Konzept:
+[KONZEPT-AUFGABEN.md](KONZEPT-AUFGABEN.md)).
 
 ## Entscheide
 
@@ -17,7 +19,7 @@ dazu Schätzrunde und Lückentext.
 | Fotos | Werden nur weitergereicht, nie gespeichert – gespeichert werden nur die Karten |
 | KI-Anbieter | Infomaniak (Rechenzentren in der Schweiz), offene Modelle, z. B. ein Qwen-Modell mit Bildverständnis |
 | Teilen | Link mit nicht erratbarer ID; Empfänger übernehmen eine Kopie in ihre Sammlung |
-| Empfänger ohne Konto | Brauchen ein eigenes Konto; der Link gilt als Einladung (Registrierung ohne Einladungscode) |
+| Empfänger ohne Konto | Brauchen ein eigenes Konto (mit Einladungscode bzw. Abo); anfangs galt der Link als Einladung, seit dem Jahresabo nicht mehr |
 | Kosten | Trägt der Betreiber |
 | Limiten | Pro Benutzer, z. B. 5 Auswertungen pro Monat – Wert wird nach dem Kostentest festgelegt |
 
@@ -152,11 +154,11 @@ interface Karte {
   kann die Freigabe aktualisieren oder widerrufen.
 - **Mit Konto:** Link öffnen → Vorschau (Titel, Fach, Anzahl Karten, erste Karten) → «In meine Stapel übernehmen».
   Die Übernahme ist eine eigene Kopie, die man frei bearbeiten kann.
-- **Ohne Konto:** Die Seite zeigt Titel und Anzahl Karten und «Konto erstellen». Der Link gilt als Einladung: Die
-  Registrierung braucht dann keinen Einladungscode. Nach der Registrierung wird der Stapel automatisch übernommen.
-- **Schutz:** Freigaben sind nicht auffindbar (keine Liste, keine Suche, `noindex`); widerrufene Links gelten
-  auch nicht mehr als Einladung; Rate-Limit beim Erstellen von Freigaben. Ob die Zahl der Registrierungen pro Link
-  begrenzt werden soll, ist offen.
+- **Ohne Konto:** Die Seite zeigt Titel und Anzahl Karten und «Konto erstellen & übernehmen». Die Registrierung
+  läuft wie sonst (mit Einladungscode bzw. Abo); danach wird der Stapel automatisch übernommen. Wer teilt, sieht, wie
+  viele neue Konten über den Link entstanden sind.
+- **Schutz:** Freigaben sind nicht auffindbar (keine Liste, keine Suche, `noindex`); Rate-Limit beim Erstellen von
+  Freigaben. Weil der Link keine Einladung mehr ist, braucht es keine Grenze für Registrierungen pro Link.
 
 ## Datenschutz und Recht
 
@@ -165,9 +167,9 @@ interface Karte {
   dem Start zu prüfen.
 - Hinweis bei der Foto-Funktion: «Deine Fotos werden in der Schweiz ausgewertet und danach gelöscht. Bitte keine
   Namen oder Noten fotografieren.»
-- Datenschutzerklärung um die KI-Auswertung ergänzen.
-- Urheberrecht: Teilen nur von eigenen oder erlaubten Inhalten – Hinweis in den Nutzungsbedingungen; vor dem
-  Start rechtlich abklären (ganze Lehrmittelseiten).
+- ✅ Die Datenschutzerklärung (`/datenschutz`) beschreibt die KI-Auswertung.
+- Urheberrecht: Teilen nur von eigenen oder erlaubten Inhalten – ✅ Hinweis in den Nutzungsbedingungen (`/agb`); vor
+  dem Start rechtlich abklären (ganze Lehrmittelseiten).
 - Über Kinder werden keine Daten benötigt: Stapel enthalten nur Lernstoff, der Lernstand hängt an Spielernamen der
   Gruppe.
 
@@ -175,9 +177,9 @@ interface Karte {
 
 | Teil | Umsetzung |
 |---|---|
-| Server | `POST /api/learn/extract` (angemeldet, Limit, Grössenlimit, Infomaniak-Aufruf), Stapel und Lernstand im Sync, `POST/DELETE /api/shares`, `GET /api/shares/:id`, Registrierung mit Freigabe-ID statt Einladungscode |
+| Server | `POST /api/learn/extract` (angemeldet, Limit, Grössenlimit, Infomaniak-Aufruf), Stapel und Lernstand im Sync, `POST/DELETE /api/shares`, `GET /api/shares/:id`, Registrierung mit Freigabe-ID (zählt die neuen Konten pro Link) |
 | Datenbank | Tabellen für Stapel, Lernstand, Freigaben und Auswertungs-Zähler (Migration) |
-| Client | Bereich «Stapel» (Liste, Erfassen, Prüfen, Teilen), Spiel «Spickzettel» mit den Spielformen, Route `/s/:id` |
+| Client | Tab «Lernen» (Heute dran, Stapelliste, Stapelseite), Erfassen, Prüfen, Teilen, die Spielformen in `games/spickzettel/` (intern weiter «Spickzettel»), Route `/s/:id` |
 | Konfiguration | Secrets `INFOMANIAK_AI_TOKEN`, `INFOMANIAK_AI_PRODUCT_ID`; Variablen `LEARN_AI_MODEL`, `LEARN_MONTHLY_LIMIT`, `LEARN_GLOBAL_MONTHLY_LIMIT` |
 
 ## Etappen
@@ -190,8 +192,8 @@ interface Karte {
    Satzzeichen; fehlender Akzent, Artikel oder ein kleiner Tippfehler zählt als «fast richtig»; «Ich hatte recht»
    korrigiert). Bewusst nicht: Fehler aus der Blitzrunde in den Kartenkasten übernehmen – dort antwortet das Team,
    nicht eine Person.
-3. **Teilen:** ✅ Freigaben, Link als Einladung (höchstens 50 neue Konten pro Link), Übernahme, geteilte Version
-   aktualisieren, Freigabe beenden.
+3. **Teilen:** ✅ Freigaben, Link als Einladung (höchstens 50 neue Konten pro Link – mit dem Jahresabo wieder
+   abgeschafft), Übernahme, geteilte Version aktualisieren, Freigabe beenden.
 4. **Duell:** ✅ geteilter Bildschirm (obere Hälfte gedreht), gleiche Frage, je vier Antworten in eigener
    Reihenfolge, Antippen per Pointer-Events (beide gleichzeitig möglich), falscher Tipp sperrt 1,5 s und setzt die
    Karte im Kartenkasten der Person zurück in Fach 1; beide falsch → Lösung wird gezeigt. 10, 15 oder 20 Fragen.
@@ -279,6 +281,14 @@ direkt in die erste Runde, wenn klar ist, wer lernt – sonst auf die Stapelseit
   höchstens 60 pro Stapel, synchronisiert). Über alle Stapel zählt `learnStreak` die Tage in Folge; wer gestern
   gelernt hat und heute noch nicht, behält die Serie bis zum Abend. Ab zwei Tagen zeigt «🔥3» sie auf der
   Namenstafel und in «Heute dran», nach der Runde «🔥 3 Tage in Folge gelernt – weiter so!».
+- **Lernstand sichtbar** ([`components/LearnCharts.tsx`](../client/src/components/LearnCharts.tsx)): In der
+  Stapelliste trägt jeder Stapel einen dünnen Balken in den Farben der fünf Fächer mit dem Prozentwert – über alle
+  Lernenden, neue Karten sind der leere Rest, 100 % heisst alles in Fach 5 (`stackMastery`). «Diese Woche» im Tab
+  «Lernen» zeigt für bis zu fünf Personen einen Punkt für jeden der letzten sieben Tage mit Lernen und die Serie
+  (`learningWeek`).
+- **Münzen fürs Lernen:** Ist «Belohnungen» an (Konto → Belohnungen), gibt jede gewusste Karte im Kartenkasten und
+  jede richtige Lücke im Lückentext Münzen für «Allein spielen», bis zu einem Tageslimit pro Person; Übungsrunden
+  zählen nicht.
 
 | Ablauf | Vorher | Jetzt |
 |---|---|---|
@@ -301,7 +311,7 @@ sich im Tab «Lernen» und nochmals auf dem Startbildschirm des Spiels wählen, 
 - **Neuer Stapel dort, wo die Stapel sind:** Statt eines Plus-Symbols oben rechts (beim Scrollen weg und ohne
   Beschriftung) schliesst die Stapelliste mit der Kachel «Neuer Stapel – Foto aufnehmen oder Karten abtippen»; ab
   vier Stapeln steht zusätzlich «Neuer Stapel» neben der Überschrift «Stapel».
-- **«So geht’s»** im Tab «Lernen» unter «Heute dran» – ein eigener Abschnitt wie «Heute dran» und «Stapel», darin
+- **«So geht’s»** im Tab «Lernen» unter «Heute dran» (und «Diese Woche») – ein eigener Abschnitt wie «Heute dran» und «Stapel», darin
   zugeklappt «In fünf Schritten»: Stapel erstellen, wer lernt, Kartenkasten mit
   den Abständen, «Heute dran» und der Badge, zusammen lernen. Beim allerersten Besuch zeigt die Einführung drei
   Schritte.
@@ -309,6 +319,8 @@ sich im Tab «Lernen» und nochmals auf dem Startbildschirm des Spiels wählen, 
   Startseite in «Heute dran» umgezogen. Dafür trägt das Symbol des Tabs «Lernen» einen roten Badge mit der Zahl
   aller fälligen Karten (alle Personen, alle Stapel, `useDueTotal`; Screenreader: «Lernen, 7 Karten fällig»). Neue,
   noch nie gelernte Karten zählen nicht mit.
+- Seit «Aufgaben» hat der Tab oben «Karten | Aufgaben» und öffnet den zuletzt benutzten Bereich; Prüfungen der
+  nächsten 7 Tage stehen ebenfalls in «Heute dran».
 
 ## Offene Punkte
 
