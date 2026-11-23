@@ -3,7 +3,7 @@ import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router'
 import { Fold } from '../components/Fold.tsx';
 import { Icon } from '../components/Icon.tsx';
 import { Mascot } from '../components/Brand.tsx';
-import { BottomBar, Page, Section } from '../components/Layout.tsx';
+import { BottomBar, cameFrom, Page, Section } from '../components/Layout.tsx';
 import { PlayerEditor } from '../components/PlayerEditor.tsx';
 import { Button, EmptyState } from '../components/ui.tsx';
 import { getGame } from '../games/registry.ts';
@@ -133,6 +133,9 @@ function GameSetup({ game }: { game: GameDefinition }) {
   const canStart = game.noGroup || (!!group && missing === 0);
 
   const addMissing = useAddMissing(group?.id, select);
+  // «Zurück» leads to the list the game was opened from; opened directly, to where it is listed.
+  const from = cameFrom();
+  const back = from === '/' || from === '/entdecken' ? from : inLibrary ? '/' : '/entdecken';
 
   const start = () => {
     if (!canStart) return;
@@ -144,7 +147,7 @@ function GameSetup({ game }: { game: GameDefinition }) {
   };
 
   return (
-    <Page title={breakableName(game.name)} back={inLibrary ? '/' : '/entdecken'} className="setup">
+    <Page title={breakableName(game.name)} back={back} className="setup">
       <div className="setup-hero" style={{ '--g1': game.colors[0], '--g2': game.colors[1] } as CSSProperties}>
         <div className="setup-hero__art">{game.Art ? <game.Art size={130} /> : <span>{game.emoji}</span>}</div>
         <div className="setup-hero__text">

@@ -53,7 +53,8 @@ Ordnung auf der Seite:
 - **Eine neue Seite beginnt oben, «Zurück» führt an die verlassene Stelle.** `<ScrollRestoration />` von React Router
   setzt die Scroll-Position bei jedem Seitenwechsel zurück und stellt sie beim Zurückgehen wieder her. Der
   Zurück-Knopf der Seiten (`Page` mit `back`) geht dafür wirklich in der Browser-History zurück, wenn die Zielseite die
-  vorherige war (`useTrail()` merkt sich den Weg) – sonst öffnet er sie neu. Wer aus der Mitte von «Entdecken» ein
+  vorherige war (`useTrail()` merkt sich den Weg) – sonst öffnet er sie neu. Ein Spiel führt mit «Zurück» in die
+  Liste, aus der es geöffnet wurde (Startseite oder «Entdecken», `cameFrom()`). Wer aus der Mitte von «Entdecken» ein
   Spiel öffnet und zurückgeht, steht wieder bei diesem Spiel.
 - **Der grosse Knopf unten ist nie eine Sackgasse.** Fehlen Mitspielende, heisst er «Mitspielende hinzufügen» bzw.
   «Noch 2 Personen hinzufügen» und führt zum Namensfeld (`useAddMissing()`), statt ausgegraut zu sein.

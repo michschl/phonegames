@@ -143,6 +143,12 @@ const historyIndex = (): number | null => {
   return typeof idx === 'number' ? idx : null;
 };
 
+/** The page before this one in this tab (path and query), if it was visited since the app was loaded. */
+export function cameFrom(): string | undefined {
+  const idx = historyIndex();
+  return idx !== null && idx > 0 ? trail[idx - 1] : undefined;
+}
+
 /** Keeps the trail; once, at the root of the app. */
 export function useTrail(): void {
   const location = useLocation();
