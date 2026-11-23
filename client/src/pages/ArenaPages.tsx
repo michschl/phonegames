@@ -19,7 +19,7 @@ import { requestTiltPermission } from '../lib/motion.ts';
 import { familyRanking, placeOf } from '../lib/ranking.ts';
 import { useData, useRewards, useWallet } from '../store/data.ts';
 import { useGameSettings } from '../store/settings.ts';
-import { PlayAreaSwitch, PlayerChips, useBackTo, usePlayer } from './SoloPages.tsx';
+import { PlayPage, PlayerChips, useBackTo, usePlayer } from './SoloPages.tsx';
 
 /*
  * «Arena» (/arena): 3D games for teenagers from 13, the third area of the «Spiele» tab. Parents can hide
@@ -62,8 +62,7 @@ export function ArenaHubPage() {
   const [look, setLook] = useGameSettings<{ grafik: ArenaGraphics }>(ARENA_SETTINGS, { grafik: 'auto' });
   if (!rewards.arena) return <Navigate to="/allein" replace />;
   return (
-    <Page title="Arena" subtitle="3D-Spiele ab 13 – mit Familien-Rangliste.">
-      <PlayAreaSwitch area="arena" />
+    <PlayPage area="arena" title="Arena" subtitle="3D-Spiele ab 13 – mit Familien-Rangliste.">
       {players.length > 1 && (
         <Section title="Wer spielt?">
           <PlayerChips value={player} onChange={setPlayer} players={players} coins={rewards.enabled} />
@@ -109,7 +108,7 @@ export function ArenaHubPage() {
         </p>
       </Section>
       {!hasWebGL() && <p className="notice notice--warn">Dieses Gerät kann leider keine 3D-Grafik anzeigen.</p>}
-    </Page>
+    </PlayPage>
   );
 }
 

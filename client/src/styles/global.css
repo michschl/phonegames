@@ -58,6 +58,40 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --tabbar-h: 72px;
   --page-max: 640px;
+
+  /* The colour of the area (its tab): section marks, the marker under a page title, the tint of the background. */
+  --accent: var(--pink);
+  --tint-a: rgba(255, 79, 163, 0.16);
+  --tint-b: rgba(46, 197, 255, 0.16);
+  --tint-c: rgba(255, 210, 63, 0.22);
+}
+
+:root[data-area='lernen'] {
+  --accent: var(--orange);
+  --tint-a: rgba(255, 138, 61, 0.18);
+  --tint-b: rgba(255, 79, 163, 0.12);
+  --tint-c: rgba(255, 210, 63, 0.24);
+}
+
+:root[data-area='entdecken'] {
+  --accent: var(--yellow);
+  --tint-a: rgba(255, 210, 63, 0.26);
+  --tint-b: rgba(255, 138, 61, 0.14);
+  --tint-c: rgba(155, 225, 93, 0.16);
+}
+
+:root[data-area='gruppen'] {
+  --accent: var(--cyan);
+  --tint-a: rgba(46, 197, 255, 0.2);
+  --tint-b: rgba(124, 92, 255, 0.14);
+  --tint-c: rgba(155, 225, 93, 0.16);
+}
+
+:root[data-area='konto'] {
+  --accent: var(--lime);
+  --tint-a: rgba(155, 225, 93, 0.24);
+  --tint-b: rgba(46, 197, 255, 0.16);
+  --tint-c: rgba(255, 210, 63, 0.2);
 }
 
 *,
@@ -167,18 +201,117 @@ button:disabled {
   overflow: hidden;
   pointer-events: none;
   background:
-    radial-gradient(60% 40% at 100% 0%, rgba(255, 79, 163, 0.16), transparent 70%),
-    radial-gradient(60% 40% at 0% 100%, rgba(46, 197, 255, 0.16), transparent 70%),
-    radial-gradient(50% 35% at 0% 10%, rgba(255, 210, 63, 0.22), transparent 70%);
+    radial-gradient(60% 40% at 100% 0%, var(--tint-a), transparent 70%),
+    radial-gradient(60% 40% at 0% 100%, var(--tint-b), transparent 70%),
+    radial-gradient(50% 35% at 0% 10%, var(--tint-c), transparent 70%);
+  transition: background 0.4s;
 }
 
+/*
+ * The shapes live in the margins: on a phone they only peek in from the edges (the gutter of the page),
+ * on a wide screen they frame the column of the content. They never sit under text.
+ */
 .backdrop__shape {
+  --column: calc(var(--page-max) / 2);
   position: absolute;
   width: var(--s, 44px);
   height: var(--s, 44px);
-  opacity: 0.5;
+  opacity: 0.42;
   animation: drift-shape var(--d, 18s) ease-in-out infinite alternate;
   animation-delay: var(--delay, 0s);
+}
+
+.backdrop__shape--star {
+  --s: 62px;
+  --d: 17s;
+  --dx: 6px;
+  --dy: 26px;
+  --r: 40deg;
+  top: 46%;
+  left: -40px;
+}
+
+.backdrop__shape--squiggle {
+  --s: 96px;
+  --d: 21s;
+  --dx: -6px;
+  --dy: 22px;
+  --r: -14deg;
+  top: 19%;
+  right: -70px;
+}
+
+.backdrop__shape--ring {
+  --s: 74px;
+  --d: 19s;
+  --dx: 6px;
+  --dy: -18px;
+  --r: 60deg;
+  bottom: 22%;
+  left: -52px;
+}
+
+.backdrop__shape--triangle,
+.backdrop__shape--plus,
+.backdrop__shape--dot {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .backdrop__shape {
+    opacity: 0.6;
+  }
+
+  .backdrop__shape--star {
+    --dx: 18px;
+    left: calc(50% - var(--column) - 150px);
+    top: 44%;
+  }
+
+  .backdrop__shape--squiggle {
+    --dx: -14px;
+    right: calc(50% - var(--column) - 170px);
+    top: 17%;
+  }
+
+  .backdrop__shape--ring {
+    --dx: 22px;
+    left: calc(50% - var(--column) - 120px);
+    bottom: 16%;
+  }
+
+  .backdrop__shape--triangle {
+    --s: 46px;
+    --d: 15s;
+    --dx: -20px;
+    --dy: -24px;
+    --r: -50deg;
+    --delay: -4s;
+    display: block;
+    right: calc(50% - var(--column) - 110px);
+    bottom: 12%;
+  }
+
+  .backdrop__shape--plus {
+    --s: 38px;
+    --d: 14s;
+    --dx: -16px;
+    --dy: 20px;
+    --r: 90deg;
+    display: block;
+    right: calc(50% - var(--column) - 90px);
+    top: 52%;
+  }
+
+  .backdrop__shape--dot {
+    --s: 18px;
+    --d: 12s;
+    --dx: 14px;
+    --dy: -16px;
+    display: block;
+    left: calc(50% - var(--column) - 70px);
+    top: 24%;
+  }
 }
 
 @keyframes drift-shape {

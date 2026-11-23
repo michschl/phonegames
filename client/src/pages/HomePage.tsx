@@ -1,11 +1,8 @@
 import { Link } from 'react-router';
-import { Logo } from '../components/Brand.tsx';
 import { GameHero, GameMini, GameTile } from '../components/GameCard.tsx';
 import { Icon } from '../components/Icon.tsx';
-import { OfflinePill } from '../components/Layout.tsx';
 import { PasskeyHint } from '../components/PasskeyHint.tsx';
-import { PlayAreaSwitch } from './SoloPages.tsx';
-import { Avatar } from '../components/ui.tsx';
+import { PlayTop } from './SoloPages.tsx';
 import { GAMES, getCatalogGame } from '../games/registry.ts';
 import type { GameDefinition } from '../games/types.ts';
 import { sound } from '../lib/audio.ts';
@@ -59,15 +56,7 @@ export function HomePage() {
 
   return (
     <main className="page home">
-      <header className="home-top">
-        <Logo size={38} />
-        <div className="page__actions">
-          <OfflinePill />
-          <Link to="/konto" className="header-avatar" aria-label="Konto">
-            <Avatar name={user.name} color={user.color} emoji={user.avatar} size={44} />
-          </Link>
-        </div>
-      </header>
+      <PlayTop area="zusammen" />
 
       <div className="page__content">
         <h1 className="home-greeting">
@@ -77,7 +66,6 @@ export function HomePage() {
           </span>
         </h1>
         <p className="page__subtitle">Worauf habt ihr heute Lust?</p>
-        <PlayAreaSwitch area="zusammen" />
 
         {continueGame && continueGame.status === 'available' ? (
           <div className="home-hero">

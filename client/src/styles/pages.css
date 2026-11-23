@@ -212,6 +212,7 @@
 
 .auth__card {
   position: relative;
+  container-type: inline-size;
   padding: 58px 22px 26px;
   border-radius: var(--radius-xl);
   background: var(--paper);
@@ -230,9 +231,14 @@
 
 .auth__title {
   font-family: var(--font-display);
-  font-size: 27px;
+  /* Fits the card: «Willkommen zurück» breaks between the words, never inside one. */
+  font-size: clamp(19px, 8.4cqi, 27px);
   font-weight: 900;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
   text-align: center;
+  hyphens: manual;
+  overflow-wrap: break-word;
 }
 
 .auth__subtitle {
@@ -385,7 +391,7 @@
 }
 
 .home-greeting__name {
-  background: linear-gradient(transparent 58%, var(--yellow) 58%, var(--yellow) 92%, transparent 92%);
+  background: linear-gradient(transparent 58%, var(--accent) 58%, var(--accent) 92%, transparent 92%);
   padding: 0 4px;
   white-space: nowrap;
 }
@@ -438,6 +444,8 @@
   margin: -10px -20px 0;
   padding: 18px 20px 14px;
   scroll-snap-type: x mandatory;
+  /* The first card snaps to the edge of the page, not to the edge of the screen. */
+  scroll-padding-inline: 20px;
   scrollbar-width: none;
 }
 
@@ -1075,10 +1083,11 @@
 }
 
 .setup-hero__meta {
+  position: relative;
+  flex-basis: 100%;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 12px;
 }
 
 .setup-hero__meta span {
@@ -1113,12 +1122,13 @@
   box-shadow: none;
 }
 
+/* Secondary: rules, settings and rankings wait folded – flatter than the cards and buttons that lead somewhere. */
 .fold {
   margin-top: 18px;
   border-radius: var(--radius-lg);
   background: var(--paper);
-  border: var(--border);
-  box-shadow: var(--shadow);
+  border: 2px solid var(--ink);
+  box-shadow: 0 2px 0 var(--ink);
 }
 
 .fold + .fold {
@@ -1150,16 +1160,19 @@
   width: 30px;
   height: 30px;
   margin-left: 4px;
-  border-radius: 10px;
+  border-radius: 50%;
   border: 2px solid var(--ink);
-  background: var(--yellow);
+  background: var(--surface-2);
   font-size: 20px;
   line-height: 1;
-  transition: transform 0.3s var(--ease-spring);
+  transition:
+    transform 0.3s var(--ease-spring),
+    background 0.2s;
 }
 
 .fold[open] summary::after {
   transform: rotate(45deg);
+  background: var(--yellow);
 }
 
 /* Title and meta share a line; with large text the meta drops below instead of squeezing the title. */
@@ -1404,7 +1417,9 @@
 
 .profile-card {
   position: relative;
+  container-type: inline-size;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   justify-items: center;
   padding: 26px 20px 22px;
   border-radius: var(--radius-xl);
@@ -1450,7 +1465,13 @@
   font-weight: 900;
 }
 
+/* One line: a long address gets smaller and ends in «…» instead of breaking in the middle. */
 .profile-card__email {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(13.5px, 4.6cqi, 17px);
   font-weight: 700;
   color: var(--ink-2);
 }
@@ -2691,9 +2712,14 @@
   color: var(--ink-2);
 }
 
-/* «Karten | Aufgaben» at the top of the «Lernen» tab. */
+/* «Karten | Aufgaben» in a document: between the header and the content. */
 .learn-area {
   margin: 4px 0 8px;
+}
+
+/* As the switch of a tab (Page `nav`) the header and the lead keep the distance. */
+.page__nav .learn-area {
+  margin: 0;
 }
 
 .exam-pill {
@@ -3695,14 +3721,21 @@
 
 /* ======================================================= Allein spielen */
 
-.play-area {
-  margin: 14px 0 4px;
+.play-area.learn-area {
+  margin: 0 0 22px;
 }
 
 .solo-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
+}
+
+/* Tablet and desktop: three tiles side by side instead of two very large ones. */
+@media (min-width: 600px) {
+  .solo-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .solo-tile {
@@ -3835,11 +3868,37 @@
   border-width: 1.5px;
 }
 
+/* For the older ones: the way from «Allein» to the Arena. */
 .solo-soon {
-  margin: 18px 0 6px;
-  text-align: center;
-  color: var(--muted);
-  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0 8px;
+  padding: 13px 16px;
+  border-radius: var(--radius-lg);
+  border: 2px dashed var(--ink);
+  background: var(--violet-soft);
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform 0.15s ease;
+}
+
+.solo-soon > span:first-child {
+  font-size: 24px;
+}
+
+.solo-soon > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+
+.solo-soon strong {
+  font-weight: 800;
+}
+
+.solo-soon:active {
+  transform: scale(0.98);
 }
 
 .solo-rewards-link {
@@ -4212,6 +4271,12 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
+}
+
+@media (min-width: 600px) {
+  .arena-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .arena-tile {

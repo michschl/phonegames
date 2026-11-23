@@ -641,6 +641,14 @@
   display: none;
 }
 
+/* Rows that scroll sideways fade out at the edges: what is cut off reads as «there is more», not as a mistake. */
+.chip-scroll,
+.rail,
+.emoji-row {
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 18px, #000 calc(100% - 30px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 18px, #000 calc(100% - 30px), transparent 100%);
+}
+
 .badge {
   display: inline-block;
   margin-left: 8px;
@@ -744,6 +752,15 @@
   overflow-wrap: anywhere;
 }
 
+/* The pages of the tabs: a stroke of marker under the title, in the colour of the tab. */
+.page__title-mark {
+  padding: 0 5px;
+  margin: 0 -5px;
+  background: linear-gradient(transparent 60%, var(--accent) 60%, var(--accent) 93%, transparent 93%);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
 /* A title with a long word (often chosen by the user: «Französisch Unité 3») gets smaller instead of breaking. */
 .page__title.is-long {
   font-size: clamp(21px, 6.2vw, 30px);
@@ -754,6 +771,16 @@
   color: var(--muted);
   font-size: 16px;
   font-weight: 600;
+}
+
+/* The switch between the areas of a tab: right under the title, so it never moves when the area changes. */
+.page__nav {
+  margin: -6px 0 16px;
+  animation: rise-in 0.45s var(--ease-out) both;
+}
+
+.page__lead {
+  margin: 0 0 18px;
 }
 
 .page__actions {
@@ -831,7 +858,7 @@
   width: 11px;
   height: 11px;
   border-radius: 3px;
-  background: var(--pink);
+  background: var(--accent);
   border: 2px solid var(--ink);
   transform: rotate(45deg);
 }
@@ -1070,6 +1097,13 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
+}
+
+/* Tablet and desktop: three tiles side by side instead of two very large ones. */
+@media (min-width: 600px) {
+  .tile-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .game-tile {
