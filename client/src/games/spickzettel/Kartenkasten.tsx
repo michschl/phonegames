@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { LearnCard, LearnStack, Player } from '../../../../shared/types.ts';
+import { Icon } from '../../components/Icon.tsx';
 import { Button } from '../../components/ui.tsx';
 import { CoinGain } from '../../components/Coins.tsx';
 import { sound } from '../../lib/audio.ts';
@@ -175,6 +176,13 @@ export function Kartenkasten({
     if (isRight) advance.current = window.setTimeout(() => next(nextQueue), 900);
   };
 
+  /** Turning the card (answers in the head): by its button or a tap on the card itself. */
+  const turnable = !choice && !typing && !revealed;
+  const turn = () => {
+    sound.flip();
+    setRevealed(true);
+  };
+
   /** Typed answer: checked kindly, the result shows before moving on. */
   const check = (giveUp = false) => {
     if (!card || checked) return;
@@ -325,11 +333,21 @@ export function Kartenkasten({
           <div className="learn-progress" aria-hidden="true">
             <span style={{ width: `${(index / queue.length) * 100}%` }} />
           </div>
-          <div key={`${card.id}-${index}`} className={`learn-card ${revealed || picked ? 'is-revealed' : ''}`}>
+          {/* The card turns with a tap as well; the button below does the same for keyboard and screen reader. */}
+          <div
+            key={`${card.id}-${index}`}
+            className={`learn-card ${revealed || picked ? 'is-revealed' : ''} ${turnable ? 'is-tappable' : ''}`}
+            onClick={turnable ? turn : undefined}
+          >
             <span className="learn-card__kind">{kindLabel(card, stack)}</span>
             <p className="learn-card__prompt">
               <CardPrompt card={card} fill={revealed || !!picked} />
             </p>
+            {turnable && (
+              <span className="learn-card__turn" aria-hidden="true">
+                <Icon name="refresh" size={14} strokeWidth={2.6} /> Tippen zum Umdrehen
+              </span>
+            )}
             {!choice && revealed && (
               <div className="learn-card__answer">
                 <span>Antwort</span>
@@ -425,15 +443,7 @@ export function Kartenkasten({
             </div>
           ) : (
             <Actions>
-              <Button
-                size="lg"
-                block
-                icon="eye"
-                onClick={() => {
-                  sound.flip();
-                  setRevealed(true);
-                }}
-              >
+              <Button size="lg" block icon="eye" onClick={turn}>
                 Antwort zeigen
               </Button>
             </Actions>

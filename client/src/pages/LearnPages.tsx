@@ -36,7 +36,7 @@ import { useData, useDueByStack, useGroup, useProgress, useStack, useStacks, use
 import { adoptDeviceLearners, useDefaultLearner, useDueList, useLearnDirection, useLearners } from '../store/learners.ts';
 import { useGameSettings, useSettings } from '../store/settings.ts';
 import { deleteStackWithUndo } from '../store/undo.ts';
-import { GroupSection, PlayLoading, usePlayScreen, useSelectedGroup } from './GamePages.tsx';
+import { GroupSection, PlayLoading, useAddMissing, usePlayScreen, useSelectedGroup } from './GamePages.tsx';
 
 const SoloLearn = lazy(() => import('../games/spickzettel/SoloLearn.tsx'));
 
@@ -123,8 +123,7 @@ export function LearnHubPage() {
   const exams = useMemo(() => upcomingExams(topics), [topics]);
 
   return (
-    <Page title="Lernen" subtitle={all.length > 0 ? 'Schulstoff als Karten – allein oder zusammen.' : undefined}>
-      <LearnAreaSwitch area="karten" />
+    <Page title="Lernen" subtitle={all.length > 0 ? 'Schulstoff als Karten – allein oder zusammen.' : undefined} nav={<LearnAreaSwitch area="karten" />}>
       {all.length === 0 ? (
         <>
           {exams.length > 0 && (
@@ -502,6 +501,8 @@ function TogetherPage({ stack, mode }: { stack: LearnStack; mode: LearnMode }) {
   const canStart = fits && !!group && missing === 0;
   const Settings = spickzettel.Settings!;
 
+  const addMissing = useAddMissing(group?.id, select);
+
   const start = () => {
     if (!canStart || !group) return;
     sound.unlock(); // must happen inside the tap for iOS
@@ -525,13 +526,15 @@ function TogetherPage({ stack, mode }: { stack: LearnStack; mode: LearnMode }) {
         <Settings value={settings} onChange={setSettings} />
       </Fold>
       <BottomBar>
-        <Button size="lg" block icon="play" onClick={start} disabled={!canStart}>
-          {!fits
-            ? 'Zu wenige Karten'
-            : missing > 0
-                ? `Noch ${missing} ${missing === 1 ? 'Person' : 'Personen'} hinzufügen`
-                : `${info.label} starten · ${count} ${count === 1 ? 'Person' : 'Personen'}`}
-        </Button>
+        {fits && !canStart ? (
+          <Button size="lg" block variant="secondary" icon="plus" onClick={addMissing}>
+            {group ? `Noch ${missing} ${missing === 1 ? 'Person' : 'Personen'} hinzufügen` : 'Mitspielende hinzufügen'}
+          </Button>
+        ) : (
+          <Button size="lg" block icon="play" onClick={start} disabled={!canStart}>
+            {fits ? `${info.label} starten · ${count} ${count === 1 ? 'Person' : 'Personen'}` : 'Zu wenige Karten'}
+          </Button>
+        )}
       </BottomBar>
     </Page>
   );

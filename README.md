@@ -119,7 +119,12 @@ Alle Inhalte sind in Schweizer Hochdeutsch geschrieben (ohne «ß») und funktio
 - **Sticker-Pop-Look:** warmes Creme-Papier mit Punktraster, kräftige Farben, dicke Konturen, harte Schatten,
   leicht schräge «Sticker»-Elemente und schwebende Formen im Hintergrund
   ([`client/src/styles/global.css`](client/src/styles/global.css)).
+- **Jeder Bereich hat seine Farbe:** Spiele Pink, Lernen Orange, Entdecken Gelb, Gruppen Blau, Konto Grün – als
+  Markerstrich unter dem Titel, in den Abschnittsmarken und als Tönung des Hintergrunds. Die Umschalter
+  «Zusammen | Allein | Arena» und «Karten | Aufgaben» bleiben beim Wechseln an derselben Stelle.
 - **Knöpfe zum Draufdrücken:** Alles Klickbare senkt sich beim Antippen spürbar ein – mit Vibration und Sound.
+- **Nie verloren:** Eine neue Seite beginnt oben, «Zurück» führt an die Stelle zurück, an der man die Liste verlassen
+  hat. Der grosse Knopf unten ist nie ausgegraut, sondern führt zu dem, was noch fehlt.
 - **Für kleine Handys gemacht:** Titel passen sich der Kartenbreite an, jede Tippfläche ist mindestens 44 px gross,
   Meldungen erscheinen unten beim Daumen. Neue Konten sehen sofort sechs Spiele zum Start statt einer leeren Liste.
 - **Bilder aus den Spielen:** Die Kacheln von «Allein» und «Arena» und ihre Einträge in «Entdecken» zeigen echte Aufnahmen der Spiele; Ranglisten

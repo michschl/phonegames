@@ -93,6 +93,23 @@ export function GroupSection({
   );
 }
 
+/**
+ * Too few people to start: the big button is no dead end – it leads to the field for the names, and
+ * creates the first group to put them in when there is none.
+ */
+export function useAddMissing(groupId: string | undefined, select: (id: string) => void): () => void {
+  const createGroup = useData((s) => s.createGroup);
+  return () => {
+    if (!groupId) select(createGroup({ name: 'Meine Runde' }).id);
+    // After the render that shows the field of a new group.
+    window.setTimeout(() => {
+      const input = document.querySelector<HTMLInputElement>('.setup .player-editor__input');
+      input?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      input?.focus({ preventScroll: true });
+    }, 60);
+  };
+}
+
 function GameSetup({ game }: { game: GameDefinition }) {
   const navigate = useNavigate();
   const library = useLibraryIds();
@@ -114,6 +131,8 @@ function GameSetup({ game }: { game: GameDefinition }) {
   const missing = game.noGroup ? 0 : Math.max(0, needed - playerCount);
   const canStart = game.noGroup || (!!group && missing === 0);
 
+  const addMissing = useAddMissing(group?.id, select);
+
   const start = () => {
     if (!canStart) return;
     sound.unlock(); // must happen inside the tap for iOS
@@ -129,15 +148,16 @@ function GameSetup({ game }: { game: GameDefinition }) {
         <div className="setup-hero__art">{game.Art ? <game.Art size={130} /> : <span>{game.emoji}</span>}</div>
         <div className="setup-hero__text">
           <p className="setup-hero__tagline">{game.tagline}</p>
-          <div className="setup-hero__meta">
-            <span>
-              <Icon name="users" size={15} /> {game.minPlayers}–{game.maxPlayers}
-            </span>
-            <span>
-              <Icon name="clock" size={15} /> {game.duration}
-            </span>
-            <span>{game.age}</span>
-          </div>
+        </div>
+        {/* Below the picture, over the whole width: the three facts stay on one line. */}
+        <div className="setup-hero__meta">
+          <span>
+            <Icon name="users" size={15} /> {game.noGroup ? 'alle' : `${game.minPlayers}–${game.maxPlayers}`}
+          </span>
+          <span>
+            <Icon name="clock" size={15} /> {game.duration}
+          </span>
+          <span>{game.age}</span>
         </div>
         {!inLibrary && (
           <button
@@ -184,13 +204,16 @@ function GameSetup({ game }: { game: GameDefinition }) {
       )}
 
       <BottomBar>
-        <Button size="lg" block icon="play" onClick={start} disabled={!canStart}>
-          {game.noGroup
-            ? 'Spiel starten'
-            : missing > 0
-              ? `Noch ${missing} ${missing === 1 ? 'Person' : 'Personen'} hinzufügen`
-              : `Spiel starten · ${playerCount} ${playerCount === 1 ? 'Person' : 'Personen'}`}
-        </Button>
+        {canStart ? (
+          <Button size="lg" block icon="play" onClick={start}>
+            {game.noGroup ? 'Spiel starten' : `Spiel starten · ${playerCount} ${playerCount === 1 ? 'Person' : 'Personen'}`}
+          </Button>
+        ) : (
+          /* Not ready yet – the button is no dead end: it leads to what is missing. */
+          <Button size="lg" block variant="secondary" icon="plus" onClick={addMissing}>
+            {group ? `Noch ${missing} ${missing === 1 ? 'Person' : 'Personen'} hinzufügen` : 'Mitspielende hinzufügen'}
+          </Button>
+        )}
       </BottomBar>
     </Page>
   );

@@ -562,12 +562,12 @@ export function SubscribePage() {
           navigate(takeAfterSubscribe(), { replace: true, viewTransition: true });
         } else {
           setError('Die Zahlung ist noch nicht abgeschlossen. Versuche es nochmals.');
-          setParams({}, { replace: true });
+          setParams({}, { replace: true, preventScrollReset: true });
         }
       })
       .catch((err) => {
         setError(errorMessage(err));
-        setParams({}, { replace: true });
+        setParams({}, { replace: true, preventScrollReset: true });
       })
       .finally(() => setBusy(null));
   }, [sessionId]); // eslint-disable-line react-hooks/exhaustive-deps

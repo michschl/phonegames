@@ -1,12 +1,12 @@
-import { Suspense, useCallback, useEffect, useState, type CSSProperties } from 'react';
+import { Suspense, useCallback, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router';
 import { balance } from '../../../shared/coins.ts';
-import { Mascot } from '../components/Brand.tsx';
+import { Logo, Mascot } from '../components/Brand.tsx';
 import { CoinPill } from '../components/Coins.tsx';
 import { FamilyRanking } from '../components/FamilyRanking.tsx';
 import { Fold } from '../components/Fold.tsx';
 import { Icon } from '../components/Icon.tsx';
-import { BottomBar, Page, Section } from '../components/Layout.tsx';
+import { BottomBar, OfflinePill, Page, Section } from '../components/Layout.tsx';
 import { Avatar, Button, ConfirmSheet, Segmented } from '../components/ui.tsx';
 import { sound } from '../lib/audio.ts';
 import { confetti } from '../lib/confetti.ts';
@@ -53,6 +53,46 @@ export function PlayAreaSwitch({ area }: { area: 'zusammen' | 'allein' | 'arena'
         }}
       />
     </div>
+  );
+}
+
+/**
+ * The top of the three areas of «Spiele»: the logo, the way to the account and the switch. It is the same
+ * in every area, so the switch stays where the finger is.
+ */
+export function PlayTop({ area }: { area: 'zusammen' | 'allein' | 'arena' }) {
+  const user = useAuth((s) => s.user);
+  return (
+    <>
+      <header className="home-top">
+        <Logo size={38} />
+        <div className="page__actions">
+          <OfflinePill />
+          {user && (
+            <Link to="/konto" className="header-avatar" aria-label="Konto">
+              <Avatar name={user.name} color={user.color} emoji={user.avatar} size={44} />
+            </Link>
+          )}
+        </div>
+      </header>
+      <PlayAreaSwitch area={area} />
+    </>
+  );
+}
+
+/** A page of «Allein» or the Arena below that top: title with the marker of the tab, a line about it, the content. */
+export function PlayPage({ area, title, subtitle, children }: { area: 'allein' | 'arena'; title: string; subtitle: string; children: ReactNode }) {
+  return (
+    <main className="page">
+      <PlayTop area={area} />
+      <div className="page__content">
+        <h1 className="page__title">
+          <span className="page__title-mark">{title}</span>
+        </h1>
+        <p className="page__subtitle page__lead">{subtitle}</p>
+        {children}
+      </div>
+    </main>
   );
 }
 
@@ -123,8 +163,7 @@ export function SoloHubPage() {
   const [{ level }] = useGameSettings<{ level: SoloLevel }>(`allein-stufe-${player.toLowerCase()}`, { level: 1 });
 
   return (
-    <Page title="Allein spielen" subtitle="Kurze Spiele für Reaktion, Merken und Köpfchen.">
-      <PlayAreaSwitch area="allein" />
+    <PlayPage area="allein" title="Allein spielen" subtitle="Kurze Spiele für Reaktion, Merken und Köpfchen.">
       {players.length > 1 && (
         <Section title="Wer spielt?">
           <PlayerChips value={player} onChange={setPlayer} players={players} coins={rewards.enabled} />
@@ -153,14 +192,20 @@ export function SoloHubPage() {
           ))}
         </div>
       </Section>
-      <p className="solo-soon">
-        <span aria-hidden="true">🚀</span> Bald: anspruchsvollere Spiele für Ältere.
-      </p>
+      {rewards.arena && (
+        <Link to="/arena" className="solo-soon" viewTransition>
+          <span aria-hidden="true">🚀</span>
+          <span>
+            <strong>Schon 13?</strong> In der Arena warten acht Spiele in 3D.
+          </span>
+          <Icon name="next" size={18} strokeWidth={3} />
+        </Link>
+      )}
       <Link to="/belohnungen" className="solo-rewards-link" viewTransition>
         <Icon name="settings" size={18} />
         <span>Belohnungen einstellen{rewards.enabled ? '' : ' – Münzen fürs Lernen sind aus'}</span>
       </Link>
-    </Page>
+    </PlayPage>
   );
 }
 

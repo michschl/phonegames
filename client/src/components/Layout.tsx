@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { NavLink, useLocation, useNavigate } from 'react-router';
+import { NavLink, useLocation, useNavigate, useNavigationType } from 'react-router';
 import { Icon, type IconName } from './Icon.tsx';
 import { haptic } from '../lib/device.ts';
 import { useData } from '../store/data.ts';
@@ -10,14 +10,24 @@ import { dismissToast, useUi } from '../store/ui.ts';
 
 type ShapeKind = 'star' | 'squiggle' | 'ring' | 'triangle' | 'plus' | 'dot';
 
-const SHAPES: { kind: ShapeKind; color: string; style: Record<string, string> }[] = [
-  { kind: 'star', color: '#ffd23f', style: { top: '46%', left: '-30px', '--s': '62px', '--d': '17s', '--dx': '18px', '--dy': '26px', '--r': '40deg' } },
-  { kind: 'squiggle', color: '#ff4fa3', style: { top: '19%', right: '-26px', '--s': '96px', '--d': '21s', '--dx': '-14px', '--dy': '22px', '--r': '-18deg' } },
-  { kind: 'ring', color: '#2ec5ff', style: { bottom: '22%', left: '-24px', '--s': '74px', '--d': '19s', '--dx': '22px', '--dy': '-18px', '--r': '60deg' } },
-  { kind: 'triangle', color: '#9be15d', style: { bottom: '9%', right: '6%', '--s': '46px', '--d': '15s', '--dx': '-20px', '--dy': '-24px', '--r': '-50deg', '--delay': '-4s' } },
-  { kind: 'plus', color: '#7c5cff', style: { top: '52%', right: '-6px', '--s': '38px', '--d': '14s', '--dx': '-16px', '--dy': '20px', '--r': '90deg' } },
-  { kind: 'dot', color: '#ff8a3d', style: { top: '38%', left: '5%', '--s': '18px', '--d': '12s', '--dx': '14px', '--dy': '-16px' } },
+/* Where each shape sits and how it drifts is in global.css (.backdrop__shape--…): in the page margins, never under the text. */
+const SHAPES: { kind: ShapeKind; color: string }[] = [
+  { kind: 'star', color: '#ffd23f' },
+  { kind: 'squiggle', color: '#ff4fa3' },
+  { kind: 'ring', color: '#2ec5ff' },
+  { kind: 'triangle', color: '#9be15d' },
+  { kind: 'plus', color: '#7c5cff' },
+  { kind: 'dot', color: '#ff8a3d' },
 ];
+
+/** The part of the app a path belongs to – it gives the page its accent colour (the colour of its tab). */
+export function areaOf(pathname: string): 'spiele' | 'lernen' | 'entdecken' | 'gruppen' | 'konto' {
+  if (/^\/(lernen|stapel|aufgaben|s)(\/|$)/.test(pathname)) return 'lernen';
+  if (pathname.startsWith('/entdecken')) return 'entdecken';
+  if (pathname.startsWith('/gruppen')) return 'gruppen';
+  if (/^\/(konto|belohnungen|abo|bedingungen|impressum|agb|datenschutz)(\/|$)/.test(pathname)) return 'konto';
+  return 'spiele';
+}
 
 function Shape({ kind, color }: { kind: ShapeKind; color: string }) {
   const ink = { stroke: '#1b1033', strokeWidth: 3, strokeLinejoin: 'round' as const, strokeLinecap: 'round' as const };
@@ -35,12 +45,18 @@ function Shape({ kind, color }: { kind: ShapeKind; color: string }) {
   );
 }
 
-/** Playful floating shapes behind everything. */
+/** Playful floating shapes behind everything, tinted in the colour of the area. */
 export function Backdrop() {
+  const { pathname } = useLocation();
+  const area = areaOf(pathname);
+  // On the root element, so sheets and toasts (rendered outside the page) get the accent too.
+  useEffect(() => {
+    document.documentElement.dataset.area = area;
+  }, [area]);
   return (
     <div className="backdrop" aria-hidden="true">
-      {SHAPES.map((shape, i) => (
-        <span key={i} className="backdrop__shape" style={shape.style as CSSProperties}>
+      {SHAPES.map((shape) => (
+        <span key={shape.kind} className={`backdrop__shape backdrop__shape--${shape.kind}`}>
           <Shape kind={shape.kind} color={shape.color} />
         </span>
       ))}
@@ -111,6 +127,30 @@ export function TabBar() {
   );
 }
 
+/*
+ * The pages visited in this tab, by their place in the browser's history. With it «Zurück» really goes back
+ * when the page it leads to is the one before – and that page is where it was left (same scroll position),
+ * instead of opening anew at its top.
+ */
+const trail: string[] = [];
+const historyIndex = (): number | null => {
+  const idx = (window.history.state as { idx?: unknown } | null)?.idx;
+  return typeof idx === 'number' ? idx : null;
+};
+
+/** Keeps the trail; once, at the root of the app. */
+export function useTrail(): void {
+  const location = useLocation();
+  const type = useNavigationType();
+  useEffect(() => {
+    const idx = historyIndex();
+    if (idx === null) return;
+    trail[idx] = location.pathname + location.search;
+    // A new page replaces what lay ahead.
+    if (type === 'PUSH') trail.length = idx + 1;
+  }, [location, type]);
+}
+
 /** Standard page with a sticky header. */
 /** Length of the longest word – a long one («Französisch», «Bruchrechnen») needs a smaller title to fit unbroken. */
 function longestWord(text: string): number {
@@ -122,6 +162,7 @@ export function Page({
   subtitle,
   back,
   actions,
+  nav,
   children,
   className = '',
 }: {
@@ -129,6 +170,8 @@ export function Page({
   subtitle?: ReactNode;
   back?: string | true;
   actions?: ReactNode;
+  /** The switch between the areas of a tab. It sits right under the title – at the same place in every area – and the subtitle follows it. */
+  nav?: ReactNode;
   children: ReactNode;
   className?: string;
 }) {
@@ -146,7 +189,8 @@ export function Page({
 
   const goBack = () => {
     haptic(6);
-    if (back === true) navigate(-1);
+    const idx = historyIndex();
+    if (back === true || (back && idx !== null && idx > 0 && trail[idx - 1] === back)) navigate(-1);
     else if (back) navigate(back, { viewTransition: true });
   };
 
@@ -165,15 +209,21 @@ export function Page({
           </button>
         )}
         <div className="page__titles">
-          <h1 className={`page__title${typeof title === 'string' && longestWord(title) > 11 ? ' is-long' : ''}`}>{title}</h1>
-          {subtitle && <p className="page__subtitle">{subtitle}</p>}
+          <h1 className={`page__title${typeof title === 'string' && longestWord(title) > 11 ? ' is-long' : ''}`}>
+            {back ? title : <span className="page__title-mark">{title}</span>}
+          </h1>
+          {subtitle && !nav && <p className="page__subtitle">{subtitle}</p>}
         </div>
         <div className="page__actions">
           <OfflinePill />
           {actions}
         </div>
       </header>
-      <div className="page__content">{children}</div>
+      {nav && <div className="page__nav">{nav}</div>}
+      <div className="page__content">
+        {subtitle && nav && <p className="page__subtitle page__lead">{subtitle}</p>}
+        {children}
+      </div>
     </main>
   );
 }

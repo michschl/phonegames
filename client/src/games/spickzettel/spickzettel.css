@@ -19,9 +19,48 @@
 
 /* ===================================================== Spickzettel: game */
 
-.learn-stage {
+/*
+ * One card of the Kartenkasten: the progress stays at the top, the card sits in the middle of the room
+ * that is left, and what the thumb taps (show, knew it, the choices) stays at the bottom.
+ */
+.gs-stage.learn-stage {
   justify-content: flex-start;
   gap: 18px;
+}
+
+.learn-stage > .learn-card {
+  margin-block: auto;
+  min-height: clamp(190px, 36dvh, 340px);
+  align-content: center;
+}
+
+/* Four choices need the room themselves. */
+.learn-stage > .learn-card:has(~ .choice-grid) {
+  min-height: clamp(130px, 22dvh, 240px);
+}
+
+/* Typing: the field stays right under the card, above the keyboard. */
+.learn-stage > .learn-card:has(~ .typed-form),
+.learn-stage > .learn-card:has(~ .typed-result) {
+  margin-block: 0;
+  min-height: 0;
+}
+
+/* The card can be turned with a tap, like a real one. */
+.learn-card.is-tappable {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.learn-card__turn {
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  color: var(--faint);
+  font-size: 13.5px;
+  font-weight: 700;
 }
 
 .learn-progress {

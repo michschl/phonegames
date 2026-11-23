@@ -47,6 +47,71 @@ test('Tabs und Seiten sind zugänglich und scrollen nie seitlich', async ({ page
   }
 });
 
+test('Umschalter bleiben an ihrem Platz, der grosse Knopf führt zu den fehlenden Mitspielenden', async ({ page }) => {
+  await register(page);
+  // «Zusammen | Allein | Arena»: the same place in every area, so a second tap hits the switch again.
+  const areas = page.getByRole('radiogroup', { name: 'Spielart' });
+  const top = async () => Math.round((await areas.boundingBox())?.y ?? -1);
+  await expect(areas).toBeVisible();
+  const home = await top();
+  expect(home).toBeGreaterThan(0);
+  for (const [area, path] of [['Allein', '/allein'], ['Arena', '/arena'], ['Zusammen', '/']] as const) {
+    await areas.getByRole('radio', { name: area }).click();
+    await expect(page).toHaveURL(path);
+    await expect(areas.getByRole('radio', { name: area })).toHaveAttribute('aria-checked', 'true');
+    // Polled: the page is swapped with a short transition.
+    await expect.poll(top, { message: area }).toBe(home);
+  }
+  // Every area carries the colour of its tab.
+  await expect(page.locator('html')).toHaveAttribute('data-area', 'spiele');
+  await page.goto('/lernen');
+  await expect(page.locator('html')).toHaveAttribute('data-area', 'lernen');
+  await page.goto('/konto');
+  await expect(page.locator('html')).toHaveAttribute('data-area', 'konto');
+
+  // Nobody to play with yet: the button at the bottom leads to the names instead of being greyed out.
+  await page.goto('/spiel/bombe');
+  await page.getByRole('button', { name: 'Mitspielende hinzufügen' }).click();
+  const name = page.getByLabel('Name des Spielers');
+  await expect(name).toBeFocused();
+  await name.fill('Lea');
+  await name.press('Enter');
+  await page.getByRole('button', { name: 'Noch 1 Person hinzufügen' }).click();
+  await expect(name).toBeFocused();
+  await name.fill('Tim');
+  await name.press('Enter');
+  await expect(page.locator('.start-bar .btn')).toHaveText('Spiel starten · 2 Personen');
+  await expectAccessible(page);
+});
+
+test('Eine neue Seite beginnt oben, «Zurück» führt an die Stelle in der Liste zurück', async ({ page }) => {
+  await register(page);
+  const scrollY = () => page.evaluate(() => Math.round(window.scrollY));
+  await page.goto('/entdecken');
+  // Far down in the list – then to another tab: it opens at its top, not somewhere in the middle.
+  await page.locator('a[href="/arena/kette"]').scrollIntoViewIfNeeded();
+  expect(await scrollY()).toBeGreaterThan(800);
+  await page.locator('.tabbar a', { hasText: 'Konto' }).click();
+  await expect(page).toHaveURL('/konto');
+  await expect.poll(scrollY).toBe(0);
+  await page.locator('.tabbar a', { hasText: 'Entdecken' }).click();
+  await expect(page).toHaveURL('/entdecken');
+  await expect.poll(scrollY).toBe(0);
+
+  // Into a game from the middle of the list and back: the list is where it was left.
+  const game = page.locator('a[href="/spiel/schaetzmeister"]');
+  await game.scrollIntoViewIfNeeded();
+  await page.mouse.wheel(0, 200);
+  await expect.poll(scrollY).toBeGreaterThan(500);
+  await game.click();
+  await expect(page).toHaveURL('/spiel/schaetzmeister');
+  await expect.poll(scrollY).toBe(0);
+  await page.getByRole('button', { name: 'Zurück' }).first().click();
+  await expect(page).toHaveURL('/entdecken');
+  await expect.poll(scrollY).toBeGreaterThan(500);
+  await expect(game).toBeInViewport();
+});
+
 test('Entdecken zeigt auch die Spiele von «Allein» und der Arena', async ({ page }) => {
   await register(page);
   await page.goto('/entdecken');

@@ -36,6 +36,33 @@ Tinte (`--ink`) für Konturen und Text, Creme-Papier (`--bg`), kräftige Akzentf
 Spiele ([`games/shared/game-shell.css`](../client/src/games/shared/game-shell.css)) bauen darauf auf. Jedes Spiel setzt
 mit `accent` seine eigene Farbe; `GameShell` mit `night` schaltet auf die dunkle Variante um.
 
+Ordnung auf der Seite:
+
+- **Jeder Bereich hat seine Farbe** – die seines Tabs (Spiele Pink, Lernen Orange, Entdecken Gelb, Gruppen Blau, Konto
+  Grün). `areaOf()` in [`Layout.tsx`](../client/src/components/Layout.tsx) leitet den Bereich aus dem Pfad ab und setzt
+  `data-area` am Wurzelelement; `--accent` färbt damit den Markerstrich unter dem Seitentitel
+  (`.page__title-mark`), die Marken der Abschnitte und die Tönung des Hintergrunds (`--tint-a/b/c`).
+- **Umschalter bleiben an ihrem Platz.** «Zusammen | Allein | Arena» steht in allen drei Bereichen direkt unter Logo und
+  Konto (`PlayTop`/`PlayPage` in [`SoloPages.tsx`](../client/src/pages/SoloPages.tsx)), «Karten | Aufgaben» direkt unter
+  dem Titel (`Page` mit `nav`) – die Unterzeile folgt danach. So springt der Umschalter beim Wechseln nicht.
+- **Drei Stufen von Gewicht:** Was irgendwohin führt (Knöpfe, Kacheln, Zeilen) hat die dicke Kontur und den harten
+  Schatten. Aufklapper (`.fold`: Regeln, Einstellungen, Rangliste) sind flacher – dünnere Kontur, kaum Schatten, das
+  Plus wird erst geöffnet gelb. Hinweise sind gestrichelt.
+- **Formen im Hintergrund stehen im Rand**, nie unter Text: Auf dem Handy schauen drei davon nur aus dem Seitenrand
+  hervor, ab 900 px Breite rahmen sechs die Inhaltsspalte ein.
+- **Eine neue Seite beginnt oben, «Zurück» führt an die verlassene Stelle.** `<ScrollRestoration />` von React Router
+  setzt die Scroll-Position bei jedem Seitenwechsel zurück und stellt sie beim Zurückgehen wieder her. Der
+  Zurück-Knopf der Seiten (`Page` mit `back`) geht dafür wirklich in der Browser-History zurück, wenn die Zielseite die
+  vorherige war (`useTrail()` merkt sich den Weg) – sonst öffnet er sie neu. Wer aus der Mitte von «Entdecken» ein
+  Spiel öffnet und zurückgeht, steht wieder bei diesem Spiel.
+- **Der grosse Knopf unten ist nie eine Sackgasse.** Fehlen Mitspielende, heisst er «Mitspielende hinzufügen» bzw.
+  «Noch 2 Personen hinzufügen» und führt zum Namensfeld (`useAddMissing()`), statt ausgegraut zu sein.
+- **Reihen, die seitlich scrollen** (Kategorien, «Neu für euch», Symbole) blenden am Rand aus und rasten am Seitenrand
+  ein – das Abgeschnittene liest sich als «da kommt noch mehr».
+- **Die Lernkarte** steht in der Mitte des freien Raums, der Fortschritt oben, die Knöpfe unten beim Daumen; sie dreht
+  sich auch per Tipp auf die Karte.
+- **Tablet und Desktop:** Kacheln stehen ab 600 px Breite zu dritt nebeneinander.
+
 Regeln für Lesbarkeit und Bedienbarkeit (geprüft mit axe-core gegen WCAG 2.2 AA):
 
 - **Text auf Farbe ist Tinte**, nicht Weiss: Weiss auf Pink oder Rot erreicht nur 3:1, Tinte rund 6:1. Weisse Schrift

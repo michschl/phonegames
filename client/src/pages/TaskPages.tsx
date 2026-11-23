@@ -127,8 +127,11 @@ export function TasksHubPage() {
   const sorted = useMemo(() => sortTopics(topics), [topics]);
 
   return (
-    <Page title="Lernen" subtitle={topics.length > 0 ? 'Prüfungen vorbereiten – mit Tests, Aufgaben und Probeprüfungen.' : undefined}>
-      <LearnAreaSwitch area="aufgaben" />
+    <Page
+      title="Lernen"
+      subtitle={topics.length > 0 ? 'Prüfungen vorbereiten – mit Tests, Aufgaben und Probeprüfungen.' : undefined}
+      nav={<LearnAreaSwitch area="aufgaben" />}
+    >
       {topics.length === 0 ? (
         <TasksIntro />
       ) : (
