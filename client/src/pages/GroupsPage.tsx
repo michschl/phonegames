@@ -118,7 +118,6 @@ export function GroupEditPage() {
       title={group.name || 'Gruppe'}
       back="/gruppen"
       className="group-edit"
-      actions={<IconButton icon="trash" label="Gruppe löschen" onClick={() => setConfirmDelete(true)} />}
     >
       <Section title="Name & Symbol">
         <div className="group-name">

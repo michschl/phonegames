@@ -6,7 +6,9 @@ import { LegalLinks, LegalSheet, type LegalDoc } from '../legal/LegalPages.tsx';
 import { legalReady } from '../legal/operator.ts';
 import { TERMS_VERSION } from '../../../shared/legal.ts';
 import { Button, TextField } from '../components/ui.tsx';
+import { ARENA_GAMES } from '../arena/registry.ts';
 import { GAMES } from '../games/registry.ts';
+import { SOLO_GAMES } from '../solo/registry.ts';
 import { api, ApiError, errorMessage } from '../lib/api.ts';
 import { useAuthOptions } from '../lib/authOptions.ts';
 import { PasskeyCancelled, passkeysSupported, preparePasskeySignIn, signInWithPasskey } from '../lib/passkeys.ts';
@@ -134,8 +136,25 @@ export function WelcomePage() {
         <p className="welcome__tagline">
           <strong>Ein Handy. Die ganze Runde.</strong>
           <br />
-          {GAMES.length} Spiele – laut, lustig und auch offline.
+          Spielen, lernen, lachen – auch offline.
         </p>
+        <ul className="welcome__pillars" aria-label="Was drin ist">
+          <li style={{ '--c': 'var(--pink-soft)' } as CSSProperties}>
+            <span aria-hidden="true">🎉</span>
+            <strong>{GAMES.length} Partyspiele</strong>
+            <small>für die ganze Runde</small>
+          </li>
+          <li style={{ '--c': 'var(--cyan-soft)' } as CSSProperties}>
+            <span aria-hidden="true">🎮</span>
+            <strong>Allein &amp; 3D</strong>
+            <small>{SOLO_GAMES.length + ARENA_GAMES.length} Spiele mit Rekorden</small>
+          </li>
+          <li style={{ '--c': 'var(--yellow-soft)' } as CSSProperties}>
+            <span aria-hidden="true">📚</span>
+            <strong>Lernen</strong>
+            <small>Karten, Tests, Prüfungen</small>
+          </li>
+        </ul>
       </div>
 
       <div className="welcome__bands">

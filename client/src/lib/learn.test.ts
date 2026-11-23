@@ -14,6 +14,8 @@ import {
   estimateVerdict,
   formatCardNumber,
   kastenStatus,
+  learningWeek,
+  stackMastery,
   languageName,
   nextProgress,
   orientCard,
@@ -318,5 +320,31 @@ describe('stack suggestions', () => {
   it('always shows the chosen stack', () => {
     expect(recommendStacks(stacks, progress, { faellig: 4 }, 'alt').map((s) => s.id)).toEqual(['faellig', 'gelernt', 'alt']);
     expect(recommendStacks(stacks.slice(0, 2), {}, {}, 'alt').map((s) => s.id)).toEqual(['neu', 'alt']);
+  });
+});
+
+describe('Lernstand und Lernwoche', () => {
+  const stack = { id: 's1', cards: [{ id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'd' }] } as unknown as LearnStack;
+  const entry = (player: string, cards: Record<string, { box: number; due: number }>, extra: Partial<LearnProgress> = {}) =>
+    ({ id: `p-${player}`, stackId: 's1', player, cards, updatedAt: 0, deleted: false, ...extra }) as LearnProgress;
+
+  it('counts new cards and boxes over everyone learning the stack', () => {
+    expect(stackMastery(stack, [])).toEqual({ fresh: 4, boxes: [0, 0, 0, 0, 0], share: 0 });
+    const lea = entry('Lea', { a: { box: 5, due: 0 }, b: { box: 1, due: 0 } });
+    const tim = entry('Tim', { a: { box: 3, due: 0 } });
+    const gone = entry('Ben', { a: { box: 5, due: 0 } }, { removed: true });
+    const result = stackMastery(stack, [lea, tim, gone]);
+    expect(result.fresh).toBe(5);
+    expect(result.boxes).toEqual([1, 0, 1, 0, 1]);
+    expect(result.share).toBeCloseTo((1 + 0.2 + 0.6) / 8);
+  });
+
+  it('marks the days of the last week on which a person learned', () => {
+    const now = new Date(2026, 10, 23, 15).getTime();
+    const lea = entry('Lea', {}, { days: ['2026-11-23', '2026-11-21', '2026-11-10'] });
+    const week = learningWeek([lea, entry('Tim', {}, { days: ['2026-11-22'] })], 'lea', now);
+    expect(week.map((d) => d.day)).toEqual(['2026-11-17', '2026-11-18', '2026-11-19', '2026-11-20', '2026-11-21', '2026-11-22', '2026-11-23']);
+    expect(week.map((d) => d.learned)).toEqual([false, false, false, false, true, false, true]);
+    expect(week.at(-1)!.today).toBe(true);
   });
 });

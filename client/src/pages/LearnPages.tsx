@@ -4,6 +4,7 @@ import { LIMITS, type LearnMode, type LearnStack, type Player } from '../../../s
 import { Mascot } from '../components/Brand.tsx';
 import { Fold } from '../components/Fold.tsx';
 import { Icon } from '../components/Icon.tsx';
+import { LearnWeek, MasteryBar } from '../components/LearnCharts.tsx';
 import { DueRows, ExamRows } from '../components/LearnDue.tsx';
 import { upcomingExams } from '../lib/topics.ts';
 import { LearnerPicker } from '../components/LearnerPicker.tsx';
@@ -117,6 +118,7 @@ export function LearnHubPage() {
     return Number.isFinite(soonest) ? soonest : null;
   }, [progress]);
   const learned = Object.values(progress).some((entry) => !entry.deleted && Object.keys(entry.cards).length > 0);
+  const progressList = useMemo(() => Object.values(progress), [progress]);
   const topics = useTopics();
   const exams = useMemo(() => upcomingExams(topics), [topics]);
 
@@ -146,6 +148,11 @@ export function LearnHubPage() {
               </p>
             )}
           </Section>
+          {learned && (
+            <Section title="Diese Woche">
+              <LearnWeek progress={progressList} />
+            </Section>
+          )}
           <Section title="So geht’s">
             <Fold title="In fünf Schritten" icon="sparkles">
               <ol className="rules">
@@ -192,6 +199,7 @@ export function LearnHubPage() {
                         {cardCount(stack.cards.length)}
                         {stack.subject && ` · ${stack.subject}`}
                       </span>
+                      <MasteryBar stack={stack} progress={progressList} />
                       {(dueByStack[stack.id] ?? 0) > 0 && <span className="due-pill">{dueByStack[stack.id]} fällig</span>}
                     </span>
                   </Link>

@@ -109,6 +109,18 @@ p {
   hyphens: auto;
 }
 
+/* Headings break into lines of similar length, text avoids a lonely last word. */
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p,
+li {
+  text-wrap: pretty;
+}
+
 a {
   color: inherit;
 }

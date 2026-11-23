@@ -41,6 +41,26 @@ Regeln für Lesbarkeit und Bedienbarkeit (geprüft mit axe-core gegen WCAG 2.2 A
 - **Fliesstext nie in `--faint`** – das ist für Platzhalter und Symbole. Kleine Texte nutzen `--muted`.
 - **Spielnamen brechen nur an Wortfugen** (`breakableName()` in [`lib/util.ts`](../client/src/lib/util.ts) plus
   `hyphens: manual`), sonst trennt der Browser «Zufallsfin-ger».
+- **Titel in Karten wachsen mit ihrem Platz.** Karten sind Container (`container-type: inline-size`), ihre Titel nehmen
+  eine Grösse in `cqi` zwischen einer Unter- und Obergrenze – «Wahrheit» oder «Kettenreaktion» passen so auch auf ein
+  360 px breites Handy, ohne mitten im Wort zu brechen. Seitentitel mit einem langen Wort (oft vom Nutzer: «Französisch
+  Unité 3») werden kleiner (`.page__title.is-long`). Überschriften brechen ausgewogen (`text-wrap: balance`).
+- **Tippflächen sind mindestens 44 × 44 px.** Kleine Symbole (Entfernen-Kreuz, Plus auf Mini-Karten, Schliessen) behalten
+  ihr Aussehen, ein unsichtbares `::after` vergrössert die Fläche. Links mitten im Satz bekommen Polster nach oben und
+  unten, ohne die Zeile zu verschieben.
+- **Meldungen (Toasts) erscheinen unten**, wo der Daumen ist – über der Tab-Leiste bzw. dem Start-Knopf (`:root:has(…)`),
+  so bleiben Titel und Zurück-Knopf sichtbar. Ist ein Blatt (Sheet) offen oder läuft ein Spiel (Antwort-Knöpfe unten),
+  stehen sie oben.
+- **Bilder der Spiele:** Die Kacheln und Startseiten von «Allein» und «Arena» zeigen echte Aufnahmen aus den Spielen
+  (`client/public/covers/*.webp`, 360 px breit, zusammen unter 80 KB, im Offline-Cache). Sie wurden mit Playwright im
+  Grafikmodus «Schön» aufgenommen, zugeschnitten und als WebP gespeichert; ändert sich ein Spiel sichtbar, werden sie neu
+  aufgenommen. Das Emoji bleibt als Sticker daneben – fehlt ein Bild, steht die Kachel trotzdem.
+- **Lernen sichtbar machen** ([`components/LearnCharts.tsx`](../client/src/components/LearnCharts.tsx)): Jeder Stapel
+  zeigt seinen Lernstand als Balken in den Farben der fünf Fächer (`stackMastery()`: über alle Lernenden, neue Karten
+  sind der leere Rest, der Prozentwert ist der Weg bis Fach 5). «Diese Woche» zeigt pro Person einen Punkt für jeden
+  Tag mit Lernen und die Serie (`learningWeek()` aus den Lerntagen in `LearnProgress.days`).
+- **Rangliste als Podest:** Ab zwei Personen stehen die besten drei auf einem Podest (Zweite links, Erste in der Mitte,
+  Dritte rechts); die Liste bleibt im Code 1, 2, 3 – für Screenreader in der richtigen Reihenfolge.
 - **Knöpfe in Formularen bleiben drückbar.** Fehlt etwas, steht beim Absenden direkt am Feld, was – und der Cursor
   springt dorthin. Ein grauer Knopf ohne Erklärung lässt Leute rätseln.
 - Jede Ansicht hat genau ein `<main>` und eine `<h1>`; Deko (Formen, Konfetti, Laufband) ist `aria-hidden`.
