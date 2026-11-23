@@ -19,6 +19,7 @@ import { isSoloMode, MODES, SITUATIONS, soloLearnPath } from '../games/spickzett
 import '../games/spickzettel/spickzettel.css';
 import { sound } from '../lib/audio.ts';
 import { haptic } from '../lib/device.ts';
+import { launch } from '../lib/launch.ts';
 import {
   boxCounts,
   canPlayChoice,
@@ -253,6 +254,7 @@ const CHECK_HINT = {
 /** /lernen/:stackId – who learns, their Kartenkasten, and every other way to play the stack. */
 export function StackLearnPage() {
   const { stackId } = useParams();
+  const navigate = useNavigate();
   const stack = useStack(stackId);
   const learners = useLearners(stackId);
   const learner = useDefaultLearner(stackId, learners);
@@ -396,7 +398,17 @@ export function StackLearnPage() {
 
       <BottomBar>
         {learner ? (
-          <Link to={soloLearnPath(stack.id, 'kasten', learner)} className="btn btn--primary btn--lg btn--block" viewTransition>
+          <Link
+            to={soloLearnPath(stack.id, 'kasten', learner)}
+            className="btn btn--primary btn--lg btn--block"
+            onClick={(event) => {
+              // Staged like the start of a game; a click that opens a new tab stays a plain link.
+              if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+              event.preventDefault();
+              sound.unlock();
+              launch({ colors: spickzettel.colors, emoji: '🗂️' }, () => navigate(soloLearnPath(stack.id, 'kasten', learner)));
+            }}
+          >
             <Icon name="play" size={20} />
             <span>
               {round > 0 ? `${cardCount(round)} lernen` : 'Trotzdem üben'} · {learner}
@@ -509,7 +521,7 @@ function TogetherPage({ stack, mode }: { stack: LearnStack; mode: LearnMode }) {
     haptic(20);
     setSettings(settings);
     setLastGroup(spickzettel.id, group.id);
-    navigate(`/spiel/${spickzettel.id}/los`, { viewTransition: true });
+    launch({ colors: spickzettel.colors, emoji: info.emoji }, () => navigate(`/spiel/${spickzettel.id}/los`));
   };
 
   return (

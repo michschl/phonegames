@@ -1,4 +1,6 @@
-import { useId } from 'react';
+import { useEffect, useId, useRef } from 'react';
+import { sound } from '../lib/audio.ts';
+import { haptic } from '../lib/device.ts';
 import './brand.css';
 
 export type Mood = 'happy' | 'wink' | 'wow' | 'party' | 'sleepy' | 'oops';
@@ -12,6 +14,38 @@ const FACES: Record<Mood, { eyes: 'dots' | 'wink' | 'wide' | 'closed' | 'x'; mou
   oops: { eyes: 'x', mouth: 'M50 80 Q60 72 70 80' },
 };
 
+/*
+ * The big Phonis are alive: they look where the finger (or the mouse) is and jump when tapped.
+ * One listener for all of them, at most one update per frame.
+ */
+const alive = new Set<SVGSVGElement>();
+let frame = 0;
+let pointer = { x: 0, y: 0 };
+
+function look(): void {
+  frame = 0;
+  for (const phoni of alive) {
+    const box = phoni.getBoundingClientRect();
+    if (box.width === 0) continue;
+    const dx = pointer.x - (box.left + box.width / 2);
+    const dy = pointer.y - (box.top + box.height / 2);
+    // Far away the glance is full, close by it follows the finger gently.
+    const reach = Math.max(120, Math.hypot(dx, dy));
+    phoni.style.setProperty('--lx', (dx / reach).toFixed(2));
+    phoni.style.setProperty('--ly', (dy / reach).toFixed(2));
+  }
+}
+
+function watch(event: PointerEvent): void {
+  pointer = { x: event.clientX, y: event.clientY };
+  if (!frame && alive.size > 0) frame = requestAnimationFrame(look);
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('pointermove', watch, { passive: true });
+  window.addEventListener('pointerdown', watch, { passive: true });
+}
+
 /**
  * «Phoni» – the Phonegames mascot: a cheerful phone with a face.
  * Pure SVG, so it scales crisply and works offline.
@@ -19,14 +53,40 @@ const FACES: Record<Mood, { eyes: 'dots' | 'wink' | 'wide' | 'closed' | 'x'; mou
 export function Mascot({ size = 120, mood = 'happy', className = '' }: { size?: number; mood?: Mood; className?: string }) {
   const id = useId().replace(/:/g, '');
   const face = FACES[mood];
+  const svg = useRef<SVGSVGElement>(null);
+  // The small one in the logo stays calm.
+  const lively = size >= 90;
+
+  useEffect(() => {
+    const element = svg.current;
+    if (!lively || !element) return;
+    alive.add(element);
+    return () => {
+      alive.delete(element);
+    };
+  }, [lively]);
+
+  /** Tapped: a jump and a squeak – for the fun of it, it does nothing else. */
+  const jump = () => {
+    const element = svg.current;
+    if (!element || element.classList.contains('is-jumping')) return;
+    element.classList.add('is-jumping');
+    sound.unlock();
+    sound.pop();
+    haptic(12);
+    window.setTimeout(() => element.classList.remove('is-jumping'), 700);
+  };
+
   return (
     <svg
-      className={`mascot mascot--${mood} ${className}`}
+      ref={svg}
+      className={`mascot mascot--${mood} ${lively ? 'mascot--live' : ''} ${className}`}
       width={size}
       height={size}
       viewBox="0 0 120 120"
       role="img"
       aria-label="Phoni, das Phonegames-Maskottchen"
+      onPointerDown={lively ? jump : undefined}
     >
       <defs>
         <clipPath id={`${id}-screen`}>

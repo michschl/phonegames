@@ -12,6 +12,7 @@ import { ActionSheet, Button, ConfirmSheet, EmptyState, IconButton, Segmented, S
 import { api, ApiError, errorMessage } from '../lib/api.ts';
 import { sound } from '../lib/audio.ts';
 import { haptic } from '../lib/device.ts';
+import { nextMove } from '../lib/transition.ts';
 import { subjectEmoji } from '../lib/learn.ts';
 import { documentMeta, KIND_INFO } from '../lib/taskDocs.ts';
 import { attemptSummary, goalStatus, GOAL_LEVEL, latestAttempt, weakGoals } from '../lib/taskResults.ts';
@@ -59,6 +60,7 @@ export function LearnAreaSwitch({ area }: { area: 'karten' | 'aufgaben' }) {
         ]}
         onChange={(value) => {
           haptic(6);
+          if (value !== area) nextMove(value === 'aufgaben' ? 'right' : 'left');
           navigate(value === 'aufgaben' ? TASKS : '/lernen', { replace: true, viewTransition: true });
         }}
       />

@@ -11,6 +11,8 @@ import { Avatar, Button, ConfirmSheet, Segmented } from '../components/ui.tsx';
 import { sound } from '../lib/audio.ts';
 import { confetti } from '../lib/confetti.ts';
 import { haptic } from '../lib/device.ts';
+import { launch } from '../lib/launch.ts';
+import { nextMove } from '../lib/transition.ts';
 import { breakableName } from '../lib/util.ts';
 import { CARS, getCar, getSoloGame, SOLO_GAMES } from '../solo/registry.ts';
 import { LEVEL_LABEL, type SoloGame, type SoloLevel, type SoloResult } from '../solo/types.ts';
@@ -49,6 +51,8 @@ export function PlayAreaSwitch({ area }: { area: 'zusammen' | 'allein' | 'arena'
         ]}
         onChange={(next) => {
           haptic(6);
+          const order = ['zusammen', 'allein', 'arena'];
+          if (next !== area) nextMove(order.indexOf(next) > order.indexOf(area) ? 'right' : 'left');
           navigate(AREA_PATH[next], { viewTransition: true });
         }}
       />
@@ -262,9 +266,15 @@ export function SoloGamePage() {
     sound.unlock();
     if (price > 0 && !spendCoins(player, price, game.name)) return;
     if (price > 0) sound.coin();
-    setRound((r) => r + 1);
-    setResult(null);
-    setPhase('play');
+    launch(
+      { colors: game.colors, emoji: game.emoji },
+      () => {
+        setRound((r) => r + 1);
+        setResult(null);
+        setPhase('play');
+      },
+      140,
+    );
   };
   const canPay = coins >= price;
 

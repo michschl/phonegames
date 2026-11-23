@@ -6,7 +6,7 @@ Die wichtigsten Abläufe der App, durchgespielt in Chromium auf einem Handy-Bild
 
 | Datei | Inhalt |
 | --- | --- |
-| `app.spec.ts` | Registrierung mit Einladungscode, Anmelden/Abmelden, Tabs, feste Umschalter und Farbe pro Bereich, grosser Knopf führt zu fehlenden Mitspielenden, Scroll-Position (neue Seite oben, «Zurück» an die alte Stelle), «Entdecken» mit allen 30 Spielen (Abschnitte, Filter «1», Suche, «Zurück» von «Allein» und Arena), alle Spielseiten, Barrierefreiheit, 280 px |
+| `app.spec.ts` | Registrierung mit Einladungscode, Anmelden/Abmelden, Tabs, feste Umschalter und Farbe pro Bereich, grosser Knopf führt zu fehlenden Mitspielenden, Scroll-Position (neue Seite oben, «Zurück» an die alte Stelle), Bewegung (Start-Bild, Phoni springt, Tabs mit Richtung, Kachel neigt sich, Farbflut beim Spielstart, Ruhe mit «Bewegung reduzieren»), «Entdecken» mit allen 30 Spielen (Abschnitte, Filter «1», Suche, «Zurück» von «Allein» und Arena), alle Spielseiten, Barrierefreiheit, 280 px |
 | `spickzettel.spec.ts` | Tab «Lernen» (Einführung, Heute dran, Badge auf dem Tab), Stapelseite, allein ohne Gruppe, ein Tipp bis zur Karte, Antwortart pro Person, Abfragerichtung bei Wörtli, Personen entfernen und zurückholen (auch auf einem zweiten Gerät), Namenstafeln und Badges (auch 360 px), Ende der Runde mit Duell-Vorschlag, Lernserie, Stapelliste mit Suche |
 | `spielformen.spec.ts` | «Wer spielt mit?», Duell, Blitzrunde, Schätzrunde (kleines Handy, 360 × 520 px), Lückentext |
 | `stapel.spec.ts` | Fotos (Kamera/Galerie, genau übernehmen, neue Aufgaben erfinden), Teilen per Link, Löschen mit «Rückgängig» (Stapel, Karten, Gruppen, Personen) |
