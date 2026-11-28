@@ -1,7 +1,7 @@
 # Spiele entwickeln
 
 Jedes Spiel ist ein eigener Ordner in [`client/src/games/`](../client/src/games/) und wird in
-[`registry.ts`](../client/src/games/registry.ts) eingetragen. Aktuell sind es 17 Partyspiele für die Runde
+[`registry.ts`](../client/src/games/registry.ts) eingetragen. Aktuell sind es 18 Partyspiele für die Runde
 («Zusammen»); «Lernen» ist ein eigener Bereich (siehe «Bereiche mit eigenen Seiten»), die 5 Spiele von «Allein
 spielen» und die 8 der «Arena» haben einen eigenen, einfacheren Aufbau (siehe «Spiele für «Allein» und die Arena»).
 Katalog, Suche, «Meine Spiele», Spielgruppen, Einstellungen und der Vollbild-Spielmodus funktionieren danach

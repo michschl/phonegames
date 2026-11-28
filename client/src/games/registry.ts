@@ -16,6 +16,7 @@ import { wahrheitOderPflicht } from './wahrheit-oder-pflicht/index.tsx';
 import { ichHabNochNie } from './ich-hab-noch-nie/index.tsx';
 import { zufallsfinger } from './zufallsfinger/index.tsx';
 import { flaschendrehen } from './flaschendrehen/index.tsx';
+import { plumps } from './plumps/index.tsx';
 import { spickzettel } from './spickzettel/index.tsx';
 
 /**
@@ -35,6 +36,7 @@ export const GAMES: GameDefinition[] = [
   summRaten,
   schaetzmeister,
   mehrOderWeniger,
+  plumps,
   werWuerdeEher,
   wahrheitOderPflicht,
   ichHabNochNie,
