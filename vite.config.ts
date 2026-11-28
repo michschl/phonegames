@@ -34,7 +34,7 @@ export default defineConfig({
         id: '/',
         name: 'Phonegames – Partyspiele',
         short_name: 'Phonegames',
-        description: 'Ein Handy. Die ganze Runde. 30 Spiele – zusammen, allein und in 3D – und Lernen, auch offline.',
+        description: 'Ein Handy. Die ganze Runde. 31 Spiele – zusammen, allein und in 3D – und Lernen, auch offline.',
         lang: 'de-CH',
         start_url: '/',
         scope: '/',

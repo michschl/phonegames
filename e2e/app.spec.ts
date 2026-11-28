@@ -226,11 +226,11 @@ test('Jedes Spiel hat eine Startseite mit Weg zurück', async ({ page }) => {
   await register(page);
   await page.goto('/entdecken');
   const links = await page.locator('a[href^="/spiel/"]').evaluateAll((els) => [...new Set(els.map((e) => e.getAttribute('href')!))]);
-  expect(links.length).toBeGreaterThanOrEqual(17);
+  expect(links.length).toBeGreaterThanOrEqual(18);
   // Lernen is a section of its own (tab), not a game of the catalogue.
   expect(links).not.toContain('/spiel/spickzettel');
   await expect(page.getByText('Schulstoff spielend repetieren')).toHaveCount(0);
-  await expect(page.locator('.page__subtitle')).toHaveText('30 Spiele – zusammen, allein und in 3D');
+  await expect(page.locator('.page__subtitle')).toHaveText('31 Spiele – zusammen, allein und in 3D');
   await page.setViewportSize({ width: 320, height: 720 });
   for (const href of links) {
     await page.goto(href);

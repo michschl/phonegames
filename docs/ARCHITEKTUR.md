@@ -374,6 +374,15 @@ Die Typen stehen in [`shared/types.ts`](../shared/types.ts).
 - **Multi-Touch:** «Zufallsfinger» verfolgt bis zu zehn Finger gleichzeitig über Pointer Events.
 - **Zeichenfläche:** «Zeichnen & Raten» speichert Striche als normalisierte Punkte und zeichnet sie mit Quadratkurven
   geglättet neu – so bleibt die Zeichnung bei Grössenänderungen erhalten.
+- **Würfel und Kiste:** «Plumps!» (das Stäbchen-Würfelspiel) trennt Regeln und Bild. Die Regeln stehen als reine
+  Funktionen in [`games/plumps/logic.ts`](../client/src/games/plumps/logic.ts) (Wurf, Löcher, stecken/nehmen/Kiste,
+  Wahl bei zwei Würfeln, Doppeltreffer, Weiterwürfeln, Sieg – mit Tests ganzer Partien). Der Bildschirm zeigt einen
+  Zwischenstand, der Schritt für Schritt nachzieht: Das Stäbchen verlässt zuerst die Hand, fliegt (Web Animations
+  API) und steht erst dann im Loch. Die Würfel sind echte CSS-3D-Würfel (`Dice.tsx`): Jeder Wurf dreht sie um zwei
+  volle Umdrehungen auf beiden Achsen weiter. Die Kiste ist in Prozent ihrer Breite gezeichnet (Container-Einheit
+  `cqi`) und nimmt den Platz, der zwischen Zug-Anzeige und Würfeln bleibt – auch auf 320 × 568 px und im Querformat.
+  Die drei Würfel-Varianten (Zahlen, Farben, beide) ändern nur, welche Würfel fallen; Zahl und Farbe meinen dasselbe
+  Loch, die Farbe wird immer auch als Wort genannt.
 
 ## Lernstapel und Foto-Auswertung
 
@@ -472,7 +481,7 @@ schlecht in Karten fassen lässt.
   bekommen `level` (1 = 6–9, 2 = 8–12 Jahre), die Person und – im Rennen – das Auto; sie melden Punkte, Sterne und
   eine Zusammenfassung zurück. Die Regeln (Memo-Punkte, Muster-Rätsel, Sortier-Sets, Tempo) stehen getestet in
   `solo/logic.ts`; das Rennen zeichnet auf ein Canvas.
-- **Entdecken** (`pages/DiscoverPage.tsx`) führt alle drei Kataloge zusammen: `GAMES` (17), `SOLO_GAMES` (5) und
+- **Entdecken** (`pages/DiscoverPage.tsx`) führt alle drei Kataloge zusammen: `GAMES` (18), `SOLO_GAMES` (5) und
   `ARENA_GAMES` (8) als Einträge einer Liste – blendet die Familie die Arena aus, fehlen ihre Spiele (22). Ohne Filter
   stehen «⭐ Tagestipp» (ein Spiel für die Runde, für alle am selben Tag gleich) und drei Abschnitte «Zusammen spielen»,
   «Allein spielen», «Arena» mit Anzahl; mit Suche oder Filter eine gemeinsame Liste «N Spiele gefunden» (Spiele für die

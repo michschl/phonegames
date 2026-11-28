@@ -1,0 +1,1082 @@
+/*
+ * «Plumps!» – the box with its six holes, the sticks, the dice.
+ * Everything on the board is placed in percent of the board, sizes inside it in cqi (1 % of its width),
+ * so the picture is the same on a small and on a large phone.
+ */
+
+.plumps {
+  --me: var(--accent);
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding-top: 6px;
+  text-align: center;
+  animation: rise-in 0.45s var(--ease-out) both;
+}
+
+/* ------------------------------------------------------------ the players */
+
+.plumps-players {
+  flex: none;
+  display: flex;
+  justify-content: center;
+  gap: clamp(3px, 1.6vw, 10px);
+  margin: 0;
+  padding: 0 0 8px;
+  list-style: none;
+}
+
+/* Eight people still fit side by side on a narrow phone: the circles get smaller. */
+.plumps-player .avatar {
+  --d: clamp(24px, calc((100vw - 64px) / var(--n, 4) - 6px), 34px);
+  width: var(--d) !important;
+  height: var(--d) !important;
+  font-size: calc(var(--d) * 0.38) !important;
+}
+
+/* Who is not on steps back a little (smaller, not paler: the numbers stay readable). */
+.plumps-player {
+  position: relative;
+  transform: scale(0.9);
+  transition: transform 0.3s var(--ease-spring);
+}
+
+.plumps-player .avatar {
+  display: grid;
+}
+
+.plumps-player.is-on {
+  transform: translateY(3px) scale(1.22);
+  z-index: 1;
+}
+
+.plumps-player.is-on .avatar {
+  box-shadow: 0 0 0 3px var(--paper), 0 0 0 5.5px var(--ink);
+}
+
+.plumps-player__count {
+  position: absolute;
+  right: -7px;
+  bottom: -7px;
+  display: grid;
+  place-items: center;
+  min-width: 21px;
+  height: 21px;
+  padding: 0 4px;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+/* One stick left: the number glows. */
+.plumps-player.is-last .plumps-player__count {
+  background: var(--yellow);
+  animation: plumps-last 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes plumps-last {
+  to {
+    transform: scale(1.28);
+    background: #ff8a3d;
+  }
+}
+
+/* ------------------------------------------------------------- whose turn */
+
+.plumps-turn {
+  flex: none;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  width: 100%;
+}
+
+.plumps-turn__who {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 8px;
+  font-family: var(--font-display);
+  font-size: clamp(19px, 5.6vw, 26px);
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.plumps-turn__who strong {
+  padding: 0 6px;
+  background: linear-gradient(transparent 58%, color-mix(in srgb, var(--me) 75%, white) 58%, color-mix(in srgb, var(--me) 75%, white) 94%, transparent 94%);
+  font-weight: 900;
+}
+
+.plumps-turn__last {
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  background: var(--yellow);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 800;
+  animation: pop-in 0.4s var(--ease-spring) both;
+}
+
+/* The sticks in the hand of whoever is on. */
+.plumps-hand {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
+  height: 32px;
+}
+
+.plumps-hand i {
+  width: 9px;
+  height: 30px;
+  border-radius: 5px;
+  border: 2px solid var(--ink);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--me) 60%, white) 0 34%, var(--me) 34%);
+  animation: pop-in 0.3s var(--ease-spring) both;
+}
+
+.plumps-hand i:nth-child(odd) {
+  transform: rotate(-4deg);
+}
+
+.plumps-hand i:nth-child(3n) {
+  transform: rotate(5deg);
+}
+
+.plumps-hand b {
+  align-self: center;
+  margin-left: 2px;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.plumps-hand.is-shaken {
+  animation: plumps-shake 0.45s ease-in-out;
+}
+
+@keyframes plumps-shake {
+  20% {
+    transform: translateX(-7px) rotate(-3deg);
+  }
+  45% {
+    transform: translateX(6px) rotate(3deg);
+  }
+  70% {
+    transform: translateX(-4px);
+  }
+}
+
+.plumps-note {
+  min-height: 2.7em;
+  max-width: 340px;
+  display: grid;
+  place-items: center;
+  hyphens: manual;
+  text-wrap: balance;
+  font-size: 15.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--muted);
+}
+
+.plumps-note:not(:empty) {
+  animation: rise-in 0.3s var(--ease-out) both;
+}
+
+.plumps-note.is-good,
+.plumps-note.is-bad,
+.plumps-note.is-wow {
+  color: var(--ink);
+  font-weight: 800;
+}
+
+/* ------------------------------------------------------------- the board */
+
+/* The room between the turn and the dice; the board is as large as fits into it. */
+.plumps-stage {
+  flex: 1 1 0;
+  min-height: 150px;
+  width: 100%;
+  display: grid;
+  place-items: center;
+  container-type: size;
+}
+
+.plumps-board {
+  position: relative;
+  container-type: inline-size;
+  width: min(100cqw, 372px, calc(100cqh / 0.92));
+  aspect-ratio: 10 / 9;
+}
+
+/* The shadow of the box on the table. */
+.plumps-board::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  left: 4%;
+  right: 4%;
+  bottom: 2%;
+  height: 12%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(27, 16, 51, 0.3), transparent 68%);
+}
+
+/* The front of the box, under the lid. */
+.plumps-front {
+  position: absolute;
+  left: 1.5%;
+  right: 1.5%;
+  top: 42%;
+  height: 48%;
+  border: 3px solid var(--ink);
+  border-radius: 0 0 9cqi 9cqi / 0 0 7cqi 7cqi;
+  background:
+    repeating-linear-gradient(90deg, rgba(120, 60, 10, 0.12) 0 2px, transparent 2px 9cqi),
+    linear-gradient(180deg, #e99a3c, #f3b55c);
+}
+
+.plumps-front__plate {
+  position: absolute;
+  left: 50%;
+  bottom: 14%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: baseline;
+  gap: 1.6cqi;
+  padding: 0.8cqi 4cqi;
+  border-radius: 999px;
+  border: 2.5px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: clamp(12px, 3.8cqi, 15px);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.plumps-front__plate b {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 1.3em;
+  font-weight: 900;
+  animation: plumps-count 0.5s var(--ease-spring) both;
+}
+
+@keyframes plumps-count {
+  from {
+    transform: translateY(-90%) scale(1.8);
+    color: #ff5a5f;
+  }
+}
+
+/* The lid, seen from the front and above: a square that looks wide. */
+.plumps-lid {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 6%;
+  height: 58%;
+  border: 3px solid var(--ink);
+  border-radius: 12%;
+  background:
+    repeating-linear-gradient(92deg, rgba(150, 90, 20, 0.11) 0 2px, transparent 2px 11cqi),
+    linear-gradient(180deg, #ffe2a3, #ffd17a);
+  box-shadow:
+    inset 0 0.9cqi 0 rgba(255, 255, 255, 0.65),
+    inset 0 -1.2cqi 0 rgba(170, 100, 20, 0.22);
+}
+
+/* A hole: a dark ellipse with a ring in its colour. A button while there is something to choose. */
+.plumps-slot {
+  position: absolute;
+  width: 17cqi;
+  aspect-ratio: 1 / 0.52;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  transform: translate(-50%, -50%);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.plumps-slot--open {
+  width: 27cqi;
+}
+
+.plumps-slot:disabled {
+  cursor: default;
+}
+
+/* Easy to hit when it is an option. */
+.plumps-slot.is-option::before {
+  content: '';
+  position: absolute;
+  inset: -4cqi -2cqi;
+}
+
+.plumps-slot__hole,
+.plumps-slot__rim {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.15cqi solid var(--c);
+  box-shadow: 0 0 0 2.5px var(--ink);
+}
+
+.plumps-slot__hole {
+  background: radial-gradient(ellipse at 50% 20%, #43306e, #170c30 68%);
+}
+
+.plumps-slot--open .plumps-slot__hole {
+  border-width: 1.5cqi;
+  background:
+    radial-gradient(ellipse at 50% 108%, rgba(255, 90, 95, 0.55), transparent 58%),
+    radial-gradient(ellipse at 50% 20%, #2b1a52, #0c0520 70%);
+}
+
+/* The front half of the ring lies over the stick: the stick stands in the hole. */
+.plumps-slot__rim {
+  z-index: 3;
+  clip-path: inset(50% -1cqi -1cqi -1cqi);
+  pointer-events: none;
+}
+
+.plumps-slot--open .plumps-slot__rim {
+  border-width: 1.5cqi;
+}
+
+.plumps-slot__n {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  top: 100%;
+  transform: translate(-50%, 22%);
+  min-width: 5.4cqi;
+  padding: 0 1.3cqi;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: clamp(10px, 3.5cqi, 14px);
+  font-weight: 900;
+  line-height: 1.5;
+}
+
+.plumps-slot--open .plumps-slot__n {
+  background: #ff5a5f;
+  font-size: clamp(11px, 4.2cqi, 16px);
+}
+
+/* The hole at the back: its number sits beside it, where neither a stick nor the open hole covers it. */
+.plumps-slot--2 .plumps-slot__n {
+  left: 100%;
+  top: 0;
+  transform: translate(8%, -52%);
+}
+
+/*
+ * Somebody lives in the box: two eyes in the dark of the open hole. They blink, look up when a stick is on
+ * its way and squeeze shut with joy when it has fallen in.
+ */
+.plumps-eyes {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  top: 56%;
+  display: flex;
+  gap: 2.6cqi;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.plumps-eyes i {
+  position: relative;
+  width: 4.2cqi;
+  height: 3.4cqi;
+  border-radius: 50%;
+  background: #fff8e8;
+  animation: plumps-blink 4.4s infinite;
+}
+
+.plumps-eyes i:nth-child(2) {
+  animation-delay: 0.06s;
+}
+
+.plumps-eyes i::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 46%;
+  height: 58%;
+  border-radius: 50%;
+  background: #170c30;
+  transform: translate(-50%, -50%);
+  animation: plumps-glance 7s ease-in-out infinite;
+}
+
+@keyframes plumps-blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.08);
+  }
+}
+
+@keyframes plumps-glance {
+  0%,
+  30%,
+  100% {
+    transform: translate(-50%, -50%);
+  }
+  38%,
+  55% {
+    transform: translate(-95%, -55%);
+  }
+  63%,
+  82% {
+    transform: translate(-5%, -45%);
+  }
+}
+
+/* A stick is coming: wide eyes, looking up. */
+.plumps-eyes.is-waiting i {
+  animation: none;
+  transform: scale(1.18);
+}
+
+.plumps-eyes.is-waiting i::after {
+  animation: none;
+  transform: translate(-50%, -95%);
+}
+
+/* Fed: the eyes squeeze shut with joy, then all is as before. */
+.plumps-eyes.is-fed i {
+  animation:
+    plumps-joy 1.1s ease-out,
+    plumps-blink 4.4s 1.1s infinite;
+}
+
+.plumps-eyes.is-fed i::after {
+  animation:
+    plumps-joy-pupil 1.1s ease-out,
+    plumps-glance 7s 1.1s ease-in-out infinite;
+}
+
+@keyframes plumps-joy {
+  0%,
+  78% {
+    height: 1.9cqi;
+    margin-top: 0.8cqi;
+    border-radius: 3cqi 3cqi 0 0;
+    background: none;
+    box-shadow: inset 0 0.85cqi 0 #fff8e8;
+  }
+}
+
+@keyframes plumps-joy-pupil {
+  0%,
+  78% {
+    opacity: 0;
+  }
+}
+
+/* The hole the dice named lights up … */
+.plumps-slot.is-target .plumps-slot__hole {
+  animation: plumps-target 0.5s ease-out 2 alternate;
+}
+
+@keyframes plumps-target {
+  to {
+    box-shadow:
+      0 0 0 2.5px var(--ink),
+      0 0 0 2.6cqi color-mix(in srgb, var(--c) 55%, transparent);
+  }
+}
+
+/* … and the two to choose from keep pulsing. */
+.plumps-slot.is-option .plumps-slot__hole {
+  animation: plumps-option 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes plumps-option {
+  to {
+    transform: scale(1.14);
+    box-shadow:
+      0 0 0 2.5px var(--ink),
+      0 0 0 2.4cqi color-mix(in srgb, var(--c) 60%, transparent);
+  }
+}
+
+/*
+ * A stick. Its box ends a little below the middle of the hole and is cut off there – what moves further
+ * down has disappeared in the hole. Upwards and sideways nothing is cut.
+ */
+.plumps-stick {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  bottom: 22%;
+  width: 5.2cqi;
+  height: 21cqi;
+  transform: translateX(-50%);
+  clip-path: inset(-400% -200% 0 -200%);
+  pointer-events: none;
+}
+
+.plumps-stick i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 2.5px solid var(--ink);
+  border-radius: 2.6cqi 2.6cqi 1cqi 1cqi;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c) 55%, white) 0 30%, var(--c) 30% 74%, color-mix(in srgb, var(--c) 78%, black) 74%);
+  transform-origin: 50% 100%;
+  transform: translateY(12%);
+  animation: plumps-stick-in 0.46s var(--ease-spring) both;
+}
+
+@keyframes plumps-stick-in {
+  0% {
+    transform: translateY(-120%) rotate(-12deg);
+  }
+  55% {
+    transform: translateY(26%) rotate(3deg);
+  }
+  100% {
+    transform: translateY(12%) rotate(0deg);
+  }
+}
+
+.plumps-stick.is-leaving i {
+  animation: plumps-stick-out 0.27s cubic-bezier(0.3, 0, 0.7, 1) forwards;
+}
+
+@keyframes plumps-stick-out {
+  from {
+    transform: translateY(12%);
+  }
+  to {
+    transform: translateY(-62%) rotate(9deg);
+  }
+}
+
+/* Into the open hole: it tips, falls and is gone. */
+.plumps-stick.is-sinking i {
+  animation: plumps-stick-sink 0.43s cubic-bezier(0.55, 0, 0.9, 0.45) forwards;
+}
+
+@keyframes plumps-stick-sink {
+  0% {
+    transform: translateY(-112%) rotate(7deg);
+  }
+  35% {
+    transform: translateY(-70%) rotate(-5deg);
+  }
+  100% {
+    transform: translateY(125%) rotate(0deg);
+  }
+}
+
+/* The ring that jumps out of the open hole when a stick fell in. */
+.plumps-burst {
+  position: absolute;
+  z-index: 6;
+  width: 27cqi;
+  aspect-ratio: 1 / 0.52;
+  border-radius: 50%;
+  border: 1.6cqi solid #fff;
+  transform: translate(-50%, -50%);
+  animation: plumps-burst 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  pointer-events: none;
+}
+
+@keyframes plumps-burst {
+  from {
+    opacity: 0.95;
+    transform: translate(-50%, -50%) scale(0.6);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(3.6);
+  }
+}
+
+/* Won: the box jumps for joy, the sticks shoot out of their holes. */
+.plumps-board.is-won {
+  animation: plumps-jump 0.7s var(--ease-spring) 3;
+}
+
+@keyframes plumps-jump {
+  30% {
+    transform: translateY(-9%) rotate(-3deg) scale(1.04);
+  }
+  60% {
+    transform: translateY(0) rotate(2deg);
+  }
+}
+
+.plumps-board.is-won .plumps-stick i {
+  animation: plumps-stick-pop 0.9s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+
+@keyframes plumps-stick-pop {
+  0% {
+    transform: translateY(12%);
+  }
+  100% {
+    transform: translateY(-260%) rotate(40deg);
+    opacity: 0;
+  }
+}
+
+/* A stick on its way across the screen (PlumpsGame.tsx, fly). */
+.plumps-fly {
+  position: fixed;
+  z-index: 1200;
+  left: 0;
+  top: 0;
+  width: 17px;
+  height: 66px;
+  border: 2.5px solid var(--ink);
+  border-radius: 9px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c) 55%, white) 0 30%, var(--c) 30% 74%, color-mix(in srgb, var(--c) 78%, black) 74%);
+  box-shadow: 3px 5px 0 rgba(27, 16, 51, 0.28);
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* --------------------------------------------------------------- the dice */
+
+.plumps-tray {
+  flex: none;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: 100%;
+  padding-bottom: 2px;
+}
+
+.plumps-dice {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 26px;
+  min-height: 124px;
+  padding: 30px 30px 10px;
+  border: 0;
+  border-radius: 30px;
+  background: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.plumps-dice:not(:disabled) {
+  cursor: pointer;
+}
+
+/* Waiting to be rolled, the dice wiggle a little. */
+.plumps-dice:not(:disabled) .die {
+  animation: die-wait 1.5s ease-in-out infinite;
+}
+
+.plumps-dice:not(:disabled) .die + .die {
+  animation-delay: -0.75s;
+}
+
+.plumps-dice:not(:disabled):active .die {
+  transform: scale(0.9);
+}
+
+@keyframes die-wait {
+  50% {
+    transform: translateY(-5px) rotate(-5deg);
+  }
+}
+
+.die {
+  --size: clamp(64px, 21vw, 90px);
+  position: relative;
+  display: block;
+  width: var(--size);
+  height: var(--size);
+  perspective: 520px;
+  transition: transform 0.12s;
+}
+
+.die__hop {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+}
+
+/* Two names for the same hop: changing from one to the other starts it again without a new cube. */
+.die__hop.is-a {
+  animation: die-hop-a 0.95s cubic-bezier(0.3, 0.6, 0.4, 1);
+}
+
+.die__hop.is-b {
+  animation: die-hop-b 0.95s cubic-bezier(0.3, 0.6, 0.4, 1);
+}
+
+@keyframes die-hop-a {
+  0% {
+    transform: translateY(0);
+  }
+  20% {
+    transform: translateY(-62px);
+  }
+  46% {
+    transform: translateY(0);
+  }
+  62% {
+    transform: translateY(-24px);
+  }
+  80% {
+    transform: translateY(0);
+  }
+  90% {
+    transform: translateY(-7px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes die-hop-b {
+  0% {
+    transform: translateY(0);
+  }
+  20% {
+    transform: translateY(-62px);
+  }
+  46% {
+    transform: translateY(0);
+  }
+  62% {
+    transform: translateY(-24px);
+  }
+  80% {
+    transform: translateY(0);
+  }
+  90% {
+    transform: translateY(-7px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.die__cube {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transform: translateZ(calc(var(--size) / -2)) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition: transform 0.95s cubic-bezier(0.17, 0.84, 0.3, 1.02);
+}
+
+.die__face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  padding: 14%;
+  border: 3px solid var(--ink);
+  border-radius: 20%;
+  background: linear-gradient(145deg, #fff, #f1ecff);
+}
+
+.die__face i {
+  place-self: center;
+  width: 62%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+
+.die__face i.is-pip {
+  background: var(--ink);
+}
+
+.die__face--colour {
+  background:
+    radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.75) 0 9%, transparent 10%),
+    linear-gradient(145deg, color-mix(in srgb, var(--c) 82%, white), var(--c));
+}
+
+.die__face--1 {
+  transform: translateZ(calc(var(--size) / 2));
+}
+
+.die__face--2 {
+  transform: rotateY(90deg) translateZ(calc(var(--size) / 2));
+}
+
+.die__face--3 {
+  transform: rotateX(90deg) translateZ(calc(var(--size) / 2));
+}
+
+.die__face--4 {
+  transform: rotateX(-90deg) translateZ(calc(var(--size) / 2));
+}
+
+.die__face--5 {
+  transform: rotateY(-90deg) translateZ(calc(var(--size) / 2));
+}
+
+.die__face--6 {
+  transform: rotateY(180deg) translateZ(calc(var(--size) / 2));
+}
+
+.die__shadow {
+  position: absolute;
+  z-index: -1;
+  left: 6%;
+  right: 6%;
+  bottom: -16%;
+  height: 22%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(27, 16, 51, 0.32), transparent 70%);
+}
+
+.plumps-tray__hint {
+  min-height: 48px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 15.5px;
+  font-weight: 700;
+}
+
+.plumps--roll .plumps-tray__hint {
+  animation: plumps-hint 1.4s ease-in-out infinite;
+}
+
+/* It nods instead of fading: the text keeps its contrast. */
+@keyframes plumps-hint {
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+/* Number or colour, roll again or stop: two buttons side by side. */
+.plumps-choice {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: min(100%, 380px);
+  min-height: 48px;
+  animation: rise-in 0.3s var(--ease-out) both;
+}
+
+.plumps-choice .btn {
+  min-width: 0;
+  padding-inline: 10px;
+}
+
+.plumps-pick {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0 9px;
+  min-height: 56px;
+  padding: 6px 12px;
+  border: var(--border);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+  text-align: left;
+  transition:
+    transform 0.12s,
+    box-shadow 0.12s;
+}
+
+.plumps-pick:active {
+  transform: translateY(3px);
+  box-shadow: none;
+}
+
+.plumps-pick__dot {
+  grid-row: span 2;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2.5px solid var(--ink);
+  background: var(--c);
+}
+
+.plumps-pick__what {
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.plumps-pick small {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* ----------------------------------------------------------- double hit */
+
+.plumps-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 50% 46%, rgba(255, 255, 255, 0.96), rgba(255, 210, 63, 0.7) 38%, transparent 72%);
+  pointer-events: none;
+  animation: plumps-flash 1s ease-out forwards;
+}
+
+.plumps-flash span {
+  font-family: var(--font-display);
+  font-size: clamp(30px, 10vw, 52px);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #fff;
+  -webkit-text-stroke: 7px var(--ink);
+  paint-order: stroke fill;
+  transform: rotate(-6deg);
+  animation: plumps-flash-word 1s var(--ease-spring) both;
+}
+
+@keyframes plumps-flash {
+  0% {
+    opacity: 0;
+  }
+  12%,
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes plumps-flash-word {
+  0% {
+    transform: rotate(-6deg) scale(0.3);
+  }
+  35%,
+  75% {
+    transform: rotate(-6deg) scale(1);
+  }
+  100% {
+    transform: rotate(-6deg) scale(1.25);
+  }
+}
+
+/* ------------------------------------------------------------ the winner */
+
+.plumps-winner {
+  position: relative;
+  display: grid;
+  justify-items: center;
+}
+
+.plumps-winner__crown {
+  position: absolute;
+  z-index: 1;
+  top: -34px;
+  font-size: 44px;
+  line-height: 1;
+  filter: drop-shadow(3px 4px 0 rgba(27, 16, 51, 0.85));
+  animation: plumps-crown 0.8s 0.25s var(--ease-spring) both;
+}
+
+@keyframes plumps-crown {
+  from {
+    opacity: 0;
+    transform: translateY(-60px) rotate(-30deg);
+  }
+  to {
+    transform: rotate(-8deg);
+  }
+}
+
+/* A short phone: the hand, the note and the dice take less room – the board gets what is left. */
+@media (max-height: 700px) {
+  .plumps-hand {
+    height: 24px;
+  }
+
+  .plumps-hand i {
+    height: 22px;
+  }
+
+  .plumps-note {
+    min-height: 2.5em;
+    font-size: 14.5px;
+  }
+
+  .plumps-dice {
+    min-height: 78px;
+    padding: 12px 24px 6px;
+  }
+
+  .die {
+    --size: clamp(52px, 17vw, 66px);
+  }
+
+  .plumps-tray__hint {
+    min-height: 40px;
+  }
+}
+
+/* The phone lies on its side: the box on the left, the turn and the dice on the right. */
+@media (orientation: landscape) and (max-height: 540px) {
+  .plumps {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
+    column-gap: 22px;
+    align-items: center;
+    justify-items: center;
+    padding-top: 0;
+  }
+
+  .plumps-players {
+    grid-column: 1 / -1;
+    padding-bottom: 4px;
+  }
+
+  .plumps-stage {
+    grid-column: 1;
+    grid-row: 2 / 4;
+    align-self: stretch;
+    min-height: 0;
+  }
+
+  .plumps-turn {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .plumps-tray {
+    grid-column: 2;
+    grid-row: 3;
+    align-self: start;
+  }
+
+  .plumps-note {
+    min-height: 2.4em;
+  }
+}
